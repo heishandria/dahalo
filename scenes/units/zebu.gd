@@ -17,6 +17,7 @@ var centre_errance := Vector3.ZERO
 var rayon_errance := 6.0
 var id := 0
 var vole := false                 # pris dans l'enclos ou l'escorte d'un autre clan
+var victime := GameRules.WILD     # clan à qui il a été volé (pour les traces)
 var date_securisation := -INF     # temps de jeu de la dernière mise en enclos
 
 var _cible_errance := Vector3.ZERO
@@ -41,6 +42,7 @@ func peut_etre_capture_par(faction: int) -> bool:
 
 func suivre(unite) -> void:
 	vole = proprietaire != GameRules.WILD and proprietaire != unite.faction
+	victime = proprietaire if vole else GameRules.WILD
 	if etat == Etat.ENCLOS and proprietaire != GameRules.WILD:
 		ResourceManager.zebu_perdu(proprietaire)
 		if proprietaire == GameRules.PLAYER:

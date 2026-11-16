@@ -19,6 +19,16 @@ const PART_NUIT := 0.35                # fraction du cycle passée de nuit
 const CYCLES_ENTRE_SECHERESSES := 2    # jours normaux avant une sécheresse
 const DUREE_SECHERESSE_CYCLES := 1
 
+# --- Vision et brouillard de guerre (spec : docs/specs/vision.md) ---
+const DEMI_CARTE := 60.0               # la carte va de -60 à +60 m
+const TAILLE_CASE_VISION := 2.0        # 60 × 60 cases (garder Vision.N cohérent)
+const FREQUENCE_VISION_S := 0.2
+const VISION_BATIMENT := 12.0
+const VISION_NUIT := 0.6               # multiplicateur de vision la nuit (bâtiments ; unités : voir .tres)
+const DUREE_TRACES_S := 90.0
+const PORTEE_LECTURE_TRACES := 15.0    # distance à laquelle un Pisteur repère une trace
+const ECART_TRACES_M := 3.0
+
 # --- Ressources ---
 const RESSOURCES := ["nourriture", "eau", "bois", "ariary"]
 const RESSOURCES_DEPART := {"nourriture": 150.0, "eau": 100.0, "bois": 150.0, "ariary": 50.0}

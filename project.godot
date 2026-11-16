@@ -17,6 +17,7 @@ InputSetup="*res://autoload/input_setup.gd"
 GameClock="*res://autoload/game_clock.gd"
 ResourceManager="*res://autoload/resource_manager.gd"
 CommandBus="*res://autoload/command_bus.gd"
+Vision="*res://autoload/vision.gd"
 
 [display]
 

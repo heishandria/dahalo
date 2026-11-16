@@ -29,8 +29,9 @@ Tous sont formés à la Case centrale (touches 1 à 5 ou ligne « Former »). La
 
 - **Ordre d'attaque** : unités sélectionnées puis clic droit (ou toucher) sur une unité ennemie.
   L'unité s'approche à portée, se tourne vers la cible et frappe à chaque fin de recharge.
-- **Engagement automatique** : un guerrier **inactif** attaque le premier ennemi qui entre dans son champ de vision
-  (Dahalo 14 m, Lanceur 14 m, Tireur 18 m), vérifié toutes les 0,5 s.
+- **Engagement automatique** : un guerrier **inactif** attaque le premier ennemi **visible** qui entre dans son
+  champ de vision (Dahalo 14 m, Lanceur 14 m, Tireur 18 m ; ×0,6 la nuit), vérifié toutes les 0,5 s.
+  Une attaque s'interrompt si la cible sort du champ de vision (voir `vision.md`).
 - **Riposte** : un guerrier frappé alors qu'il fait autre chose (marcher, piller…) riposte contre son agresseur,
   **sauf s'il escorte un troupeau** (il continue sa fuite).
 - Les unités en déplacement n'attaquent pas d'elles-mêmes (pas encore d'« attaque en mouvement »).

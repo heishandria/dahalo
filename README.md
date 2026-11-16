@@ -64,6 +64,7 @@ GitHub Pages et Safari iOS sans réglage serveur particulier.
 - Dahalo : capture de zébus sauvages, escorte (ralentie), sécurisation dans l'enclos, vol dans les enclos adverses,
   reprise d'un troupeau escorté par l'ennemi.
 - Enclos : +10 places de cheptel chacun.
+- Brouillard de guerre : on ne voit que ce que voient ses unités, moins la nuit ; Pisteur éclaireur et lecteur de traces.
 - Cycle jour/nuit (4 min) ; sécheresse cyclique (puisage à 30 %, sol plus clair).
 - Seuls les zébus en enclos mangent et boivent ; en cas de manque, ils s'enfuient un par un.
 - IA rivale : économie équilibrée, formation, construction d'enclos, raids sur les zébus sauvages,

@@ -38,6 +38,7 @@ var cible_attaque = null     # Unite ennemie
 var _recharge := 0.0
 var _chrono_guet := 0.0
 var _materiau_barre := StandardMaterial3D.new()
+var _derniere_trace := Vector3.INF
 
 @onready var agent: NavigationAgent3D = $NavigationAgent3D
 @onready var anneau: MeshInstance3D = $Anneau
@@ -196,7 +197,7 @@ func _physics_process(delta: float) -> void:
 		Etat.MORT:
 			return
 		Etat.ATTAQUE:
-			if not _ennemi_valide(cible_attaque):
+			if not _ennemi_valide(cible_attaque) or not Vision.est_visible(faction, cible_attaque.global_position):
 				cible_attaque = null
 				_stop()
 				return
@@ -257,6 +258,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _avancer() -> void:
+	if not zebus_escortes.is_empty():
+		_laisser_traces()
 	if agent.is_navigation_finished():
 		if etat == Etat.DEPLACEMENT:
 			_stop()
@@ -404,8 +407,28 @@ func _guetter(delta: float) -> void:
 	var ennemi_proche := func(u) -> bool:
 		return u.faction != f and not u.mort
 	var ennemi = _plus_proche(get_tree().get_nodes_in_group("unites"), ennemi_proche)
-	if ennemi != null and global_position.distance_to(ennemi.global_position) <= data.vision:
+	if ennemi != null and global_position.distance_to(ennemi.global_position) <= Vision.rayon_unite(self) \
+			and Vision.est_visible(faction, ennemi.global_position):
 		attaquer(ennemi)
+
+
+## Un Dahalo qui escorte des zébus volés laisse des traces que les Pisteurs du clan volé peuvent lire.
+func _laisser_traces() -> void:
+	var victime := GameRules.WILD
+	for z in zebus_escortes:
+		if is_instance_valid(z) and z.vole:
+			victime = z.victime
+			break
+	if victime == GameRules.WILD:
+		return
+	if _derniere_trace != Vector3.INF and global_position.distance_to(_derniere_trace) < GameRules.ECART_TRACES_M:
+		return
+	_derniere_trace = global_position
+	var trace := Trace.new()
+	trace.faction_volee = victime
+	get_tree().current_scene.add_child(trace)
+	trace.global_position = Vector3(global_position.x, 0.25, global_position.z)
+	trace.rotation.y = rotation.y
 
 
 func _frapper(ennemi) -> void:

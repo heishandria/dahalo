@@ -4,6 +4,8 @@ extends Node
 ## Comportement : économie équilibrée (champs, eau pour le cheptel) -> formation -> enclos
 ## -> raids sur les zébus sauvages, et pillage des enclos du joueur la nuit (GDD §7).
 ## Pas encore de Tsena ni de puits pour l'IA (voir docs/specs/economie.md).
+## Brouillard : l'IA ne voit que ce que voient ses unités ; son Pisteur explore la carte
+## et elle « se souvient » des zones explorées (voir docs/specs/vision.md).
 
 @export var faction := GameRules.AI
 @export var intervalle := 1.5
@@ -17,6 +19,10 @@ const OBJECTIFS := {"bois": 250.0, "eau": 200.0, "nourriture": 250.0}
 const POSITIONS_ENCLOS := [Vector3(0, 0, -11), Vector3(-11, 0, -11), Vector3(11, 0, 11), Vector3(0, 0, 11)]
 const POSITIONS_CHAMPS := [Vector3(-20, 0, -10), Vector3(-20, 0, -3), Vector3(-20, 0, 4), Vector3(-27, 0, -3)]
 const CHAMPS_MAX := 4
+const POINTS_EXPLORATION := [Vector3(30, 0, 30), Vector3(0, 0, 0), Vector3(-30, 0, -30), Vector3(15, 0, -15),
+		Vector3(-15, 0, 15), Vector3(-35, 0, 35), Vector3(-45, 0, -45), Vector3(45, 0, 45)]
+
+var _point_exploration := 0
 
 var _t := 0.0
 
@@ -39,6 +45,7 @@ func _reflechir() -> void:
 	var dahalos: Array = []
 	var combattants: Array = []
 	var nb_lanceurs := 0
+	var pisteurs: Array = []
 	for u in get_tree().get_nodes_in_group("unites_%d" % faction):
 		match u.data.role:
 			"villageois":
@@ -47,6 +54,8 @@ func _reflechir() -> void:
 				dahalos.append(u)
 			"lanceur":
 				nb_lanceurs += 1
+			"pisteur":
+				pisteurs.append(u)
 		if u.est_combattant():
 			combattants.append(u)
 	if _defendre(case, combattants):
@@ -56,6 +65,7 @@ func _reflechir() -> void:
 	_gerer_enclos(case)
 	_gerer_champs(case, villageois.size())
 	_gerer_raids(dahalos)
+	_explorer(pisteurs)
 
 
 # --- Économie ---
@@ -141,6 +151,17 @@ func _sources_recoltables(type: String) -> Array:
 	return sources
 
 
+# --- Exploration ---
+
+func _explorer(pisteurs: Array) -> void:
+	for p in pisteurs:
+		if not p.est_inactif():
+			continue
+		var cible: Vector3 = POINTS_EXPLORATION[_point_exploration % POINTS_EXPLORATION.size()]
+		_point_exploration += 1
+		_cmd({"type": "deplacer", "unites": [p.id], "cible": cible})
+
+
 # --- Défense ---
 
 ## Si des unités ennemies approchent du village ou des enclos, tous les guerriers
@@ -152,7 +173,7 @@ func _defendre(case, combattants: Array) -> bool:
 			points.append(e.global_position)
 	var intrus: Array = []
 	for u in get_tree().get_nodes_in_group("unites"):
-		if u.faction == faction:
+		if u.faction == faction or not Vision.est_visible(faction, u.global_position):
 			continue
 		for p in points:
 			if u.global_position.distance_to(p) <= rayon_defense:
@@ -195,7 +216,7 @@ func _enclos_a_piller():
 	var meilleur = null
 	var max_zebus := 0
 	for e in get_tree().get_nodes_in_group("enclos"):
-		if e.faction == faction or not _valide(e):
+		if e.faction == faction or not _valide(e) or not Vision.est_explore(faction, e.global_position):
 			continue
 		var n := 0
 		for z in get_tree().get_nodes_in_group("zebus"):
@@ -212,7 +233,7 @@ func _zebu_cible(dahalo):
 	var meilleur = null
 	var d_min := INF
 	for z in get_tree().get_nodes_in_group("zebus"):
-		if not z.peut_etre_capture_par(faction):
+		if not z.peut_etre_capture_par(faction) or not Vision.est_explore(faction, z.global_position):
 			continue
 		var sauvage: bool = z.proprietaire == GameRules.WILD
 		if not sauvage and not GameClock.est_nuit:

@@ -9,6 +9,7 @@ role = "pisteur"
 vitesse = 8.5
 pv = 40
 vision = 22.0
+facteur_vision_nuit = 0.9
 peut_recolter = false
 peut_capturer = false
 cout = {"nourriture": 40.0, "bois": 10.0}

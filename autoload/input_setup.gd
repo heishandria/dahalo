@@ -14,6 +14,7 @@ func _ready() -> void:
 	_touche("former_tireur", [KEY_5, KEY_KP_5])
 	_touche("construire_enclos", [KEY_E])
 	_touche("annuler", [KEY_ESCAPE])
+	_touche("reveler_carte", [KEY_F9])   # débogage uniquement
 
 
 func _touche(action: String, touches: Array) -> void:

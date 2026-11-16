@@ -272,6 +272,8 @@ func _ordre(pos: Vector2) -> void:
 		return
 	var ids: Array = selection.map(func(u) -> int: return u.id)
 	var c = hit.collider
+	if c is Node3D and not c.is_visible_in_tree():
+		c = null  # caché par le brouillard : on traite le clic comme un déplacement
 	var cmd := {"faction": GameRules.PLAYER, "unites": ids}
 	if c is Unite and c.faction != GameRules.PLAYER:
 		cmd["type"] = "attaquer"

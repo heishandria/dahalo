@@ -8,6 +8,7 @@ extends Resource
 @export var vitesse := 5.0
 @export var pv := 50
 @export var vision := 12.0
+@export var facteur_vision_nuit := 0.6   # la nuit, la vision est multipliée par ce facteur
 @export_group("Récolte")
 @export var peut_recolter := true
 @export var capacite := 10.0

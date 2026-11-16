@@ -52,6 +52,10 @@ func _ready() -> void:
 	# Navmesh cuit au lancement à partir du sol (obstacles ajoutés plus tard).
 	navigation.bake_navigation_mesh(false)
 	_generer_carte()
+	Vision.initialiser([GameRules.PLAYER, GameRules.AI])
+	var brouillard := preload("res://systems/brouillard.gd").new()
+	brouillard.name = "Brouillard"
+	add_child(brouillard)
 
 
 func _process(_delta: float) -> void:
@@ -218,6 +222,7 @@ func _baobab(pos: Vector3) -> void:
 	couronne.position.y = 6.3
 	arbre.add_child(couronne)
 	arbre.position = _borner(pos)
+	arbre.add_to_group("decor")
 	entites.add_child(arbre)
 
 
