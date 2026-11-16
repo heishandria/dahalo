@@ -25,7 +25,7 @@ tonemap_mode = 2
 [sub_resource type="NavigationMesh" id="NavMesh"]
 geometry_parsed_geometry_type = 1
 geometry_collision_mask = 1
-agent_radius = 0.6
+agent_radius = 0.5
 
 [sub_resource type="PlaneMesh" id="Sol_mesh"]
 size = Vector2(120, 120)
