@@ -7,6 +7,8 @@ var faction := GameRules.PLAYER
 var id := 0
 var en_formation := 0   # nombre d'unités en cours de formation
 var en_recherche := ""  # technologie en cours de recherche
+var fins_formation: Array[float] = []   # instants (GameClock) où chaque formation en cours se termine
+var fin_recherche := 0.0                # instant (GameClock) où la recherche en cours se termine
 var mort := false       # bâtiments détruits (palissade) : jamais vrai pour les autres pour l'instant
 
 
@@ -63,8 +65,11 @@ func former(role: String) -> void:
 		var role_tactique := (" – " + data.description) if data.description != "" else ""
 		EventBus.message.emit("Formation en cours : %s (%d s)%s" % [data.nom, int(data.temps_formation), role_tactique])
 	en_formation += 1
+	var fin := GameClock.temps_ecoule + data.temps_formation
+	fins_formation.append(fin)
 	await get_tree().create_timer(data.temps_formation, false).timeout
 	en_formation -= 1
+	fins_formation.erase(fin)
 	if not is_inside_tree() or CommandBus.monde == null:
 		return
 	var a := randf() * TAU
@@ -95,6 +100,7 @@ func rechercher(tech: String) -> void:
 		_message("%s : il faut %s." % [nom, ResourceManager.texte_cout(cout)])
 		return
 	en_recherche = tech
+	fin_recherche = GameClock.temps_ecoule + float(def["temps"])
 	_message("Recherche en cours : %s (%d s) – %s" % [nom, int(def["temps"]), def.get("effet", "")])
 	await get_tree().create_timer(float(def["temps"]), false).timeout
 	en_recherche = ""

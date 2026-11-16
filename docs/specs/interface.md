@@ -1,6 +1,6 @@
 # Spec — Interface et confort de jeu
 
-> Statut : **prototype v0.9** (16/11/2026). Décrit ce qui est **réellement codé**.
+> Statut : **prototype v0.10** (17/11/2026). Décrit ce qui est **réellement codé**.
 > Code : `ui/hud.gd`, `ui/mini_carte.gd`, `systems/selection_manager.gd`, `scenes/main.gd` (validité des emplacements).
 > Règle : tout est jouable **à la souris ET au doigt** (cible mobile : Safari iOS).
 
@@ -10,8 +10,8 @@
 |---|---|
 | Bandeau haut | Nourriture et eau (avec consommation/min du cheptel), bois, Ariary, zébus / capacité, météo, jour/nuit, temps restant, zébus du rival, alerte de manque |
 | Haut gauche | **Mini-carte** (§3) |
-| Bas gauche | Sélection en cours + aide (souris ou tactile selon l'appareil) |
-| Bas droite | Boutons : Choisir, Former, Village, Clan, Tsena |
+| Bas gauche | Sélection en cours (unités ou bâtiment) + aide (souris ou tactile selon l'appareil) |
+| Bas droite | **Panneau du bâtiment sélectionné** (§2 quater), puis boutons toujours visibles : Choisir, Village, Clan |
 | Centre haut | Messages (s'effacent en 4 s) |
 
 ## 2. Construction : aperçu et emplacements
@@ -39,6 +39,30 @@
 - L'**anneau de sélection** est dessiné par-dessus les bâtiments : une unité sélectionnée cachée derrière
   une case reste repérable.
 - Les unités cachées par le brouillard ne sont jamais ciblées.
+
+## 2 quater. Bâtiment sélectionné : panneau contextuel
+
+- **Sélectionner un bâtiment** : clic gauche dessus (souris) ; au doigt, le toucher **quand aucune unité n'est
+  sélectionnée** (avec des unités sélectionnées, toucher son bâtiment reste l'ordre « déposer »). Toucher le sol
+  désélectionne. Un **anneau doré** entoure le bâtiment. Sélectionner des unités désélectionne le bâtiment.
+- Le panneau s'ouvre en bas à droite, au-dessus des boutons permanents :
+
+| Bâtiment | État affiché | Boutons |
+|---|---|---|
+| Case centrale | Dépôt de toutes les ressources | Former : Villageois, Pisteur ; Recherche : âges et technologies de la Case |
+| Case des Hommes | — | Former : Dahalo, Lanceur, Tireur ; Recherche : Sagaies acérées, Raid éclair |
+| Tsena | — | Marché : vendre zébu, acheter bois / nourriture, vendre bois / nourriture, acheter zébu ; Recherche : Maîtres du Tsena |
+| Enclos | Zébus dans cet enclos, cheptel / capacité | — |
+| Camp de bûcherons | Dépôt de bois | — |
+| Palissade | Solidité (PV / 150) | — |
+
+- Partout : **formations en cours** (nombre et secondes avant la prochaine) et **recherche en cours** (secondes restantes).
+- Chaque bouton montre **son coût ou son prix actuel** sur la 2e ligne (prix du Tsena : sécheresse et Maîtres du
+  Tsena compris). Bouton **grisé** avec la raison quand c'est impossible (« Âge 2 », « Il faut un Tsena »,
+  « en cours… », une autre recherche occupe le bâtiment). Bouton **teinté de rouge** quand on n'a pas de quoi payer.
+- Les anciennes lignes permanentes « Former », « Recherche » et « Tsena » sont **retirées** : on forme,
+  recherche et commerce en touchant le bâtiment. Raccourcis PC inchangés (1 à 5 : former dans le bâtiment
+  sélectionné s'il le peut, sinon dans le premier bâtiment adapté).
 
 ## 2 ter. Déplacements et collisions
 
@@ -69,6 +93,6 @@ Les zébus heurtent bâtiments et arbres, mais pas les clôtures ni les autres u
 ## 4. À faire
 
 - File de formation visible et point de ralliement.
-- Attaque en mouvement, groupes d'unités (Ctrl+1…), sélection des bâtiments.
+- Attaque en mouvement, groupes d'unités (Ctrl+1…).
 - Icônes d'activité au-dessus des villageois.
 - Menu principal, pause, options.

@@ -15,6 +15,7 @@ Lire aussi `CLAUDE.md` (règles d'architecture) et `docs/specs/` (règles codée
   (https://heishandria.github.io/dahalo/) et lance un test accéléré sans écran
   (`-- --accelerer`), dont le rapport sort en annotations.
 - Graphismes : formes primitives (capsules, boîtes). Tout est à remplacer.
+- Interface contextuelle : toucher un bâtiment ouvre ses actions avec leurs coûts (`docs/specs/interface.md` §2 quater).
 - L'IA clôture son enclos garni de palissades et répare les brèches (voir `docs/specs/defense.md` §4).
 - Lancer en local (Mac) : `open -a Godot --args --path ~/dahalo` ; test accéléré :
   `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . -- --accelerer`.
@@ -53,5 +54,4 @@ couleurs ternes et poussiéreuses. Les personnages sont inventés, jamais copié
 
 - Captures d'écran automatiques dans la CI.
 - Carte générée par le code (relief au-delà de ±60 m, zone de jeu plate à y = 0).
-- Interface contextuelle (actions et coûts au toucher d'un bâtiment).
 - Mettre le GDD à jour avec les décisions prises ; vérifier les termes malgaches.

@@ -1,14 +1,22 @@
 extends CanvasLayer
 ## HUD (GDD §9) : bandeau des ressources en haut, sélection en bas à gauche,
 ## boutons d'action en bas à droite (indispensables en tactile), messages, fin de partie.
+## Bâtiment sélectionné : panneau contextuel (état, formations, recherches, commerce, avec leurs coûts).
+## Spec : docs/specs/interface.md
 ## Construit en code pour le prototype ; à remplacer par une scène UI dessinée plus tard.
 
 @onready var selection_mgr = $Selection
 
 const TAILLE_BOUTON := Vector2(124, 54)
-const AIDE_PC := "Clic gauche : sélectionner (glisser = cadre)  |  Clic droit : attaquer, récolter, capturer, piller, ramener à l'enclos, déplacer\n" \
+const AIDE_PC := "Clic gauche : sélectionner une unité ou un bâtiment (glisser = cadre)\n" \
+		+ "Clic droit : attaquer, récolter, capturer, piller, ramener à l'enclos, déplacer\n" \
 		+ "1 à 5 : former  |  E : enclos sous la souris  |  ZQSD / flèches / bords : caméra  |  Molette : zoom"
-const AIDE_TACTILE := "Touchez une unité puis une cible (ennemi, ressource, zébu, enclos, sol)  |  Glisser : caméra  |  Pincer : zoom"
+const AIDE_TACTILE := "Touchez une unité, puis sa cible (ennemi, ressource, zébu, enclos, sol)\n" \
+		+ "Sans sélection, touchez un bâtiment : ses actions\n" \
+		+ "Glisser : caméra  |  Pincer : zoom"
+const ACTIONS_TSENA := ["vendre_zebu", "acheter_bois", "acheter_nourriture", "vendre_bois", "vendre_nourriture", "acheter_zebu"]
+const NOMS_COURTS := {"nourriture": "nourr.", "bois": "bois", "eau": "eau", "ariary": "Ar"}
+const COULEUR_TROP_CHER := Color(1.0, 0.62, 0.55)
 
 var _barre: Label
 var _info: Label
@@ -16,8 +24,12 @@ var _message: Label
 var _actions: PanelContainer
 var _mini_carte: Control
 var _boutons_construction := {}   # type_batiment -> Button
-var _bouton_vente: Button
-var _ligne_recherche: HBoxContainer
+# Panneau contextuel du bâtiment sélectionné
+var _contexte: VBoxContainer
+var _contexte_titre: Label
+var _contexte_etat: Label
+var _contexte_boutons: VBoxContainer
+var _boutons_dynamiques: Array = []   # [Button, Callable] : le Callable renvoie {texte, actif, payable}
 var _fin: PanelContainer
 var _fin_texte: Label
 var _duree_message := 0.0
@@ -31,11 +43,13 @@ func _ready() -> void:
 	EventBus.partie_terminee.connect(_on_fin)
 	selection_mgr.mode_construction_change.connect(_on_mode_construction)
 	EventBus.technologies_changees.connect(_on_technologies_changees)
+	selection_mgr.batiment_change.connect(_on_batiment_change)
 
 
 func _process(delta: float) -> void:
 	_maj_barre()
 	_maj_selection()
+	_maj_contexte()
 	if _duree_message > 0.0:
 		_duree_message -= delta
 		_message.modulate.a = clampf(_duree_message, 0.0, 1.0)
@@ -69,13 +83,16 @@ func _maj_barre() -> void:
 		ResourceManager.nb_zebus(GameRules.AI),
 		alerte,
 	]
-	_bouton_vente.text = "Vendre zébu\n%d Ar" % int(GameRules.prix_zebu_actuel(false, f))
 
 
 func _maj_selection() -> void:
 	selection_mgr.nettoyer()
 	var aide := AIDE_TACTILE if _tactile else AIDE_PC
 	var sel: Array = selection_mgr.selection
+	var b = selection_mgr.batiment_selectionne
+	if b != null:
+		_info.text = "Bâtiment : %s\n%s" % [_nom_batiment(b.type_batiment), aide]
+		return
 	if sel.is_empty():
 		_info.text = "Aucune sélection\n" + aide
 		return
@@ -101,32 +118,172 @@ func _afficher_message(texte: String) -> void:
 
 func _on_technologies_changees(faction: int) -> void:
 	if faction == GameRules.PLAYER:
-		_maj_ligne_recherche()
+		_remplir_contexte()
 
 
-## Ligne « Recherche » : uniquement ce qui est accessible à l'âge actuel (et le passage à l'âge suivant).
-func _maj_ligne_recherche() -> void:
-	for i in range(_ligne_recherche.get_child_count() - 1, 0, -1):
-		_ligne_recherche.get_child(i).queue_free()
-	var f := GameRules.PLAYER
+func _on_batiment_change(_batiment) -> void:
+	_remplir_contexte()
+
+
+# --- Panneau contextuel du bâtiment sélectionné ---
+
+## Recrée les boutons du bâtiment sélectionné (au changement de bâtiment ou de technologies).
+func _remplir_contexte() -> void:
+	for c in _contexte_boutons.get_children():
+		_contexte_boutons.remove_child(c)
+		c.queue_free()
+	_boutons_dynamiques.clear()
+	var b = selection_mgr.batiment_selectionne
+	_contexte.visible = b != null
+	if b == null:
+		return
+	_contexte_titre.text = _nom_batiment(b.type_batiment)
+	var roles: Array = GameRules.FORMATIONS.get(b.type_batiment, [])
+	if not roles.is_empty():
+		var ligne := _ligne_contexte("Former")
+		for role in roles:
+			var data: UnitData = CommandBus.monde.donnees_unite(role)
+			_bouton_contexte(ligne, selection_mgr.former.bind(role), _etat_formation.bind(role), data.description)
+	if b.type_batiment == "tsena":
+		var ligne := _ligne_contexte("Marché")
+		for action in ACTIONS_TSENA:
+			_bouton_contexte(ligne, selection_mgr.commercer.bind(action), _etat_commerce.bind(action), "")
+	var ligne_recherche: HBoxContainer = null
 	for tech in GameRules.TECHNOLOGIES:
-		if not ResourceManager.technologie_accessible(f, tech):
-			continue
 		var def: Dictionary = GameRules.TECHNOLOGIES[tech]
-		var b := Button.new()
-		b.text = String(def["court"])
-		b.custom_minimum_size = Vector2(TAILLE_BOUTON.x * 0.82, TAILLE_BOUTON.y)
-		b.add_theme_font_size_override("font_size", 15)
-		b.focus_mode = Control.FOCUS_NONE
-		var batiment: String = GameRules.NOMS_BATIMENTS.get(def["batiment"], def["batiment"])
-		b.tooltip_text = "%s : %s (%s, %s, %d s)" % [def["nom"], def["effet"], ResourceManager.texte_cout(def["cout"]),
-				batiment, int(def["temps"])]
-		b.pressed.connect(_lancer_recherche.bind(tech))
-		_ligne_recherche.add_child(b)
+		if def["batiment"] != b.type_batiment or not ResourceManager.technologie_accessible(GameRules.PLAYER, tech):
+			continue
+		if ligne_recherche == null:
+			ligne_recherche = _ligne_contexte("Recherche")
+		var infobulle := "%s : %s (%d s)" % [def["nom"], def["effet"], int(def["temps"])]
+		_bouton_contexte(ligne_recherche, selection_mgr.rechercher.bind(tech), _etat_recherche.bind(tech), infobulle)
+	_maj_contexte()
 
 
-func _lancer_recherche(tech: String) -> void:
-	selection_mgr.rechercher(tech)
+## Met à jour l'état et les boutons (textes, prix, disponibilité) à chaque image.
+func _maj_contexte() -> void:
+	var b = selection_mgr.batiment_selectionne
+	if b == null:
+		if _contexte.visible:
+			_remplir_contexte()
+		return
+	_contexte_etat.text = _texte_etat(b)
+	_contexte_etat.visible = _contexte_etat.text != ""
+	for entree in _boutons_dynamiques:
+		var bouton: Button = entree[0]
+		var etat: Dictionary = entree[1].call()
+		bouton.text = etat["texte"]
+		bouton.disabled = not etat["actif"]
+		bouton.modulate = Color.WHITE if etat.get("payable", true) else COULEUR_TROP_CHER
+
+
+func _texte_etat(b) -> String:
+	var f := GameRules.PLAYER
+	var lignes := PackedStringArray()
+	match b.type_batiment:
+		"case_centrale":
+			lignes.append("Dépôt de toutes les ressources")
+		"camp_bois":
+			lignes.append("Dépôt de bois : les villageois y déposent le bois coupé")
+		"enclos":
+			var ici := 0
+			for z in get_tree().get_nodes_in_group("zebus"):
+				if z.enclos == b and z.etat == Zebu.Etat.ENCLOS:
+					ici += 1
+			lignes.append("Zébus dans cet enclos : %d   |   Cheptel : %d / %d" % [ici, ResourceManager.nb_zebus(f),
+					ResourceManager.capacite_zebus(f)])
+		"palissade":
+			lignes.append("Solidité : %d / %d" % [int(b.pv), int(GameRules.PALISSADE_PV)])
+	if b.en_formation > 0:
+		var prochaine := INF
+		for fin in b.fins_formation:
+			prochaine = minf(prochaine, fin)
+		lignes.append("Formation : %d en cours (prochaine dans %d s)" % [b.en_formation,
+				maxi(0, ceili(prochaine - GameClock.temps_ecoule))])
+	if b.en_recherche != "":
+		var def: Dictionary = GameRules.TECHNOLOGIES[b.en_recherche]
+		lignes.append("Recherche : %s (%d s)" % [def["nom"], maxi(0, ceili(b.fin_recherche - GameClock.temps_ecoule))])
+	return "\n".join(lignes)
+
+
+func _etat_formation(role: String) -> Dictionary:
+	var f := GameRules.PLAYER
+	var data: UnitData = CommandBus.monde.donnees_unite(role)
+	var texte := "+ %s\n" % data.nom
+	if ResourceManager.age(f) < data.age_requis:
+		return {"texte": texte + "Âge %d" % data.age_requis, "actif": false}
+	if data.requiert != "" and not CommandBus.monde.possede(f, data.requiert):
+		return {"texte": texte + "Il faut un %s" % _nom_batiment(data.requiert), "actif": false}
+	return {"texte": texte + _cout_court(data.cout), "actif": true, "payable": ResourceManager.peut_payer(f, data.cout)}
+
+
+func _etat_recherche(tech: String) -> Dictionary:
+	var f := GameRules.PLAYER
+	var def: Dictionary = GameRules.TECHNOLOGIES[tech]
+	var texte := String(def["court"]) + "\n"
+	var b = selection_mgr.batiment_selectionne
+	var occupe: String = b.en_recherche if b != null else ""
+	if occupe == tech:
+		return {"texte": texte + "en cours…", "actif": false}
+	var cout: Dictionary = def["cout"]
+	# Une seule recherche à la fois par bâtiment.
+	return {"texte": texte + _cout_court(cout), "actif": occupe == "", "payable": ResourceManager.peut_payer(f, cout)}
+
+
+func _etat_commerce(action: String) -> Dictionary:
+	var f := GameRules.PLAYER
+	var ariary := ResourceManager.quantite(f, "ariary")
+	match action:
+		"vendre_zebu":
+			return {"texte": "Vendre zébu\n+%d Ar" % int(GameRules.prix_zebu_actuel(false, f)), "actif": true,
+					"payable": ResourceManager.nb_zebus(f) > 0}
+		"acheter_bois", "acheter_nourriture":
+			var r := action.trim_prefix("acheter_")
+			var offre: Dictionary = GameRules.ACHATS[r]
+			var prix := GameRules.prix_achat(f, float(offre["prix"]))
+			return {"texte": "+%d %s\n%d Ar" % [int(offre["quantite"]), NOMS_COURTS[r], int(prix)], "actif": true,
+					"payable": ariary >= prix}
+		"vendre_bois", "vendre_nourriture":
+			var r := action.trim_prefix("vendre_")
+			var offre: Dictionary = GameRules.VENTES[r]
+			var prix := GameRules.prix_vente_surplus(f, float(offre["prix"]))
+			return {"texte": "Vendre %d %s\n+%d Ar" % [int(offre["quantite"]), NOMS_COURTS[r], int(prix)], "actif": true,
+					"payable": ResourceManager.quantite(f, r) >= float(offre["quantite"])}
+		"acheter_zebu":
+			if not ResourceManager.a_technologie(f, "maitres_tsena"):
+				return {"texte": "Acheter zébu\nMaîtres du Tsena", "actif": false}
+			return {"texte": "Acheter zébu\n%d Ar" % int(GameRules.PRIX_ZEBU_REPRODUCTEUR), "actif": true,
+					"payable": ariary >= GameRules.PRIX_ZEBU_REPRODUCTEUR and ResourceManager.a_place(f)}
+	return {"texte": action, "actif": false}
+
+
+## « 100 nourr. 50 bois 40 Ar » : tient sur la 2e ligne d'un bouton.
+func _cout_court(cout: Dictionary) -> String:
+	var parties := PackedStringArray()
+	for r in cout:
+		parties.append("%d %s" % [int(cout[r]), NOMS_COURTS.get(r, r)])
+	return " ".join(parties)
+
+
+func _nom_batiment(type_batiment: String) -> String:
+	return GameRules.NOMS_BATIMENTS.get(type_batiment, type_batiment)
+
+
+func _ligne_contexte(titre: String) -> HBoxContainer:
+	var ligne := _ligne_boutons(titre, [])
+	_contexte_boutons.add_child(ligne)
+	return ligne
+
+
+func _bouton_contexte(ligne: HBoxContainer, action: Callable, etat: Callable, infobulle: String) -> void:
+	var b := Button.new()
+	b.custom_minimum_size = TAILLE_BOUTON
+	b.add_theme_font_size_override("font_size", 15)
+	b.focus_mode = Control.FOCUS_NONE
+	b.tooltip_text = infobulle
+	b.pressed.connect(action)
+	ligne.add_child(b)
+	_boutons_dynamiques.append([b, etat])
 
 
 func _on_mode_construction(type_batiment: String) -> void:
@@ -186,6 +343,19 @@ func _construire_ui() -> void:
 	_actions.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	var lignes := VBoxContainer.new()
 	_actions.add_child(lignes)
+	_contexte = VBoxContainer.new()
+	_contexte.visible = false
+	lignes.add_child(_contexte)
+	_contexte_titre = Label.new()
+	_contexte_titre.add_theme_font_size_override("font_size", 20)
+	_contexte_titre.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
+	_contexte.add_child(_contexte_titre)
+	_contexte_etat = Label.new()
+	_contexte_etat.add_theme_font_size_override("font_size", 15)
+	_contexte.add_child(_contexte_etat)
+	_contexte_boutons = VBoxContainer.new()
+	_contexte.add_child(_contexte_boutons)
+	_contexte.add_child(HSeparator.new())
 	lignes.add_child(_ligne_boutons("Choisir", [
 		["Villageois", selection_mgr.selectionner_type.bind("villageois")],
 		["Dahalo", selection_mgr.selectionner_type.bind("dahalo")],
@@ -193,30 +363,10 @@ func _construire_ui() -> void:
 		["Pisteur", selection_mgr.selectionner_type.bind("pisteur")],
 		["Aucun", selection_mgr.annuler],
 	]))
-	lignes.add_child(_ligne_boutons("Former", [
-		["+ Villageois", selection_mgr.former.bind("villageois")],
-		["+ Dahalo", selection_mgr.former.bind("dahalo")],
-		["+ Pisteur", selection_mgr.former.bind("pisteur")],
-		["+ Lanceur", selection_mgr.former.bind("lanceur")],
-		["+ Tireur", selection_mgr.former.bind("tireur")],
-	]))
 	_ajouter_ligne_construction(lignes, "Village", [["enclos", "Enclos"], ["champ", "Champ"],
 			["camp_bois", "Camp bois"], ["puits", "Puits"]])
 	_ajouter_ligne_construction(lignes, "Clan", [["tsena", "Tsena"],
 			["case_hommes", "Case\nHommes"], ["palissade", "Palissade"]])
-	_ligne_recherche = _ligne_boutons("Recherche", [])
-	lignes.add_child(_ligne_recherche)
-	_maj_ligne_recherche()
-	var ligne_tsena := _ligne_boutons("Tsena", [
-		["Vendre zébu", selection_mgr.commercer.bind("vendre_zebu")],
-		["+50 bois\n30 Ar", selection_mgr.commercer.bind("acheter_bois")],
-		["+50 nourr.\n30 Ar", selection_mgr.commercer.bind("acheter_nourriture")],
-		["Vendre\n50 bois", selection_mgr.commercer.bind("vendre_bois")],
-		["Vendre\n50 nourr.", selection_mgr.commercer.bind("vendre_nourriture")],
-		["Acheter\nzébu", selection_mgr.commercer.bind("acheter_zebu")],
-	])
-	lignes.add_child(ligne_tsena)
-	_bouton_vente = ligne_tsena.get_child(1)
 
 	# Messages d'alerte
 	_message = Label.new()

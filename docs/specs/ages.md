@@ -8,8 +8,8 @@
 - Trois âges : **1 – Clan de la Brousse** (départ), **2 – Pistes et Convois**, **3 – Seigneurs des Zébus**.
 - Le passage d'âge est une **recherche à la Case centrale**. Chaque âge débloque ses technologies.
 - **Une recherche à la fois par bâtiment** (le passage d'âge occupe la Case centrale).
-- Ligne de boutons **« Recherche »** : n'affiche que ce qui est accessible maintenant ; se met à jour à chaque
-  technologie acquise. Le message de lancement rappelle l'effet. L'âge actuel est affiché dans le bandeau.
+- Boutons de recherche dans le **panneau du bâtiment sélectionné** (voir `interface.md` §2 quater) : chaque
+  bâtiment n'affiche que ses technologies accessibles maintenant ; la liste se met à jour à chaque technologie acquise. Le message de lancement rappelle l'effet. L'âge actuel est affiché dans le bandeau.
 
 ## 2. Passages d'âge
 

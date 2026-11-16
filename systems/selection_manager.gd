@@ -2,11 +2,12 @@ extends Control
 ## Sélection et ordres du joueur, à la souris (PC) ou au doigt (mobile / navigateur).
 ##
 ## Souris (façon Age of Empires) :
-##  - clic gauche : sélectionner une unité (Maj = ajouter) ; glisser = cadre de sélection
+##  - clic gauche : sélectionner une unité (Maj = ajouter) ou un de ses bâtiments ; glisser = cadre de sélection
 ##  - clic droit : ordre contextuel (récolter, capturer un zébu, ramener à l'enclos, déplacer)
 ##  - touches : 1/2/3 former, E construire un enclos sous la souris, Échap désélectionner
 ## Tactile :
 ##  - toucher une de ses unités : la sélectionner
+##  - toucher un de ses bâtiments sans unité sélectionnée : le sélectionner (actions dans le HUD)
 ##  - toucher autre chose avec une sélection : ordre contextuel
 ##  - glisser un doigt : déplacer la caméra ; pincer : zoomer
 ##  - boutons du HUD : sélection par type, formation, construction
@@ -14,6 +15,7 @@ extends Control
 
 signal selection_changee(unites: Array)
 signal mode_construction_change(type_batiment: String)
+signal batiment_change(batiment)
 
 const SEUIL_CADRE := 6.0
 const SEUIL_GLISSER := 14.0
@@ -26,6 +28,8 @@ const TOLERANCE_DOIGT_PX := 34.0
 
 var selection: Array = []
 var mode_construction := ""     # "" ou un type de bâtiment : le prochain clic / toucher le pose
+var batiment_selectionne = null # bâtiment du joueur sélectionné (jamais en même temps que des unités)
+var _anneau_batiment: MeshInstance3D
 
 # Souris
 var _debut := Vector2.ZERO
@@ -135,8 +139,12 @@ func selectionner_type(role: String) -> void:
 	selection_changee.emit(selection)
 
 
+## Forme dans le bâtiment sélectionné s'il le peut, sinon dans le premier bâtiment adapté (raccourcis clavier).
 func former(role: String) -> void:
-	for b in get_tree().get_nodes_in_group("batiments_%d" % GameRules.PLAYER):
+	var candidats: Array = get_tree().get_nodes_in_group("batiments_%d" % GameRules.PLAYER)
+	if _batiment_valide(batiment_selectionne):
+		candidats.push_front(batiment_selectionne)
+	for b in candidats:
 		if b.has_method("peut_former") and b.peut_former(role):
 			CommandBus.emettre({"type": "former", "faction": GameRules.PLAYER, "batiment": b.id, "unite": role})
 			return
@@ -208,9 +216,62 @@ func annuler() -> void:
 	selection_changee.emit(selection)
 
 
-## Retire les unités disparues (appelé par le HUD).
+## Retire les unités disparues et le bâtiment détruit (appelé par le HUD).
 func nettoyer() -> void:
 	selection = selection.filter(func(u) -> bool: return is_instance_valid(u))
+	if batiment_selectionne != null and not _batiment_valide(batiment_selectionne):
+		selectionner_batiment(null)
+
+
+## Sélectionne un bâtiment du joueur (null : aucun). Désélectionne les unités.
+func selectionner_batiment(b) -> void:
+	if b != null:
+		_vider_unites()
+		selection_changee.emit(selection)
+	if b == batiment_selectionne:
+		return
+	batiment_selectionne = b
+	_maj_anneau_batiment()
+	batiment_change.emit(b)
+
+
+func _batiment_valide(b) -> bool:
+	return b != null and is_instance_valid(b) and not b.is_queued_for_deletion() and not b.mort
+
+
+## Bâtiment du joueur sous le point écran, sinon null.
+func _batiment_sous(pos: Vector2):
+	var hit := _raycast(pos, MASQUE_INTERACTIFS)
+	if hit.is_empty():
+		return null
+	var c = hit.collider
+	if c is Batiment and c.faction == GameRules.PLAYER and _batiment_valide(c):
+		return c
+	return null
+
+
+## Anneau doré autour du bâtiment sélectionné (dessiné par-dessus le décor).
+func _maj_anneau_batiment() -> void:
+	if _anneau_batiment == null:
+		_anneau_batiment = MeshInstance3D.new()
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.no_depth_test = true
+		mat.albedo_color = COULEUR_CADRE
+		_anneau_batiment.material_override = mat
+		_anneau_batiment.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		get_tree().current_scene.add_child(_anneau_batiment)
+	var b = batiment_selectionne
+	_anneau_batiment.visible = b != null
+	if b == null:
+		return
+	var e: Vector2 = GameRules.EMPRISES.get(b.type_batiment, Vector2(3, 3))
+	var rayon := maxf(e.x, e.y) * 0.5 + 0.6
+	var tore := TorusMesh.new()
+	tore.inner_radius = rayon
+	tore.outer_radius = rayon + 0.25
+	_anneau_batiment.mesh = tore
+	_anneau_batiment.global_position = Vector3(b.global_position.x, 0.1, b.global_position.z)
 
 
 # --- Tactile ---
@@ -272,7 +333,9 @@ func _toucher_simple(pos: Vector2) -> void:
 		_vider()
 		_ajouter(a_moi)
 		selection_changee.emit(selection)
-	elif not selection.is_empty():
+	elif selection.is_empty():
+		selectionner_batiment(_batiment_sous(pos))   # toucher ailleurs : désélectionne
+	else:
 		_ordre(pos)
 
 
@@ -298,6 +361,11 @@ func _selection_clic(pos: Vector2, ajouter: bool) -> void:
 	var a_moi = _unite_sous(pos, func(u) -> bool: return u is Unite and u.faction == GameRules.PLAYER)
 	if a_moi != null:
 		_ajouter(a_moi)
+	elif not ajouter:
+		var b = _batiment_sous(pos)
+		if b != null:
+			selectionner_batiment(b)
+			return
 	selection_changee.emit(selection)
 
 
@@ -312,6 +380,7 @@ func _selection_cadre(rect: Rect2, ajouter: bool) -> void:
 
 
 func _ajouter(u) -> void:
+	selectionner_batiment(null)
 	if u in selection:
 		return
 	selection.append(u)
@@ -319,6 +388,11 @@ func _ajouter(u) -> void:
 
 
 func _vider() -> void:
+	selectionner_batiment(null)
+	_vider_unites()
+
+
+func _vider_unites() -> void:
 	for u in selection:
 		if is_instance_valid(u):
 			u.set_selectionne(false)

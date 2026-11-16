@@ -8,7 +8,8 @@
 - **Coût** : 120 bois. Bouton « Case Hommes » (ligne « Clan »).
 - **Forme les guerriers** : Dahalo, Lanceur de sagaies, Tireur. La **Case centrale** ne forme plus que
   les villageois et les pisteurs.
-- Sans Case des Hommes, les boutons de guerriers affichent : « Construisez d'abord une Case des Hommes ».
+- Les boutons de guerriers sont dans le panneau de la Case des Hommes (la toucher). Sans elle, les touches 2, 4, 5
+  affichent : « Construisez d'abord une Case des Hommes ».
 - Le Tireur demande **en plus** un Tsena (fusils achetés aux marchands).
 - C'est aussi le lieu des **recherches militaires** (§3).
 
