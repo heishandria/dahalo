@@ -61,7 +61,7 @@ Villageois et pisteurs peuvent aussi être tués s'ils sont attaqués.
 | « Sagaies acérées » (Âge 2) : + dégâts | Absente | À brancher sur `degats` |
 | « Raid éclair » (Âge 3) : + vitesse en fuite | Absente | À brancher sur l'escorte |
 | Sabotage de palissades, infiltration | Absents | Avec la palissade |
-| Pénalité de vision la nuit | Absente | Avec le brouillard de guerre |
+| Pénalité de vision la nuit | Vision ×0,6 la nuit (×0,9 Pisteur) | **Fait** (voir `vision.md`) |
 
 ## 7. Questions ouvertes
 
