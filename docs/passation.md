@@ -1,0 +1,53 @@
+# Passation — état du projet et décisions en cours
+
+Note de reprise pour une nouvelle session Claude (VS Code, Claude Code sur PC).
+Lire aussi `CLAUDE.md` (règles d'architecture) et `docs/specs/` (règles codées).
+
+## Où en est le prototype (v0.10)
+
+- Solo contre IA jouable : économie (bois, eau, nourriture, Ariary), champs, Tsena,
+  zébus sauvages et migrations, capture / escorte / pillage d'enclos, palissades,
+  brouillard de guerre, 3 âges et technologies, mini-carte.
+- Combat : villageois, pisteur, et triangle des guerriers Dahalo > Tireur > Lanceur > Dahalo
+  (voir `docs/specs/combat.md`). Les unités meurent (chute puis disparition) ; les zébus jamais.
+- Victoire : 40 zébus. Partie de 30 min.
+- CI : `.github/workflows/export-web.yml` exporte le build Web vers GitHub Pages
+  (https://heishandria.github.io/dahalo/) et lance un test accéléré sans écran
+  (`-- --accelerer`), dont le rapport sort en annotations.
+- Graphismes : formes primitives (capsules, boîtes). Tout est à remplacer.
+
+## Pipeline des personnages 3D (décidé)
+
+1. **Canva** : image du personnage en **A-pose**, de face, mains vides, fond blanc ou transparent,
+   corps entier, aucun logo ni texte. Canva refuse les armes : ne jamais en mettre dans le prompt.
+2. **Tripo** (ou Meshy) : image → modèle 3D, avec **auto-rig** et animations (idle, marche, course,
+   attaque, mort). Version allégée (« low poly », ~10 000 triangles, texture 1024 px).
+   Offre gratuite pour tester ; mois payant pour les modèles définitifs (droits commerciaux Steam).
+3. Export **`.glb`** dans `assets/models/personnages/`.
+4. **Intégration Godot (Claude)** : remplacer la capsule « Corps » de `scenes/units/unite.tscn`
+   en gardant les noms de nœuds ; brancher les animations sur les états de `unite.gd` ;
+   armes modélisées par le code et accrochées à l'os de la main (`BoneAttachment3D`) ;
+   couleur du clan sur les rayures du pagne (matériau séparé).
+5. **Blender** seulement si un modèle a un défaut non corrigeable dans Godot (BlenderMCP possible).
+
+### Images déjà générées
+
+- Planche Canva « Androy Malagasy RTS warrior » : villageois (p. 3), ancien au bâton → pisteur
+  (p. 5, 7), guerrier lance + bouclier → dahalo (p. 1), lanciers → lanceur (p. 9, 10).
+  Poses à refaire en A-pose. La p. 2 (t-shirt, jean) est à trancher selon la direction artistique.
+- Dahalo contemporain en A-pose (débardeur orange, casquette, pagne imprimé sur short, tongs) :
+  média Canva `MAHbHcW_hiA`. Premier candidat pour tester Tripo.
+
+### Direction artistique à trancher (à reporter dans le GDD)
+
+Mélange possible : villageois en tenue traditionnelle, dahalo en tenue contemporaine
+(maillots délavés, casquettes), fusil de chasse pour le tireur. Rendu « 3D réaliste stylisé »,
+couleurs ternes et poussiéreuses. Les personnages sont inventés, jamais copiés de vraies photos.
+
+## Tâches proposées, pas encore lancées
+
+- Captures d'écran automatiques dans la CI.
+- Carte générée par le code (relief au-delà de ±60 m, zone de jeu plate à y = 0).
+- Interface contextuelle (actions et coûts au toucher d'un bâtiment).
+- Palissades construites par l'IA.
+- Mettre le GDD à jour avec les décisions prises ; vérifier les termes malgaches.
