@@ -1,10 +1,12 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://systems/rts_camera.gd" id="2_camera"]
 [ext_resource type="Script" path="res://ui/hud.gd" id="3_hud"]
 [ext_resource type="Script" path="res://systems/selection_manager.gd" id="4_selection"]
 [ext_resource type="Script" path="res://systems/ai_controller.gd" id="5_ia"]
+[ext_resource type="PackedScene" path="res://scenes/world/paysage.tscn" id="6_paysage"]
+[ext_resource type="Shader" path="res://scenes/world/terrain.gdshader" id="7_terrain"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Ciel_mat"]
 sky_top_color = Color(0.42, 0.6, 0.85, 1)
@@ -30,10 +32,10 @@ agent_radius = 0.5
 [sub_resource type="PlaneMesh" id="Sol_mesh"]
 size = Vector2(120, 120)
 
-[sub_resource type="StandardMaterial3D" id="Sol_mat"]
+[sub_resource type="ShaderMaterial" id="Sol_mat"]
 resource_local_to_scene = true
-albedo_color = Color(0.72, 0.36, 0.2, 1)
-roughness = 1.0
+render_priority = 0
+shader = ExtResource("7_terrain")
 
 [sub_resource type="BoxShape3D" id="Sol_forme"]
 size = Vector3(120, 1, 120)
@@ -62,6 +64,8 @@ collision_mask = 0
 [node name="Forme" type="CollisionShape3D" parent="NavigationRegion3D/SolPhysique"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 shape = SubResource("Sol_forme")
+
+[node name="Paysage" parent="." instance=ExtResource("6_paysage")]
 
 [node name="Entites" type="Node3D" parent="."]
 

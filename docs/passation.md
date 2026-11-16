@@ -14,10 +14,11 @@ Lire aussi `CLAUDE.md` (règles d'architecture) et `docs/specs/` (règles codée
 - CI : `.github/workflows/export-web.yml` exporte le build Web vers GitHub Pages
   (https://heishandria.github.io/dahalo/) et lance un test accéléré sans écran
   (`-- --accelerer`), dont le rapport sort en annotations.
-  Elle prend aussi 5 **captures d'écran** (départ, panneau de la Case centrale, nuit, base de l'IA à 5 min,
+  Elle prend aussi 6 **captures d'écran** (départ, bord du relief, panneau de la Case centrale, nuit, base de l'IA à 5 min,
   vue d'ensemble) sous écran virtuel, publiées sur https://heishandria.github.io/dahalo/captures/
   (scénario : `systems/captures.gd` ; en local : `Godot --path . -- --captures=<dossier>`).
 - Graphismes : formes primitives (capsules, boîtes). Tout est à remplacer.
+- Carte : sol texturé par shader, relief et décor autour de la zone de jeu (`docs/specs/carte.md`).
 - Interface contextuelle : toucher un bâtiment ouvre ses actions avec leurs coûts (`docs/specs/interface.md` §2 quater).
 - L'IA clôture son enclos garni de palissades et répare les brèches (voir `docs/specs/defense.md` §4).
 - Lancer en local (Mac) : `open -a Godot --args --path ~/dahalo` ; test accéléré :
@@ -55,5 +56,5 @@ couleurs ternes et poussiéreuses. Les personnages sont inventés, jamais copié
 
 ## Tâches proposées, pas encore lancées
 
-- Carte générée par le code (relief au-delà de ±60 m, zone de jeu plate à y = 0).
+- Carte : disposition générée par le code (GDD §8), avec une graine et l'équité entre les clans.
 - Mettre le GDD à jour avec les décisions prises ; vérifier les termes malgaches.

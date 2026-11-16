@@ -36,6 +36,9 @@ func _scenario() -> void:
 	await _attendre_temps_de_jeu(1.0)
 	rig.centrer_sur(BASE_JOUEUR)
 	await _capturer("depart")
+	rig.centrer_sur(Vector3(-62, 0, 10))   # bord ouest : raccord entre la zone de jeu et le relief
+	await _capturer("bordure_relief")
+	rig.centrer_sur(BASE_JOUEUR)
 
 	for b in get_tree().get_nodes_in_group("case_centrale"):
 		if b.faction == GameRules.PLAYER:

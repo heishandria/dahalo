@@ -36,9 +36,6 @@ const AMBIANCE_NUIT := 0.5
 const CIEL_NUIT := 0.4
 const COULEUR_LUNE := Color(0.8, 0.83, 0.95)   # clair de lune presque neutre (moins bleu)
 
-const COULEUR_SOL := Color(0.72, 0.36, 0.2)
-const COULEUR_SOL_SECHERESSE := Color(0.82, 0.5, 0.3)
-
 @onready var entites: Node3D = $Entites
 @onready var navigation: NavigationRegion3D = $NavigationRegion3D
 @onready var sol: MeshInstance3D = $NavigationRegion3D/Sol
@@ -461,6 +458,7 @@ func _maj_lumiere() -> void:
 
 
 func _on_meteo(secheresse: bool) -> void:
-	var m := sol.material_override as StandardMaterial3D
+	# Le relief (scenes/world/paysage.gd) écoute le même signal.
+	var m := sol.material_override as ShaderMaterial
 	if m:
-		m.albedo_color = COULEUR_SOL_SECHERESSE if secheresse else COULEUR_SOL
+		m.set_shader_parameter("secheresse", 1.0 if secheresse else 0.0)
