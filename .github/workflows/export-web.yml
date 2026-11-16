@@ -51,6 +51,18 @@ jobs:
           godot --headless --export-release "Web" build/web/index.html
           test -f build/web/index.html
 
+      - name: Test de fumée (partie accélérée, erreurs remontées en annotations)
+        run: |
+          timeout 240 godot --headless --path . -- --accelerer > test.log 2>&1 || true
+          echo "Lignes de log : $(wc -l < test.log)"
+          grep -E "SCRIPT ERROR|Parse Error|ERROR:|at: |Invalid|Cannot|Nonexistent|Attempt to" test.log | sort | uniq -c | sort -rn | head -60 > erreurs.txt || true
+          if [ -s erreurs.txt ]; then
+            echo "::warning title=Erreurs au test de fumée::$(sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g' erreurs.txt | cut -c1-60000)"
+          else
+            echo "::notice title=Test de fumée::Aucune erreur détectée ($(wc -l < test.log) lignes de log)"
+          fi
+          tail -5 test.log
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web

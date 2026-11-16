@@ -43,6 +43,10 @@ func _ready() -> void:
 	CommandBus.reinitialiser()
 	CommandBus.monde = self
 	ResourceManager.initialiser([GameRules.PLAYER, GameRules.AI])
+	# Test de fumée (CI) : `godot --headless -- --accelerer` joue une partie en accéléré.
+	if "--accelerer" in OS.get_cmdline_user_args():
+		Engine.time_scale = 8.0
+		print("[test] partie accélérée x8")
 	EventBus.meteo_change.connect(_on_meteo)
 
 	# Navmesh cuit au lancement à partir du sol (obstacles ajoutés plus tard).
