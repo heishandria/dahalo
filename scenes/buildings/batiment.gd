@@ -60,7 +60,8 @@ func former(role: String) -> void:
 			EventBus.message.emit("%s : il faut %s." % [data.nom, ResourceManager.texte_cout(data.cout)])
 		return
 	if faction == GameRules.PLAYER:
-		EventBus.message.emit("Formation en cours : %s (%d s)" % [data.nom, int(data.temps_formation)])
+		var role_tactique := (" – " + data.description) if data.description != "" else ""
+		EventBus.message.emit("Formation en cours : %s (%d s)%s" % [data.nom, int(data.temps_formation), role_tactique])
 	en_formation += 1
 	await get_tree().create_timer(data.temps_formation, false).timeout
 	en_formation -= 1

@@ -206,6 +206,18 @@ func capacite_transport() -> float:
 	return c
 
 
+## Dégâts contre une cible précise : triangle des guerriers (Dahalo > Tireur > Lanceur > Dahalo).
+func degats_contre(cible) -> float:
+	var d := degats_actuels()
+	var role_cible := ""
+	if cible is Unite:
+		role_cible = cible.data.role
+	d *= float(data.bonus_contre.get(role_cible, 1.0))
+	if data.malus_au_contact != 1.0 and global_position.distance_to(cible.global_position) < PORTEE_DISTANCE:
+		d *= data.malus_au_contact
+	return d
+
+
 func degats_actuels() -> float:
 	var d := data.degats
 	if data.arme in ["sagaie", "sagaie_jet"] and ResourceManager.a_technologie(faction, "sagaies_acerees"):
@@ -552,7 +564,7 @@ func _frapper(ennemi) -> void:
 	_recharge = data.cadence
 	if data.portee > PORTEE_DISTANCE:
 		_tracer_vers(ennemi.global_position)
-	ennemi.subir(degats_actuels(), self)
+	ennemi.subir(degats_contre(ennemi), self)
 
 
 func _mourir() -> void:

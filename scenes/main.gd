@@ -57,6 +57,7 @@ func _ready() -> void:
 		_test_accelere = true
 		print("[test] partie accélérée x8")
 		EventBus.partie_terminee.connect(_fin_du_test)
+		_lancer_duels.call_deferred()
 	EventBus.meteo_change.connect(_on_meteo)
 	EventBus.cycle_change.connect(_on_cycle)
 
@@ -373,6 +374,41 @@ func _rapport_test() -> void:
 		sauvages, ResourceManager.age(ia), int(ResourceManager.quantite(ia, "ariary")),
 		get_tree().get_nodes_in_group("unites_%d" % ia).size(),
 		get_tree().get_nodes_in_group("batiments_%d" % ia).size()])
+
+
+## Duels du triangle des guerriers, loin des deux bases, entre deux clans de test (2 et 3)
+## que l'IA et le joueur ignorent. Le résultat est imprimé pour la CI.
+const DUELS := [
+	["lanceur", "dahalo", Vector3(-5, 0, 52)],
+	["tireur", "lanceur", Vector3(25, 0, 52)],
+	["dahalo", "tireur", Vector3(52, 0, 20)],
+]
+
+
+func _lancer_duels() -> void:
+	var duels: Array = []
+	for d in DUELS:
+		var centre: Vector3 = d[2]
+		var a := creer_unite(d[0], 2, centre + Vector3(-5, 0, 0))
+		var b := creer_unite(d[1], 3, centre + Vector3(5, 0, 0))
+		duels.append([d[0], a, d[1], b])
+	await get_tree().create_timer(40.0).timeout
+	for d in duels:
+		var a = d[1]
+		var b = d[3]
+		var a_vit: bool = is_instance_valid(a) and not a.mort
+		var b_vit: bool = is_instance_valid(b) and not b.mort
+		var vainqueur := "aucun"
+		var pv := 0
+		if a_vit and not b_vit:
+			vainqueur = d[0]
+			pv = int(a.pv)
+		elif b_vit and not a_vit:
+			vainqueur = d[2]
+			pv = int(b.pv)
+		elif a_vit and b_vit:
+			vainqueur = "égalité (aucun mort)"
+		print("[test] duel %s contre %s : vainqueur = %s, PV restants %d" % [d[0], d[2], vainqueur, pv])
 
 
 func _fin_du_test(gagnant: int) -> void:

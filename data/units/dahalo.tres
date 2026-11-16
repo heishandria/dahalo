@@ -15,6 +15,7 @@ arme = "sagaie"
 degats = 12.0
 portee = 1.8
 cadence = 1.0
+description = "Fort contre les Tireurs, faible contre les Lanceurs. Seul à capturer des zébus."
 cout = {"nourriture": 60.0, "bois": 20.0}
 temps_formation = 10.0
 couleur = Color(0.55, 0.2, 0.12, 1)

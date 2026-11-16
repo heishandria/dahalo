@@ -1,6 +1,6 @@
 # Spec — Combat et armes
 
-> Statut : **prototype v0.4.1** (16/11/2026). Décrit ce qui est **réellement codé**.
+> Statut : **prototype v0.10** (16/11/2026). Décrit ce qui est **réellement codé**.
 > Valeurs : `data/units/*.tres` (dégâts, portée, cadence, PV) et `scenes/units/unite.gd` (comportements).
 
 ## 1. Principes
@@ -17,11 +17,29 @@
 | Villageois | — | 50 | — | — | — | 50 nourr. | Ne combat pas |
 | Pisteur | — | 40 | — | — | — | 40 nourr. + 10 bois | Ne combat pas |
 | **Dahalo armé** | Sagaie, coupe-coupe | 120 | 12 | 1,8 m (contact) | 1 s | 60 nourr. + 20 bois | **Seul à capturer et escorter** |
-| **Lanceur de sagaies** | Sagaies de jet | 70 | 9 | 9 m | 1,6 s | 50 nourr. + 25 bois | Soutien à distance |
-| **Tireur** | Fusil de traite | 80 | 30 | 15 m | 3,5 s (rechargement) | 60 nourr. + 20 bois + **45 Ar** | **Âge 2** + **Tsena** (armes achetées aux marchands) |
+| **Lanceur de sagaies** | Sagaies de jet | **90** | 9 | 9 m | 1,6 s | 50 nourr. + 25 bois | **×2,5 contre le Dahalo** |
+| **Tireur** | Fusil de traite | 80 | 30 | 15 m | 3,5 s (rechargement) | 60 nourr. + 20 bois + **45 Ar** | **×1,6 contre le Lanceur**, **×0,3 au contact** (< 3 m) ; Âge 2 + Tsena |
 
-Dégâts par seconde : Dahalo 12, Lanceur ~5,6, Tireur ~8,6. Le Dahalo domine au contact ; le Tireur
-frappe fort et de loin, mais lentement : il doit être protégé.
+### Triangle des guerriers (décidé le 16/11/2026)
+
+**Dahalo > Tireur > Lanceur > Dahalo.** Chaque guerrier a une proie et un prédateur ; les multiplicateurs
+sont dans les `.tres` (`bonus_contre`, `malus_au_contact`).
+
+| Attaquant ↓ / Cible → | Dahalo | Lanceur | Tireur | Autres |
+|---|---|---|---|---|
+| Dahalo (12 dégâts/s) | 12 | 12 | 12 | 12 |
+| Lanceur (5,6 dégâts/s) | **14,1** (×2,5) | 5,6 | 5,6 | 5,6 |
+| Tireur (8,6 dégâts/s à distance) | 8,6 · 2,6 au contact | **13,7** (×1,6) · 4,1 au contact | 8,6 · 2,6 au contact | 8,6 |
+
+Duels théoriques à 10 m (un contre un) :
+- **Lanceur contre Dahalo** : le Dahalo met ~1 s à arriver ; il tombe en ~8,5 s, le Lanceur en ~8,7 s. Le Lanceur gagne de peu ;
+  à deux Lanceurs pour un Dahalo, c'est net.
+- **Tireur contre Lanceur** : le Tireur tire dès 15 m (48 dégâts par balle) ; le Lanceur (90 PV) tombe à la 2ᵉ balle, ~3,5 s.
+- **Dahalo contre Tireur** : une balle avant le contact (30), puis 9 par tir au corps à corps ; le Tireur (80 PV) tombe en ~6,7 s.
+
+Un test automatique rejoue ces trois duels à chaque mise à jour (rapport de partie de la CI).
+
+La recherche Sagaies acérées (+30 %) s'ajoute aux bonus du triangle.
 
 Villageois et Pisteurs sont formés à la Case centrale ; **Dahalo, Lanceur et Tireur à la Case des Hommes**
 (touches 1 à 5 ou ligne « Former »). La recherche **Sagaies acérées** (Âge 2) donne +30 % de dégâts aux armes à sagaie.
@@ -53,7 +71,9 @@ Villageois et pisteurs peuvent aussi être tués s'ils sont attaqués.
 
 - **Défense** : si une unité ennemie approche à moins de 22 m de sa Case centrale ou d'un de ses enclos,
   tous ses guerriers (sauf ceux qui escortent) attaquent l'intrus le plus proche.
-- **Armée** : jusqu'à 3 Dahalo et 2 Lanceurs. **Pas encore de Tireurs** (elle a un Tsena, mais ne les forme pas).
+- **Armée** : au moins 2 Dahalo (pour les raids), puis jusqu'à 6 guerriers. Elle forme **ce qui contre l'armée du joueur
+  qu'elle voit** : Lanceurs contre des Dahalo, Tireurs contre des Lanceurs (Âge 2 + Tsena, sinon Dahalo), Dahalo contre
+  des Tireurs. Sans rien voir, elle forme des Lanceurs.
 
 ## 6. Écarts avec le GDD
 
@@ -63,9 +83,11 @@ Villageois et pisteurs peuvent aussi être tués s'ils sont attaqués.
 | « Sagaies acérées » (Âge 2) : + dégâts | +30 %, recherche à la Case des Hommes, Âge 2 | **Fait** |
 | « Raid éclair » (Âge 3) : + vitesse en fuite | Escorte ×0,85 au lieu de ×0,6 | **Fait** (voir `ages.md`) |
 | Sabotage de palissades | Attaque des palissades ennemies | **Fait** (voir `defense.md`) |
+| Un seul type de guerrier | Triangle Dahalo / Lanceur / Tireur | **Décidé** (16/11) |
 | Pénalité de vision la nuit | Vision ×0,6 la nuit (×0,9 Pisteur) | **Fait** (voir `vision.md`) |
 
 ## 7. Questions ouvertes
 
 1. Fusils : limiter leur nombre (rareté, munitions en Ariary) pour garder le Dahalo au centre du jeu ?
-2. Attaque en mouvement et formations (escorte protégée par des Lanceurs) ?
+2. Le Lanceur doit-il reculer tout seul quand un Dahalo approche (harcèlement) ?
+3. Attaque en mouvement et formations (escorte protégée par des Lanceurs) ?

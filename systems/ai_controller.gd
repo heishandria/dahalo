@@ -12,7 +12,7 @@ extends Node
 @export var intervalle := 1.5
 @export var villageois_max := 9
 @export var dahalo_max := 3
-@export var lanceurs_max := 2
+@export var guerriers_max := 6
 @export var rayon_defense := 22.0
 @export var taille_raid := 3
 
@@ -49,7 +49,6 @@ func _reflechir() -> void:
 	var villageois: Array = []
 	var dahalos: Array = []
 	var combattants: Array = []
-	var nb_lanceurs := 0
 	var pisteurs: Array = []
 	for u in get_tree().get_nodes_in_group("unites_%d" % faction):
 		match u.data.role:
@@ -57,8 +56,6 @@ func _reflechir() -> void:
 				villageois.append(u)
 			"dahalo":
 				dahalos.append(u)
-			"lanceur":
-				nb_lanceurs += 1
 			"pisteur":
 				pisteurs.append(u)
 		if u.est_combattant():
@@ -66,7 +63,7 @@ func _reflechir() -> void:
 	if _defendre(case, combattants):
 		dahalos = []  # tout le monde est mobilisé pour la défense ce tour-ci
 	_gerer_economie(villageois)
-	_gerer_formation(case, villageois.size(), dahalos.size(), nb_lanceurs)
+	_gerer_formation(case, villageois.size(), dahalos.size(), combattants.size())
 	_gerer_enclos(case)
 	_gerer_champs(case, villageois.size())
 	_gerer_raids(dahalos)
@@ -113,7 +110,7 @@ func _type_prioritaire(affectes: Dictionary) -> String:
 
 # --- Formation et enclos ---
 
-func _gerer_formation(case, nb_villageois: int, nb_dahalos: int, nb_lanceurs: int) -> void:
+func _gerer_formation(case, nb_villageois: int, nb_dahalos: int, nb_guerriers: int) -> void:
 	var monde = CommandBus.monde
 	if case.en_formation == 0 and nb_villageois < villageois_max \
 			and ResourceManager.peut_payer(faction, monde.donnees_unite("villageois").cout):
@@ -127,10 +124,46 @@ func _gerer_formation(case, nb_villageois: int, nb_dahalos: int, nb_lanceurs: in
 		return
 	if hommes.en_formation > 0:
 		return
-	if nb_dahalos < dahalo_max and ResourceManager.peut_payer(faction, monde.donnees_unite("dahalo").cout):
-		_cmd({"type": "former", "batiment": hommes.id, "unite": "dahalo"})
-	elif nb_lanceurs < lanceurs_max and ResourceManager.peut_payer(faction, monde.donnees_unite("lanceur").cout):
-		_cmd({"type": "former", "batiment": hommes.id, "unite": "lanceur"})
+	# Toujours quelques Dahalo pour les raids, puis l'unité qui contre l'armée adverse vue.
+	if nb_dahalos < 2:
+		_former_si_possible(hommes, "dahalo")
+		return
+	if nb_guerriers >= guerriers_max:
+		return
+	_former_si_possible(hommes, _contre_armee_adverse())
+
+
+func _former_si_possible(hommes, role: String) -> void:
+	var data: UnitData = CommandBus.monde.donnees_unite(role)
+	if ResourceManager.age(faction) < data.age_requis:
+		return
+	if data.requiert != "" and _premier_batiment(data.requiert) == null:
+		return
+	if ResourceManager.peut_payer(faction, data.cout):
+		_cmd({"type": "former", "batiment": hommes.id, "unite": role})
+
+
+## Triangle : Dahalo > Tireur > Lanceur > Dahalo. L'IA forme ce qui bat le plus le joueur VU.
+func _contre_armee_adverse() -> String:
+	var vus := {"dahalo": 0, "lanceur": 0, "tireur": 0}
+	for u in get_tree().get_nodes_in_group("unites"):
+		if u.faction != faction and u.data.role in vus and Vision.est_explore(faction, u.global_position) \
+				and Vision.est_visible(faction, u.global_position):
+			vus[u.data.role] += 1
+	var dominant := "dahalo"
+	for role in vus:
+		if vus[role] > vus[dominant]:
+			dominant = role
+	if vus[dominant] == 0:
+		return "lanceur"   # rien vu : de quoi tenir les raids de Dahalo adverses
+	match dominant:
+		"dahalo":
+			return "lanceur"
+		"lanceur":
+			# Le Tireur bat le Lanceur ; à défaut (âge 1, pas de Tsena), des Dahalo.
+			return "tireur" if ResourceManager.age(faction) >= 2 and _premier_batiment("tsena") != null else "dahalo"
+		_:
+			return "dahalo"
 
 
 func _gerer_enclos(case) -> void:

@@ -18,6 +18,9 @@ extends Resource
 @export var degats := 0.0            # 0 = ne combat pas
 @export var portee := 1.8            # > 3 m = attaque à distance
 @export var cadence := 1.0           # secondes entre deux attaques
+@export var bonus_contre := {}       # rôle visé -> multiplicateur de dégâts (triangle des guerriers)
+@export var malus_au_contact := 1.0  # multiplicateur quand la cible est à moins de 3 m (fusil : inutile au corps à corps)
+@export var description := ""        # rôle tactique, affiché à la formation
 @export_group("Raids")
 @export var peut_capturer := false
 @export_group("Formation")
