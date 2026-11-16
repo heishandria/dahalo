@@ -11,6 +11,8 @@ func commercer(action: String) -> void:
 			_acheter("bois")
 		"acheter_nourriture":
 			_acheter("nourriture")
+		"acheter_zebu":
+			_acheter_zebu()
 
 
 func _vendre_zebu() -> void:
@@ -24,7 +26,7 @@ func _vendre_zebu() -> void:
 	if candidat == null:
 		_message("Aucun zébu dans vos enclos à vendre.")
 		return
-	var prix := GameRules.prix_zebu_actuel(candidat.est_vole_recemment())
+	var prix := GameRules.prix_zebu_actuel(candidat.est_vole_recemment(), faction)
 	var decote: bool = candidat.est_vole_recemment()
 	ResourceManager.zebu_perdu(faction)
 	candidat.queue_free()
@@ -37,9 +39,33 @@ func _vendre_zebu() -> void:
 
 func _acheter(ressource: String) -> void:
 	var offre: Dictionary = GameRules.ACHATS[ressource]
-	if not ResourceManager.payer(faction, {"ariary": offre["prix"]}):
-		_message("Pas assez d'Ariary (%d Ar)." % int(offre["prix"]))
+	var prix := GameRules.prix_achat(faction, float(offre["prix"]))
+	if not ResourceManager.payer(faction, {"ariary": prix}):
+		_message("Pas assez d'Ariary (%d Ar)." % int(prix))
 		return
 	ResourceManager.ajouter(faction, ressource, offre["quantite"])
 	_message("Acheté : %d %s." % [int(offre["quantite"]), ressource])
+
+
+## Maîtres du Tsena (Âge 3) : achat d'un zébu reproducteur, livré dans un enclos.
+func _acheter_zebu() -> void:
+	if not ResourceManager.a_technologie(faction, "maitres_tsena"):
+		_message("Il faut la technologie « Maîtres du Tsena » (Âge 3).")
+		return
+	if not ResourceManager.a_place(faction):
+		_message("Enclos pleins : construisez un enclos d'abord.")
+		return
+	var enclos = null
+	for e in get_tree().get_nodes_in_group("enclos"):
+		if e.faction == faction:
+			enclos = e
+			break
+	if enclos == null or CommandBus.monde == null:
+		return
+	if not ResourceManager.payer(faction, {"ariary": GameRules.PRIX_ZEBU_REPRODUCTEUR}):
+		_message("Pas assez d'Ariary (%d Ar)." % int(GameRules.PRIX_ZEBU_REPRODUCTEUR))
+		return
+	var zebu = CommandBus.monde.creer_zebu(enclos.global_position, enclos.global_position)
+	zebu.securiser(enclos)
+	_message("Zébu reproducteur acheté et livré à l'enclos.")
 

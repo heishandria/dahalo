@@ -18,13 +18,13 @@
 | Pisteur | — | 40 | — | — | — | 40 nourr. + 10 bois | Ne combat pas |
 | **Dahalo armé** | Sagaie, coupe-coupe | 120 | 12 | 1,8 m (contact) | 1 s | 60 nourr. + 20 bois | **Seul à capturer et escorter** |
 | **Lanceur de sagaies** | Sagaies de jet | 70 | 9 | 9 m | 1,6 s | 50 nourr. + 25 bois | Soutien à distance |
-| **Tireur** | Fusil de traite | 80 | 30 | 15 m | 3,5 s (rechargement) | 60 nourr. + 20 bois + **60 Ar** | **Nécessite un Tsena** (armes achetées aux marchands) |
+| **Tireur** | Fusil de traite | 80 | 30 | 15 m | 3,5 s (rechargement) | 60 nourr. + 20 bois + **60 Ar** | **Âge 2** + **Tsena** (armes achetées aux marchands) |
 
 Dégâts par seconde : Dahalo 12, Lanceur ~5,6, Tireur ~8,6. Le Dahalo domine au contact ; le Tireur
 frappe fort et de loin, mais lentement : il doit être protégé.
 
 Villageois et Pisteurs sont formés à la Case centrale ; **Dahalo, Lanceur et Tireur à la Case des Hommes**
-(touches 1 à 5 ou ligne « Former »). La recherche **Sagaies acérées** donne +30 % de dégâts aux armes à sagaie.
+(touches 1 à 5 ou ligne « Former »). La recherche **Sagaies acérées** (Âge 2) donne +30 % de dégâts aux armes à sagaie.
 Les guerriers peuvent aussi **saboter les palissades** ennemies (voir `defense.md`).
 
 ## 3. Comportements
@@ -60,8 +60,8 @@ Villageois et pisteurs peuvent aussi être tués s'ils sont attaqués.
 | GDD | Prototype | Statut |
 |---|---|---|
 | Dahalo armé (sagaies, coupe-coupe) | Dahalo + Lanceur + Tireur | **Décidé** (16/11) : fusils via le Tsena |
-| « Sagaies acérées » (Âge 2) : + dégâts | +30 %, recherche à la Case des Hommes | **Fait** (sans âges) |
-| « Raid éclair » (Âge 3) : + vitesse en fuite | Absente | À brancher sur l'escorte |
+| « Sagaies acérées » (Âge 2) : + dégâts | +30 %, recherche à la Case des Hommes, Âge 2 | **Fait** |
+| « Raid éclair » (Âge 3) : + vitesse en fuite | Escorte ×0,85 au lieu de ×0,6 | **Fait** (voir `ages.md`) |
 | Sabotage de palissades | Attaque des palissades ennemies | **Fait** (voir `defense.md`) |
 | Pénalité de vision la nuit | Vision ×0,6 la nuit (×0,9 Pisteur) | **Fait** (voir `vision.md`) |
 

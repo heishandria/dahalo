@@ -170,10 +170,20 @@ func est_inactif() -> bool:
 func vitesse_actuelle() -> float:
 	var v := data.vitesse
 	if not zebus_escortes.is_empty():
-		v *= GameRules.MALUS_VITESSE_ESCORTE
+		v *= GameRules.MALUS_VITESSE_ESCORTE_RAID_ECLAIR if ResourceManager.a_technologie(faction, "raid_eclair") \
+				else GameRules.MALUS_VITESSE_ESCORTE
+	if ResourceManager.a_technologie(faction, "marcheurs_androy"):
+		v *= GameRules.BONUS_MARCHEURS
 	if ralentissements > 0:
 		v *= GameRules.PALISSADE_RALENTISSEMENT
 	return v
+
+
+func capacite_transport() -> float:
+	var c := data.capacite
+	if ResourceManager.a_technologie(faction, "vannerie_cuirs"):
+		c *= GameRules.BONUS_VANNERIE
+	return c
 
 
 func degats_actuels() -> float:
@@ -318,7 +328,7 @@ func _recolter(delta: float) -> void:
 	_timer_recolte -= 1.0
 	type_charge = cible_ressource.type_ressource
 	charge += cible_ressource.extraire(data.vitesse_recolte, faction)
-	if charge >= data.capacite:
+	if charge >= capacite_transport():
 		_aller_deposer()
 
 

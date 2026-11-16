@@ -83,15 +83,56 @@ const PALISSADE_PV := 150.0
 const PALISSADE_RALENTISSEMENT := 0.35   # vitesse des ennemis qui traversent une palissade
 
 # --- Technologies (recherchées dans un bâtiment) ---
+# Spec : docs/specs/ages.md. « age » = âge minimum ; « passage_age » = cette recherche fait changer d'âge.
+const NOMS_AGES := {1: "Clan de la Brousse", 2: "Pistes et Convois", 3: "Seigneurs des Zébus"}
 const TECHNOLOGIES := {
-	"sagaies_acerees": {
-		"nom": "Sagaies acérées",
-		"batiment": "case_hommes",
-		"cout": {"nourriture": 100.0, "bois": 50.0, "ariary": 40.0},
-		"temps": 30.0,
-	},
+	# Passages d'âge (Case centrale)
+	"age_2": {"nom": "Âge 2 : Pistes et Convois", "court": "Âge 2", "age": 1, "passage_age": 2,
+		"batiment": "case_centrale", "cout": {"nourriture": 250.0, "bois": 200.0, "ariary": 60.0}, "temps": 40.0,
+		"effet": "Débloque les technologies et le Tireur de l'Âge 2"},
+	"age_3": {"nom": "Âge 3 : Seigneurs des Zébus", "court": "Âge 3", "age": 2, "passage_age": 3,
+		"batiment": "case_centrale", "cout": {"nourriture": 400.0, "bois": 300.0, "ariary": 150.0}, "temps": 60.0,
+		"effet": "Débloque les technologies de l'Âge 3"},
+	# Âge 1 – Le Clan de la Brousse
+	"cultures_traditionnelles": {"nom": "Cultures traditionnelles", "court": "Cultures", "age": 1,
+		"batiment": "case_centrale", "cout": {"nourriture": 80.0, "bois": 60.0}, "temps": 25.0,
+		"effet": "+25 % de récolte dans les champs"},
+	"marcheurs_androy": {"nom": "Marcheurs de l'Androy", "court": "Marcheurs", "age": 1,
+		"batiment": "case_centrale", "cout": {"nourriture": 100.0}, "temps": 25.0,
+		"effet": "+15 % de vitesse pour toutes les unités"},
+	"vannerie_cuirs": {"nom": "Vannerie et cuirs", "court": "Vannerie", "age": 1,
+		"batiment": "case_centrale", "cout": {"nourriture": 50.0, "bois": 60.0}, "temps": 25.0,
+		"effet": "Capacité de transport des villageois +50 %"},
+	# Âge 2 – L'Âge des Pistes et des Convois
+	"sagaies_acerees": {"nom": "Sagaies acérées", "court": "Sagaies", "age": 2,
+		"batiment": "case_hommes", "cout": {"nourriture": 100.0, "bois": 50.0, "ariary": 40.0}, "temps": 30.0,
+		"effet": "+30 % de dégâts pour les sagaies (Dahalo, Lanceur)"},
+	"technique_pisteurs": {"nom": "Technique des pisteurs", "court": "Pistes", "age": 2,
+		"batiment": "case_centrale", "cout": {"nourriture": 80.0, "ariary": 40.0}, "temps": 30.0,
+		"effet": "Les traces des voleurs apparaissent sans Pisteur, et sur la mini-carte"},
+	"puits_profonds": {"nom": "Puits profonds", "court": "Puits prof.", "age": 2,
+		"batiment": "case_centrale", "cout": {"bois": 120.0, "ariary": 60.0}, "temps": 35.0,
+		"effet": "Pénalité de sécheresse sur l'eau réduite de moitié"},
+	# Âge 3 – Les Seigneurs des Zébus
+	"pacte_eleveurs": {"nom": "Pacte des grands éleveurs", "court": "Pacte", "age": 3,
+		"batiment": "case_centrale", "cout": {"nourriture": 200.0, "ariary": 100.0}, "temps": 45.0,
+		"effet": "Naissance d'un veau par enclos bien tenu toutes les 90 s"},
+	"raid_eclair": {"nom": "Raid éclair", "court": "Raid éclair", "age": 3,
+		"batiment": "case_hommes", "cout": {"nourriture": 150.0, "ariary": 80.0}, "temps": 40.0,
+		"effet": "Les Dahalo escortant un troupeau vont presque à pleine vitesse"},
+	"maitres_tsena": {"nom": "Maîtres du Tsena", "court": "Maîtres Tsena", "age": 3,
+		"batiment": "tsena", "cout": {"bois": 100.0, "ariary": 120.0}, "temps": 40.0,
+		"effet": "Zébus vendus +25 %, achats −1/3, achat de zébus reproducteurs"},
 }
 const BONUS_SAGAIES_ACEREES := 1.3       # dégâts des armes « sagaie » et « sagaie_jet »
+const BONUS_CULTURES := 1.25
+const BONUS_MARCHEURS := 1.15
+const BONUS_VANNERIE := 1.5
+const MALUS_VITESSE_ESCORTE_RAID_ECLAIR := 0.85
+const REPRODUCTION_S := 90.0
+const BONUS_VENTE_MAITRES := 1.25
+const REMISE_ACHAT_MAITRES := 2.0 / 3.0
+const PRIX_ZEBU_REPRODUCTEUR := 80.0
 
 # --- Champs (maïs / sorgho) ---
 const CHAMP_POUSSE_S := 60.0          # temps de culture pour UN villageois (2 villageois = 2× plus vite)
@@ -133,10 +174,18 @@ static func couleur_faction(faction: int) -> Color:
 			return Color(0.6, 0.6, 0.6)
 
 
-static func prix_zebu_actuel(vole_recemment: bool) -> float:
+static func prix_zebu_actuel(vole_recemment: bool, faction: int = -1) -> float:
 	var p := PRIX_ZEBU
 	if GameClock.secheresse:
 		p *= PRIX_ZEBU_SECHERESSE
 	if vole_recemment:
 		p *= DECOTE_ZEBU_VOLE
+	if faction >= 0 and ResourceManager.a_technologie(faction, "maitres_tsena"):
+		p *= BONUS_VENTE_MAITRES
 	return p
+
+
+static func prix_achat(faction: int, prix_de_base: float) -> float:
+	if ResourceManager.a_technologie(faction, "maitres_tsena"):
+		return roundf(prix_de_base * REMISE_ACHAT_MAITRES)
+	return prix_de_base

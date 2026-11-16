@@ -96,6 +96,10 @@ func _draw() -> void:
 	for u in get_tree().get_nodes_in_group("unites"):
 		if u.faction == f or Vision.est_visible(f, u.global_position):
 			draw_circle(_vers_carte(u.global_position), 2.2, GameRules.couleur_faction(u.faction).lightened(0.2))
+	# Traces des voleurs déjà repérées
+	for t in get_tree().get_nodes_in_group("traces"):
+		if t.lue and t.faction_volee == f:
+			draw_rect(Rect2(_vers_carte(t.global_position) - Vector2(1, 1), Vector2(2, 2)), Color(0.55, 0.3, 0.15))
 	# Zone vue par la caméra
 	if _camera_rig != null:
 		var cam: Camera3D = _camera_rig.get_node("Camera3D")

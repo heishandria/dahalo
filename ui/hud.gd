@@ -17,6 +17,7 @@ var _actions: PanelContainer
 var _mini_carte: Control
 var _boutons_construction := {}   # type_batiment -> Button
 var _bouton_vente: Button
+var _ligne_recherche: HBoxContainer
 var _fin: PanelContainer
 var _fin_texte: Label
 var _duree_message := 0.0
@@ -29,6 +30,7 @@ func _ready() -> void:
 	EventBus.message.connect(_afficher_message)
 	EventBus.partie_terminee.connect(_on_fin)
 	selection_mgr.mode_construction_change.connect(_on_mode_construction)
+	EventBus.technologies_changees.connect(_on_technologies_changees)
 
 
 func _process(delta: float) -> void:
@@ -51,7 +53,8 @@ func _maj_barre() -> void:
 	var f := GameRules.PLAYER
 	var restant := int(GameClock.temps_restant())
 	var alerte := "   |   CHEPTEL EN MANQUE !" if ResourceManager.en_manque.get(f, false) else ""
-	_barre.text = ("Nourriture %d (-%d/min)   Eau %d (-%d/min)   Bois %d   Ariary %d   |   Zébus %d/%d   |   %s · %s   |   %02d:%02d   |   Rival : %d zébus%s") % [
+	_barre.text = ("Âge %d   |   Nourriture %d (-%d/min)   Eau %d (-%d/min)   Bois %d   Ariary %d   |   Zébus %d/%d   |   %s · %s   |   %02d:%02d   |   Rival : %d zébus%s") % [
+		ResourceManager.age(f),
 		int(ResourceManager.quantite(f, "nourriture")),
 		int(ResourceManager.conso_par_minute(f, "nourriture")),
 		int(ResourceManager.quantite(f, "eau")),
@@ -66,7 +69,7 @@ func _maj_barre() -> void:
 		ResourceManager.nb_zebus(GameRules.AI),
 		alerte,
 	]
-	_bouton_vente.text = "Vendre zébu\n%d Ar" % int(GameRules.prix_zebu_actuel(false))
+	_bouton_vente.text = "Vendre zébu\n%d Ar" % int(GameRules.prix_zebu_actuel(false, f))
 
 
 func _maj_selection() -> void:
@@ -94,6 +97,36 @@ func _afficher_message(texte: String) -> void:
 	_message.text = texte
 	_duree_message = 4.0
 	_message.modulate.a = 1.0
+
+
+func _on_technologies_changees(faction: int) -> void:
+	if faction == GameRules.PLAYER:
+		_maj_ligne_recherche()
+
+
+## Ligne « Recherche » : uniquement ce qui est accessible à l'âge actuel (et le passage à l'âge suivant).
+func _maj_ligne_recherche() -> void:
+	for i in range(_ligne_recherche.get_child_count() - 1, 0, -1):
+		_ligne_recherche.get_child(i).queue_free()
+	var f := GameRules.PLAYER
+	for tech in GameRules.TECHNOLOGIES:
+		if not ResourceManager.technologie_accessible(f, tech):
+			continue
+		var def: Dictionary = GameRules.TECHNOLOGIES[tech]
+		var b := Button.new()
+		b.text = String(def["court"])
+		b.custom_minimum_size = Vector2(TAILLE_BOUTON.x * 0.82, TAILLE_BOUTON.y)
+		b.add_theme_font_size_override("font_size", 15)
+		b.focus_mode = Control.FOCUS_NONE
+		var batiment: String = GameRules.NOMS_BATIMENTS.get(def["batiment"], def["batiment"])
+		b.tooltip_text = "%s : %s (%s, %s, %d s)" % [def["nom"], def["effet"], ResourceManager.texte_cout(def["cout"]),
+				batiment, int(def["temps"])]
+		b.pressed.connect(_lancer_recherche.bind(tech))
+		_ligne_recherche.add_child(b)
+
+
+func _lancer_recherche(tech: String) -> void:
+	selection_mgr.rechercher(tech)
 
 
 func _on_mode_construction(type_batiment: String) -> void:
@@ -169,21 +202,16 @@ func _construire_ui() -> void:
 	]))
 	_ajouter_ligne_construction(lignes, "Village", [["enclos", "Enclos"], ["champ", "Champ"],
 			["camp_bois", "Camp bois"], ["puits", "Puits"]])
-	var ligne_clan := _ajouter_ligne_construction(lignes, "Clan", [["tsena", "Tsena"],
+	_ajouter_ligne_construction(lignes, "Clan", [["tsena", "Tsena"],
 			["case_hommes", "Case\nHommes"], ["palissade", "Palissade"]])
-	var bouton_sagaies := Button.new()
-	bouton_sagaies.text = "Sagaies\nacérées"
-	bouton_sagaies.custom_minimum_size = TAILLE_BOUTON
-	bouton_sagaies.add_theme_font_size_override("font_size", 16)
-	bouton_sagaies.focus_mode = Control.FOCUS_NONE
-	var tech: Dictionary = GameRules.TECHNOLOGIES["sagaies_acerees"]
-	bouton_sagaies.tooltip_text = "+30 %% dégâts sagaies (%s, Case des Hommes)" % ResourceManager.texte_cout(tech["cout"])
-	bouton_sagaies.pressed.connect(selection_mgr.rechercher.bind("sagaies_acerees"))
-	ligne_clan.add_child(bouton_sagaies)
+	_ligne_recherche = _ligne_boutons("Recherche", [])
+	lignes.add_child(_ligne_recherche)
+	_maj_ligne_recherche()
 	var ligne_tsena := _ligne_boutons("Tsena", [
 		["Vendre zébu", selection_mgr.commercer.bind("vendre_zebu")],
 		["+50 bois\n30 Ar", selection_mgr.commercer.bind("acheter_bois")],
 		["+50 nourr.\n30 Ar", selection_mgr.commercer.bind("acheter_nourriture")],
+		["Acheter\nzébu", selection_mgr.commercer.bind("acheter_zebu")],
 	])
 	lignes.add_child(ligne_tsena)
 	_bouton_vente = ligne_tsena.get_child(1)

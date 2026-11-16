@@ -36,6 +36,8 @@ func maj_lecture(faction_joueur: int) -> void:
 	if faction_volee != faction_joueur:
 		visible = false
 		return
+	if not lue and ResourceManager.a_technologie(faction_joueur, "technique_pisteurs"):
+		lue = true
 	if not lue:
 		for u in get_tree().get_nodes_in_group("unites_%d" % faction_joueur):
 			if u.data.role == "pisteur" \

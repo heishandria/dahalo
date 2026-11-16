@@ -88,7 +88,10 @@ func extraire(q: float, f: int) -> float:
 		return 0.0
 	q *= rendement
 	if GameClock.secheresse:
-		q *= rendement_secheresse
+		var rs := rendement_secheresse
+		if ResourceManager.a_technologie(f, "puits_profonds"):
+			rs = lerpf(rs, 1.0, 0.5)   # pénalité de sécheresse divisée par 2
+		q *= rs
 		if bonus_eau > 0.0:
 			ResourceManager.ajouter(f, "eau", q * bonus_eau)
 	if not infini:

@@ -46,6 +46,10 @@ func former(role: String) -> void:
 	var data: UnitData = CommandBus.monde.donnees_unite(role)
 	if data == null:
 		return
+	if ResourceManager.age(faction) < data.age_requis:
+		if faction == GameRules.PLAYER:
+			EventBus.message.emit("%s : disponible à l'âge %d." % [data.nom, data.age_requis])
+		return
 	if data.requiert != "" and not CommandBus.monde.possede(faction, data.requiert):
 		if faction == GameRules.PLAYER:
 			var nom: String = GameRules.NOMS_BATIMENTS.get(data.requiert, data.requiert)
@@ -79,6 +83,9 @@ func rechercher(tech: String) -> void:
 	if ResourceManager.a_technologie(faction, tech) or en_recherche == tech:
 		_message("%s : déjà acquise ou en cours." % nom)
 		return
+	if not ResourceManager.technologie_accessible(faction, tech):
+		_message("%s : il faut d'abord atteindre l'âge %d." % [nom, int(def.get("age", 1))])
+		return
 	if en_recherche != "":
 		_message("Une recherche est déjà en cours dans ce bâtiment.")
 		return
@@ -87,7 +94,7 @@ func rechercher(tech: String) -> void:
 		_message("%s : il faut %s." % [nom, ResourceManager.texte_cout(cout)])
 		return
 	en_recherche = tech
-	_message("Recherche en cours : %s (%d s)" % [nom, int(def["temps"])])
+	_message("Recherche en cours : %s (%d s) – %s" % [nom, int(def["temps"]), def.get("effet", "")])
 	await get_tree().create_timer(float(def["temps"]), false).timeout
 	en_recherche = ""
 	if not is_inside_tree():

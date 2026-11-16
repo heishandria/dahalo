@@ -100,6 +100,11 @@ Construction immédiate, sans prévisualisation ni contrôle de chevauchement (�
 | Zébu **volé depuis moins de 3 min** | Prix ×0,4 (les marchands se méfient). Le Tsena vend d'abord un zébu « en règle » |
 | Acheter du bois | 50 bois pour 30 Ar |
 | Acheter de la nourriture | 50 nourriture pour 30 Ar |
+| Acheter un zébu reproducteur | 80 Ar, livré à l'enclos (**Maîtres du Tsena**, Âge 3) |
+
+Avec **Maîtres du Tsena** : zébus vendus +25 %, achats de bois et de nourriture à 20 Ar. Toutes les
+technologies qui modifient l'économie (Cultures traditionnelles, Vannerie et cuirs, Puits profonds, Pacte des
+grands éleveurs…) sont décrites dans `ages.md`.
 
 Vendre fait **baisser le cheptel** : c'est un arbitrage entre score de victoire et développement.
 
@@ -117,8 +122,8 @@ Vendre fait **baisser le cheptel** : c'est un arbitrage entre score de victoire 
 ## 10. IA (prototype)
 
 Récolte selon ses besoins (objectifs d'eau et de nourriture qui grandissent avec son cheptel, eau ×2 en
-sécheresse), construit des champs (1 pour 3 villageois, 4 max) et des enclos. **Pas encore** de Tsena,
-de puits ni de camp de bûcherons pour l'IA.
+sécheresse), construit des champs (1 pour 3 villageois, 4 max) et des enclos. Elle construit un Tsena et vend
+quelques zébus pour financer ses âges (voir `ages.md`). **Pas encore** de puits ni de camp de bûcherons pour l'IA.
 
 ## 11. Écarts avec le GDD (à reporter dans le GDD)
 
@@ -131,7 +136,7 @@ de puits ni de camp de bûcherons pour l'IA.
 | Bois coupé sur les baobabs | Forêts d'épineux ; baobabs en décor | **Décidé** |
 | Marché : surplus contre zébus | Vente de zébus contre Ariary, achats en Ariary | **Décidé** ; achat de zébus à l'Âge 3 |
 | Barre d'hydratation par unité | Stock d'eau global du clan | À confirmer |
-| Technologies (Vannerie, Puits profonds, Maîtres du Tsena…) | Absentes | À brancher sur ces valeurs |
+| Technologies (Vannerie, Puits profonds, Maîtres du Tsena…) | Les 9 technologies + 3 âges | **Fait** (voir `ages.md`) |
 
 ## 12. Questions ouvertes
 

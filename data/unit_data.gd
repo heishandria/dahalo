@@ -23,6 +23,7 @@ extends Resource
 @export_group("Formation")
 @export var cout := {}
 @export var temps_formation := 6.0
+@export var age_requis := 1          # âge minimum du clan pour former l'unité
 @export var requiert := ""           # bâtiment nécessaire pour former l'unité (ex. "tsena" pour les fusils)
 @export_group("Visuel")
 @export var couleur := Color(0.85, 0.72, 0.55)

@@ -28,7 +28,7 @@ Squelette Godot 4 du RTS : premier prototype jouable **en solo contre une IA**, 
 | Former | `1` Villageois · `2` Dahalo · `3` Pisteur · `4` Lanceur de sagaies · `5` Tireur (Tsena requis) |
 | Attaquer | Guerriers sélectionnés, puis clic droit / toucher sur une unité ennemie (riposte et engagement automatiques) |
 | Construire | Lignes « Village » (Enclos, Champ, Camp bois, Puits) et « Clan » (Tsena, Case des Hommes, Palissade), puis toucher le sol · `E` = enclos sous la souris · la palissade se pose segment par segment |
-| Améliorer | « Sagaies acérées » (ligne Clan, nécessite la Case des Hommes) |
+| Âges et recherches | Ligne « Recherche » : passage d'âge et technologies disponibles (détail : `docs/specs/ages.md`) |
 | Marché | Boutons « Tsena » : vendre un zébu, acheter du bois ou de la nourriture |
 | Caméra | ZQSD / WASD, flèches, bords de l'écran · molette = zoom |
 | Désélectionner | Échap |

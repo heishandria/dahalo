@@ -8,6 +8,8 @@ var enclos := {}      # faction -> int (nombre d'enclos)
 var en_manque := {}   # faction -> bool (plus d'eau ou plus de nourriture pour le cheptel)
 var _chrono_fuite := {}
 var technologies := {}   # faction -> Array des technologies acquises
+var ages := {}           # faction -> 1, 2 ou 3
+var _chrono_reproduction := {}
 var partie_finie := false
 
 
@@ -19,8 +21,12 @@ func initialiser(factions: Array) -> void:
 	en_manque.clear()
 	_chrono_fuite.clear()
 	technologies.clear()
+	ages.clear()
+	_chrono_reproduction.clear()
 	for f in factions:
 		technologies[f] = []
+		ages[f] = 1
+		_chrono_reproduction[f] = 0.0
 		stocks[f] = GameRules.RESSOURCES_DEPART.duplicate()
 		zebus[f] = 0
 		enclos[f] = 0
@@ -81,6 +87,24 @@ func acquerir_technologie(faction: int, tech: String) -> void:
 		technologies[faction] = []
 	if not a_technologie(faction, tech):
 		technologies[faction].append(tech)
+	var def: Dictionary = GameRules.TECHNOLOGIES.get(tech, {})
+	if def.has("passage_age"):
+		ages[faction] = int(def["passage_age"])
+	EventBus.technologies_changees.emit(faction)
+
+
+func age(faction: int) -> int:
+	return int(ages.get(faction, 1))
+
+
+## Technologie que le clan peut lancer maintenant (âge atteint, pas encore acquise).
+func technologie_accessible(faction: int, tech: String) -> bool:
+	var def: Dictionary = GameRules.TECHNOLOGIES.get(tech, {})
+	if def.is_empty() or a_technologie(faction, tech):
+		return false
+	if def.has("passage_age") and age(faction) >= int(def["passage_age"]):
+		return false
+	return age(faction) >= int(def.get("age", 1))
 
 
 # --- Cheptel ---
@@ -134,6 +158,11 @@ func _process(delta: float) -> void:
 		stocks[f]["nourriture"] = maxf(0.0, quantite(f, "nourriture") - n * GameRules.CONSO_NOURRITURE_ZEBU_S * delta)
 		var manque := quantite(f, "eau") <= 0.0 or quantite(f, "nourriture") <= 0.0
 		_maj_manque(f, manque)
+		if not manque and a_technologie(f, "pacte_eleveurs"):
+			_chrono_reproduction[f] = float(_chrono_reproduction.get(f, 0.0)) + delta
+			if _chrono_reproduction[f] >= GameRules.REPRODUCTION_S:
+				_chrono_reproduction[f] = 0.0
+				_faire_naitre_veaux(f)
 		if manque:
 			_chrono_fuite[f] = float(_chrono_fuite.get(f, 0.0)) + delta
 			if _chrono_fuite[f] >= GameRules.INTERVALLE_FUITE_S:
@@ -164,6 +193,26 @@ func _faire_fuir_un_zebu(f: int) -> void:
 			if f == GameRules.PLAYER:
 				EventBus.message.emit("Un zébu affamé s'est enfui dans la brousse !")
 			return
+
+
+## Pacte des grands éleveurs : un veau naît dans chaque enclos qui a au moins 2 zébus (s'il reste de la place).
+func _faire_naitre_veaux(f: int) -> void:
+	if CommandBus.monde == null:
+		return
+	var naissances := 0
+	for e in get_tree().get_nodes_in_group("enclos"):
+		if e.faction != f or not a_place(f):
+			continue
+		var presents := 0
+		for z in get_tree().get_nodes_in_group("zebus"):
+			if z.etat == Zebu.Etat.ENCLOS and z.enclos == e:
+				presents += 1
+		if presents >= 2:
+			var veau = CommandBus.monde.creer_zebu(e.global_position, e.global_position)
+			veau.securiser(e)
+			naissances += 1
+	if naissances > 0 and f == GameRules.PLAYER:
+		EventBus.message.emit("%d veau(x) né(s) dans vos enclos !" % naissances)
 
 
 # --- Fin de partie ---

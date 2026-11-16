@@ -22,3 +22,5 @@ signal message(texte: String)
 signal vision_maj()
 @warning_ignore("unused_signal")
 signal alerte(position: Vector3)   # raid, attaque : clignote sur la mini-carte
+@warning_ignore("unused_signal")
+signal technologies_changees(faction: int)

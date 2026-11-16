@@ -81,6 +81,8 @@ func _murir() -> void:
 	etat_champ = EtatChamp.MUR
 	croissance = 1.0
 	quantite = GameRules.CHAMP_RECOLTE
+	if ResourceManager.a_technologie(faction, "cultures_traditionnelles"):
+		quantite *= GameRules.BONUS_CULTURES
 	_maj_visuel()
 
 

@@ -3,7 +3,8 @@ extends Node
 ## Elle ne triche pas : elle lit le même état que le joueur et passe par CommandBus.
 ## Comportement : économie équilibrée (champs, eau pour le cheptel) -> formation -> enclos
 ## -> raids sur les zébus sauvages, et pillage des enclos du joueur la nuit (GDD §7).
-## Pas encore de Tsena ni de puits pour l'IA (voir docs/specs/economie.md).
+## Tsena : elle en construit un pour vendre quelques zébus quand il lui faut des Ariary (âges, technologies).
+## Pas encore de puits ni de camp de bûcherons pour l'IA.
 ## Brouillard : l'IA ne voit que ce que voient ses unités ; son Pisteur explore la carte
 ## et elle « se souvient » des zones explorées (voir docs/specs/vision.md).
 
@@ -19,6 +20,10 @@ const OBJECTIFS := {"bois": 250.0, "eau": 200.0, "nourriture": 250.0}
 const POSITIONS_ENCLOS := [Vector3(0, 0, -11), Vector3(-11, 0, -11), Vector3(11, 0, 11), Vector3(0, 0, 11)]
 const POSITIONS_CHAMPS := [Vector3(-20, 0, -10), Vector3(-20, 0, -3), Vector3(-20, 0, 4), Vector3(-27, 0, -3)]
 const CHAMPS_MAX := 4
+# Ordre de recherche de l'IA ; elle ne lance une recherche que si elle garde une réserve après paiement.
+const PLAN_RECHERCHE := ["cultures_traditionnelles", "vannerie_cuirs", "age_2", "sagaies_acerees",
+		"puits_profonds", "marcheurs_androy", "age_3", "pacte_eleveurs", "raid_eclair"]
+const RESERVE_RECHERCHE := {"nourriture": 120.0, "bois": 100.0}
 const POINTS_EXPLORATION := [Vector3(30, 0, 30), Vector3(0, 0, 0), Vector3(-30, 0, -30), Vector3(15, 0, -15),
 		Vector3(-15, 0, 15), Vector3(-35, 0, 35), Vector3(-45, 0, -45), Vector3(45, 0, 45)]
 
@@ -66,6 +71,8 @@ func _reflechir() -> void:
 	_gerer_champs(case, villageois.size())
 	_gerer_raids(dahalos)
 	_explorer(pisteurs)
+	_gerer_recherche()
+	_gerer_tsena(case, villageois.size())
 
 
 # --- Économie ---
@@ -157,6 +164,51 @@ func _sources_recoltables(type: String) -> Array:
 				and (n.disponible() or n.attendre_recolte()):
 			sources.append(n)
 	return sources
+
+
+# --- Recherche ---
+
+func _gerer_recherche() -> void:
+	for tech in PLAN_RECHERCHE:
+		if ResourceManager.a_technologie(faction, tech):
+			continue
+		if not ResourceManager.technologie_accessible(faction, tech):
+			return  # on suit le plan dans l'ordre
+		var def: Dictionary = GameRules.TECHNOLOGIES[tech]
+		var batiment = _premier_batiment(def["batiment"])
+		if batiment == null or batiment.en_recherche != "":
+			return
+		var cout: Dictionary = def["cout"]
+		var avec_reserve := cout.duplicate()
+		for r in RESERVE_RECHERCHE:
+			avec_reserve[r] = float(avec_reserve.get(r, 0.0)) + float(RESERVE_RECHERCHE[r])
+		if ResourceManager.peut_payer(faction, avec_reserve):
+			_cmd({"type": "rechercher", "technologie": tech})
+		return
+
+
+# --- Tsena : vendre un peu de cheptel pour financer les âges ---
+
+func _gerer_tsena(case, nb_villageois: int) -> void:
+	var tsena = _premier_batiment("tsena")
+	if tsena == null:
+		var cout: Dictionary = GameRules.COUTS_BATIMENTS["tsena"]
+		if nb_villageois >= 6 and ResourceManager.quantite(faction, "bois") >= float(cout["bois"]) + 100.0:
+			_cmd({"type": "construire", "type_batiment": "tsena", "position": case.global_position + Vector3(-12, 0, 0)})
+		return
+	var besoin := _ariary_manquants()
+	if besoin > 0.0 and ResourceManager.nb_zebus(faction) >= 6 and not GameClock.secheresse:
+		_cmd({"type": "commerce", "action": "vendre_zebu"})
+
+
+## Ariary qui manquent pour la prochaine recherche du plan (0 si rien ne manque).
+func _ariary_manquants() -> float:
+	for tech in PLAN_RECHERCHE:
+		if ResourceManager.a_technologie(faction, tech):
+			continue
+		var cout: Dictionary = GameRules.TECHNOLOGIES[tech]["cout"]
+		return maxf(0.0, float(cout.get("ariary", 0.0)) - ResourceManager.quantite(faction, "ariary"))
+	return 0.0
 
 
 # --- Exploration ---

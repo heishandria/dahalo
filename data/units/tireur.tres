@@ -18,4 +18,5 @@ cadence = 3.5
 cout = {"nourriture": 60.0, "bois": 20.0, "ariary": 60.0}
 temps_formation = 14.0
 requiert = "tsena"
+age_requis = 2
 couleur = Color(0.3, 0.28, 0.25, 1)

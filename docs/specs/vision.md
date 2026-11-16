@@ -66,7 +66,7 @@ La nuit dure ~1 min 25 s par cycle de 4 min : c'est le moment des raids.
 | La nuit réduit la vue des sentinelles et villageois | ×0,6 pour tous, ×0,9 pour le Pisteur | **Fait** |
 | Pisteur : dissipe le brouillard, repère les troupeaux | Vision 22 m, rapide | **Fait** |
 | Pisteur : détecte les traces des voleurs | Traces lisibles à 15 m | **Fait** |
-| Technique des pisteurs (Âge 2) : pistes sur la mini-carte | Pas de mini-carte | À faire avec la mini-carte |
+| Technique des pisteurs (Âge 2) : pistes sur la mini-carte | Traces visibles sans Pisteur + sur la mini-carte | **Fait** (voir `ages.md`) |
 
 ## 8. Questions ouvertes
 

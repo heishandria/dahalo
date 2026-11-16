@@ -34,14 +34,16 @@
 
 | Technologie | Où | Coût | Durée | Effet |
 |---|---|---|---|---|
-| **Sagaies acérées** (GDD Âge 2) | Case des Hommes | 100 nourriture + 50 bois + 40 Ar | 30 s | **+30 % de dégâts** pour les armes à sagaie (Dahalo, Lanceur) |
+| **Sagaies acérées** (**Âge 2**) | Case des Hommes | 100 nourriture + 50 bois + 40 Ar | 30 s | **+30 % de dégâts** pour les armes à sagaie (Dahalo, Lanceur) |
+| **Raid éclair** (**Âge 3**) | Case des Hommes | 150 nourriture + 80 Ar | 40 s | Escorte presque à pleine vitesse |
 
-Une seule recherche à la fois par bâtiment. Les autres technologies du GDD viendront avec les âges.
+Une seule recherche à la fois par bâtiment. Toutes les technologies : voir `ages.md`.
 
 ## 4. IA
 
 - Construit sa **Case des Hommes** dès qu'elle a 4 villageois et 120 bois, puis y forme Dahalo et Lanceurs.
-- **Pas encore** : palissades, sabotage, recherche.
+- Recherche Sagaies acérées et Raid éclair selon son plan (voir `ages.md`).
+- **Pas encore** : palissades, sabotage.
 
 ## 5. Écarts avec le GDD
 
@@ -50,7 +52,7 @@ Une seule recherche à la fois par bâtiment. Les autres technologies du GDD vie
 | Case des Hommes : convertit des villageois en Dahalo | Forme des guerriers neufs (coût en ressources) | À trancher : conversion de villageois ? |
 | Palissade : ralentit l'intrusion des Dahalo | Ralentit **tous** les ennemis à 35 % | **Fait** |
 | Dahalo : sabotage de palissades | Tout guerrier peut l'attaquer | **Fait** |
-| « Sagaies acérées » en Âge 2 | Disponible dès le début | Sera rattaché aux âges |
+| « Sagaies acérées » en Âge 2 | Âge 2 | **Fait** (voir `ages.md`) |
 
 ## 6. Questions ouvertes
 
