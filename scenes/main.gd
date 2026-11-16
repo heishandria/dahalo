@@ -409,6 +409,10 @@ func _lancer_duels() -> void:
 		elif a_vit and b_vit:
 			vainqueur = "égalité (aucun mort)"
 		print("[test] duel %s contre %s : vainqueur = %s, PV restants %d" % [d[0], d[2], vainqueur, pv])
+		# Les survivants quittent la carte : ils ne doivent pas fausser la suite de la partie de test.
+		for u in [a, b]:
+			if is_instance_valid(u):
+				u.queue_free()
 
 
 func _fin_du_test(gagnant: int) -> void:
