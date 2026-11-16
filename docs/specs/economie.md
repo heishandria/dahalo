@@ -69,7 +69,7 @@ Chaque clan démarre avec **2 champs mûrs**.
 - **Dépôts** : Case centrale (tout) et **Camp de bûcherons** (bois seulement), à placer près des forêts.
 - **Cadence** : 2 unités/s (paquets d'une seconde) × rendement de la source ; **capacité 10**.
 - **Portées** : récolte < 2,2 m de la source, dépôt < 3,5 m du bâtiment.
-- **Source indisponible** : champ qui pousse → attendre ; arbre abattu ou source disparue → source du même type
+- **Source indisponible** : champ en culture → le cultiver ; arbre abattu ou source disparue → source du même type
   la plus proche (< 30 m), sinon arrêt.
 - Changer de type de ressource fait perdre la charge en cours.
 
