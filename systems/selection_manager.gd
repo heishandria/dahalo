@@ -21,6 +21,8 @@ const MASQUE_SOL := 1
 const MASQUE_UNITES := 2
 const MASQUE_INTERACTIFS := 4
 const COULEUR_CADRE := Color(1.0, 0.85, 0.4)
+const TOLERANCE_SOURIS_PX := 18.0   # rayon de « clic approximatif » autour d'une unité
+const TOLERANCE_DOIGT_PX := 34.0
 
 var selection: Array = []
 var mode_construction := ""     # "" ou un type de bâtiment : le prochain clic / toucher le pose
@@ -260,13 +262,10 @@ func _toucher_simple(pos: Vector2) -> void:
 			_placer_fantome(sol.position)
 			_fantome_pose = true
 		return
-	var hit := _raycast(pos, MASQUE_SOL | MASQUE_UNITES | MASQUE_INTERACTIFS)
-	if hit.is_empty():
-		return
-	var c = hit.collider
-	if c is Unite and c.faction == GameRules.PLAYER:
+	var a_moi = _unite_sous(pos, func(u) -> bool: return u is Unite and u.faction == GameRules.PLAYER)
+	if a_moi != null:
 		_vider()
-		_ajouter(c)
+		_ajouter(a_moi)
 		selection_changee.emit(selection)
 	elif not selection.is_empty():
 		_ordre(pos)
@@ -291,11 +290,9 @@ func _sur_interface(pos: Vector2) -> bool:
 func _selection_clic(pos: Vector2, ajouter: bool) -> void:
 	if not ajouter:
 		_vider()
-	var hit := _raycast(pos, MASQUE_UNITES | MASQUE_INTERACTIFS)
-	if not hit.is_empty():
-		var c = hit.collider
-		if c is Unite and c.faction == GameRules.PLAYER:
-			_ajouter(c)
+	var a_moi = _unite_sous(pos, func(u) -> bool: return u is Unite and u.faction == GameRules.PLAYER)
+	if a_moi != null:
+		_ajouter(a_moi)
 	selection_changee.emit(selection)
 
 
@@ -329,7 +326,7 @@ func _ordre(pos: Vector2) -> void:
 	nettoyer()
 	if selection.is_empty():
 		return
-	var hit := _raycast(pos, MASQUE_SOL | MASQUE_UNITES | MASQUE_INTERACTIFS)
+	var hit := _cible_sous(pos)
 	if hit.is_empty():
 		return
 	var ids: Array = selection.map(func(u) -> int: return u.id)
@@ -377,6 +374,44 @@ func _poser_batiment(pos: Vector2) -> void:
 		mode_construction = "palissade"
 		mode_construction_change.emit(mode_construction)
 		_maj_forme_fantome()
+
+
+# --- Ciblage : les unités et zébus passent avant les bâtiments ---
+# En vue isométrique, une unité derrière une case reste cliquable : on cherche d'abord les unités
+# (le rayon ignore alors les bâtiments), puis l'unité la plus proche du doigt / curseur à l'écran,
+# et seulement ensuite les bâtiments, ressources et le sol.
+
+## Unité (ou zébu) visible sous le point écran qui passe le filtre, sinon null.
+func _unite_sous(pos: Vector2, filtre: Callable):
+	var hit := _raycast(pos, MASQUE_UNITES)
+	if not hit.is_empty():
+		var c = hit.collider
+		if c is Node3D and c.is_visible_in_tree() and filtre.call(c):
+			return c
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return null
+	var tolerance := TOLERANCE_DOIGT_PX if DisplayServer.is_touchscreen_available() else TOLERANCE_SOURIS_PX
+	var meilleur = null
+	var d_min := tolerance
+	for groupe in ["unites", "zebus"]:
+		for n in get_tree().get_nodes_in_group(groupe):
+			if not n.is_visible_in_tree() or not filtre.call(n):
+				continue
+			var ecran := cam.unproject_position(n.global_position + Vector3(0.0, 0.9, 0.0))
+			var d := ecran.distance_to(pos)
+			if d < d_min:
+				d_min = d
+				meilleur = n
+	return meilleur
+
+
+## Cible d'un ordre : unité/zébu en priorité, puis bâtiment/ressource, puis le sol.
+func _cible_sous(pos: Vector2) -> Dictionary:
+	var u = _unite_sous(pos, func(_n) -> bool: return true)
+	if u != null:
+		return {"collider": u, "position": u.global_position}
+	return _raycast(pos, MASQUE_SOL | MASQUE_INTERACTIFS)
 
 
 # --- Utilitaires ---

@@ -1,6 +1,6 @@
 # Spec — Interface et confort de jeu
 
-> Statut : **prototype v0.7** (16/11/2026). Décrit ce qui est **réellement codé**.
+> Statut : **prototype v0.7.1** (16/11/2026). Décrit ce qui est **réellement codé**.
 > Code : `ui/hud.gd`, `ui/mini_carte.gd`, `systems/selection_manager.gd`, `scenes/main.gd` (validité des emplacements).
 > Règle : tout est jouable **à la souris ET au doigt** (cible mobile : Safari iOS).
 
@@ -30,6 +30,15 @@
   palissade 4×0,6 m.
 - **IA** : si son emplacement prévu est pris, elle cherche un emplacement libre en spirale (jusqu'à 16 m).
 - Rien n'est payé si l'emplacement est refusé.
+
+## 2 bis. Sélection et ciblage
+
+- **Priorité aux unités** : un clic ou un toucher cherche d'abord une unité ou un zébu, en ignorant les
+  bâtiments placés devant (vue isométrique) ; puis l'unité la plus proche du point à l'écran
+  (**18 px** à la souris, **34 px** au doigt) ; et seulement ensuite les bâtiments, ressources et le sol.
+- L'**anneau de sélection** est dessiné par-dessus les bâtiments : une unité sélectionnée cachée derrière
+  une case reste repérable.
+- Les unités cachées par le brouillard ne sont jamais ciblées.
 
 ## 3. Mini-carte
 
