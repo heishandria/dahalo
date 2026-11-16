@@ -143,8 +143,9 @@ func construire(faction: int, type_batiment: String, pos: Vector3, rotation_y: f
 			EventBus.message.emit("Votre clan a déjà un Tsena.")
 		return
 	var raison := raison_emplacement_invalide(faction, type_batiment, pos)
-	if raison != "" and faction != GameRules.PLAYER:
-		pos = _chercher_emplacement(faction, type_batiment, pos)   # l'IA se décale toute seule
+	# L'IA se décale toute seule, sauf pour une palissade (un segment déplacé ne fermerait rien).
+	if raison != "" and faction != GameRules.PLAYER and type_batiment != "palissade":
+		pos = _chercher_emplacement(faction, type_batiment, pos)
 		raison = "" if pos != Vector3.INF else "aucun emplacement libre"
 	if raison != "":
 		if faction == GameRules.PLAYER:
@@ -369,11 +370,15 @@ func _rapport_test() -> void:
 		if z.etat == Zebu.Etat.SAUVAGE:
 			sauvages += 1
 	var ia := GameRules.AI
-	print("[test] t=%d min | zebus joueur=%d IA=%d sauvages=%d | IA : age=%d, Ar=%d, unites=%d, batiments=%d" % [
+	var palissades := 0
+	for p in get_tree().get_nodes_in_group("palissade"):
+		if p.faction == ia:
+			palissades += 1
+	print("[test] t=%d min | zebus joueur=%d IA=%d sauvages=%d | IA : age=%d, Ar=%d, unites=%d, batiments=%d, palissades=%d" % [
 		int(GameClock.temps_ecoule / 60.0), ResourceManager.nb_zebus(GameRules.PLAYER), ResourceManager.nb_zebus(ia),
 		sauvages, ResourceManager.age(ia), int(ResourceManager.quantite(ia, "ariary")),
 		get_tree().get_nodes_in_group("unites_%d" % ia).size(),
-		get_tree().get_nodes_in_group("batiments_%d" % ia).size()])
+		get_tree().get_nodes_in_group("batiments_%d" % ia).size() - palissades, palissades])
 
 
 ## Duels du triangle des guerriers, loin des deux bases, entre deux clans de test (2 et 3)

@@ -1,6 +1,6 @@
 # Spec — Défense du village : Case des Hommes, palissade, améliorations
 
-> Statut : **prototype v0.9** (16/11/2026). Décrit ce qui est **réellement codé**.
+> Statut : **prototype v0.10** (16/11/2026). Décrit ce qui est **réellement codé**.
 > Valeurs : `data/game_rules.gd` (COUTS_BATIMENTS, FORMATIONS, PALISSADE_*, TECHNOLOGIES).
 
 ## 1. Case des Hommes (GDD §5)
@@ -61,7 +61,15 @@ Une seule recherche à la fois par bâtiment. Toutes les technologies : voir `ag
 - Construit sa **Case des Hommes** dès qu'elle a 4 villageois et 120 bois, puis y forme Dahalo et Lanceurs.
 - Recherche Sagaies acérées et Raid éclair selon son plan (voir `ages.md`).
 - Ses guerriers **sabotent automatiquement** vos palissades quand elles leur barrent la route.
-- **Pas encore** : construire ses propres palissades.
+- **Palissades de l'IA** : elle entoure chaque enclos qui contient **au moins 4 zébus** d'un carré de palissade
+  à 2 m de la clôture (12 segments, 180 bois), en commençant par l'enclos le plus garni.
+  - **Un segment par réflexion** (toutes les 1,5 s), seulement s'il lui reste **100 bois** après paiement :
+    enclos, champs et Case des Hommes passent avant.
+  - Un segment **saboté est reconstruit** de la même façon (il manque à nouveau dans le carré).
+  - Un segment qui tomberait sur un champ, un arbre ou un bâtiment n'est **pas posé** : l'IA ne le décale pas,
+    la brèche reste. Sur la carte de test, l'enclos de départ a ainsi une brèche côté champs (11 segments sur 12).
+  - Comme l'IA dépose tous ses zébus dans son premier enclos, c'est en pratique le seul clôturé.
+  - Valeurs : constantes `PALISSADE_*` en tête de `systems/ai_controller.gd`.
 
 ## 5. Écarts avec le GDD
 
@@ -71,8 +79,10 @@ Une seule recherche à la fois par bâtiment. Toutes les technologies : voir `ag
 | Palissade : ralentit l'intrusion des Dahalo | **Bloque** les ennemis jusqu'au sabotage | **Décidé** (16/11) : plus fort que le GDD |
 | Dahalo : sabotage de palissades | Tout guerrier la sabote, automatiquement s'il est bloqué | **Fait** |
 | « Sagaies acérées » en Âge 2 | Âge 2 | **Fait** (voir `ages.md`) |
+| Palissade : défense du joueur | L'IA clôture aussi ses enclos garnis | **Fait** (16/11) |
 
 ## 6. Questions ouvertes
 
 2. Les Dahalo doivent-ils saboter **plus vite** que les autres guerriers (bonus d'infiltration) ?
 3. Former un guerrier en **convertissant un villageois** (comme le dit le GDD) ?
+4. L'IA devrait-elle répartir ses zébus entre ses enclos (et donc clôturer les suivants) ?

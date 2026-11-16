@@ -4,6 +4,7 @@ extends Node
 ## Comportement : économie équilibrée (champs, eau pour le cheptel) -> formation -> enclos
 ## -> raids sur les zébus sauvages, et pillage des enclos du joueur la nuit (GDD §7).
 ## Tsena : elle en construit un pour vendre quelques zébus quand il lui faut des Ariary (âges, technologies).
+## Palissades : elle entoure ses enclos garnis d'un carré d'épines et répare les brèches.
 ## Pas encore de puits ni de camp de bûcherons pour l'IA.
 ## Brouillard : l'IA ne voit que ce que voient ses unités ; son Pisteur explore la carte
 ## et elle « se souvient » des zones explorées (voir docs/specs/vision.md).
@@ -26,6 +27,10 @@ const PLAN_RECHERCHE := ["cultures_traditionnelles", "vannerie_cuirs", "age_2", 
 const RESERVE_RECHERCHE := {"nourriture": 120.0, "bois": 100.0}
 const POINTS_EXPLORATION := [Vector3(30, 0, 30), Vector3(0, 0, 0), Vector3(-30, 0, -30), Vector3(15, 0, -15),
 		Vector3(-15, 0, 15), Vector3(-35, 0, 35), Vector3(-45, 0, -45), Vector3(45, 0, 45)]
+# Palissades autour des enclos (spec : docs/specs/defense.md §4)
+const PALISSADE_ZEBUS_MIN := 4          # un enclos n'est clôturé qu'à partir de ce nombre de zébus
+const PALISSADE_RESERVE_BOIS := 100.0   # bois gardé après chaque segment (enclos et champs passent avant)
+const PALISSADE_DEMI_COTE := 6.0        # carré à 2 m de la clôture de l'enclos (8 x 8 m)
 
 var _point_exploration := 0
 
@@ -66,6 +71,7 @@ func _reflechir() -> void:
 	_gerer_formation(case, villageois.size(), dahalos.size(), combattants.size())
 	_gerer_enclos(case)
 	_gerer_champs(case, villageois.size())
+	_gerer_palissades()
 	_gerer_raids(dahalos)
 	_explorer(pisteurs)
 	_gerer_recherche()
@@ -197,6 +203,61 @@ func _sources_recoltables(type: String) -> Array:
 				and (n.disponible() or n.attendre_recolte()):
 			sources.append(n)
 	return sources
+
+
+# --- Palissades ---
+
+## Pose au plus un segment par réflexion : le premier qui manque autour de l'enclos le plus garni.
+## Un segment saboté manque à nouveau, il est donc reconstruit de la même façon.
+func _gerer_palissades() -> void:
+	var cout: Dictionary = GameRules.COUTS_BATIMENTS["palissade"]
+	if ResourceManager.quantite(faction, "bois") < float(cout["bois"]) + PALISSADE_RESERVE_BOIS:
+		return
+	var monde = CommandBus.monde
+	for e in _enclos_par_cheptel():
+		for segment in _segments_autour(e.global_position):
+			var position: Vector3 = segment[0]
+			if _palissade_presente(position) \
+					or monde.raison_emplacement_invalide(faction, "palissade", position) != "":
+				continue  # déjà là, ou emplacement occupé (champ, arbre) : brèche acceptée
+			_cmd({"type": "construire", "type_batiment": "palissade", "position": position,
+					"rotation_y": segment[1]})
+			return
+
+
+## Enclos de l'IA qui méritent une palissade, du plus garni au moins garni.
+func _enclos_par_cheptel() -> Array:
+	var cheptel := {}
+	for z in get_tree().get_nodes_in_group("zebus"):
+		if z.etat == Zebu.Etat.ENCLOS and _valide(z.enclos) and z.enclos.faction == faction:
+			cheptel[z.enclos] = int(cheptel.get(z.enclos, 0)) + 1
+	var liste: Array = []
+	for e in cheptel:
+		if int(cheptel[e]) >= PALISSADE_ZEBUS_MIN:
+			liste.append(e)
+	liste.sort_custom(func(a, b) -> bool: return int(cheptel[a]) > int(cheptel[b]))
+	return liste
+
+
+## Segments [position, rotation_y] d'un carré de palissade centré sur un enclos.
+func _segments_autour(centre: Vector3) -> Array:
+	var longueur: float = GameRules.EMPRISES["palissade"].x
+	var nombre := int(ceil(2.0 * PALISSADE_DEMI_COTE / longueur))
+	var segments: Array = []
+	for i in nombre:
+		var t := -PALISSADE_DEMI_COTE + longueur * (i + 0.5)
+		segments.append([centre + Vector3(t, 0, -PALISSADE_DEMI_COTE), 0.0])
+		segments.append([centre + Vector3(t, 0, PALISSADE_DEMI_COTE), 0.0])
+		segments.append([centre + Vector3(-PALISSADE_DEMI_COTE, 0, t), PI / 2.0])
+		segments.append([centre + Vector3(PALISSADE_DEMI_COTE, 0, t), PI / 2.0])
+	return segments
+
+
+func _palissade_presente(position: Vector3) -> bool:
+	for p in get_tree().get_nodes_in_group("palissade"):
+		if p.faction == faction and _valide(p) and not p.mort and p.global_position.distance_to(position) < 1.0:
+			return true
+	return false
 
 
 # --- Recherche ---
