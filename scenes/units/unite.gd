@@ -43,6 +43,16 @@ var ralentissements := 0     # nombre de palissades ennemies traversées en ce m
 var _derniere_alerte := -INF
 var _deplacement_demande := false   # avoidance : vrai si _avancer a demandé un pas ce tour-ci
 
+# Capture : passer la corde / détacher un zébu prend du temps
+var _zebu_en_capture = null
+var _chrono_capture := 0.0
+var _etiquette_action: Label3D
+
+# Sabotage automatique d'une palissade qui barre la route, puis reprise de l'ordre en cours
+var _derniere_commande := {}
+var _dernier_rang := 0
+var _sabotage_auto := false
+
 @onready var agent: NavigationAgent3D = $NavigationAgent3D
 @onready var anneau: MeshInstance3D = $Anneau
 @onready var corps: MeshInstance3D = $Corps
@@ -53,6 +63,8 @@ var _deplacement_demande := false   # avoidance : vrai si _avancer a demandé un
 func _ready() -> void:
 	id = CommandBus.enregistrer(self)
 	agent.velocity_computed.connect(_on_vitesse_calculee)
+	# Bute sur les obstacles (4), les arbres (5) et les palissades des AUTRES clans (7, 8).
+	collision_mask = 24 | (192 & ~(64 << faction))
 	add_to_group("unites")
 	add_to_group("unites_%d" % faction)
 	anneau.visible = false
@@ -81,6 +93,10 @@ func _ready() -> void:
 func executer(cmd: Dictionary, rang: int = 0) -> void:
 	if mort:
 		return
+	_fin_capture()
+	_sabotage_auto = false
+	_derniere_commande = cmd
+	_dernier_rang = rang
 	match cmd.get("type", ""):
 		"attaquer":
 			var ennemi = CommandBus.get_entite(cmd.get("cible_id", 0))
@@ -143,6 +159,8 @@ func est_combattant() -> bool:
 func attaquer(ennemi) -> void:
 	if not _ennemi_valide(ennemi):
 		return
+	_fin_capture()
+	_sabotage_auto = false
 	cible_attaque = ennemi
 	etat = Etat.ATTAQUE
 	agent.target_position = ennemi.global_position
@@ -225,10 +243,15 @@ func _physics_process(delta: float) -> void:
 		Etat.ATTAQUE:
 			if not _ennemi_valide(cible_attaque) or not Vision.est_visible(faction, cible_attaque.global_position):
 				cible_attaque = null
-				_stop()
+				if _sabotage_auto and not _derniere_commande.is_empty():
+					executer(_derniere_commande, _dernier_rang)   # la voie est libre : on reprend l'ordre
+				else:
+					_stop()
 				return
 			var distance := global_position.distance_to(cible_attaque.global_position)
-			if distance <= data.portee:
+			# Une palissade fait 4 m de long : on la frappe de n'importe où le long du segment.
+			var portee := data.portee + (2.2 if cible_attaque is Batiment else 0.0)
+			if distance <= portee:
 				velocity = Vector3.ZERO
 				var vers: Vector3 = cible_attaque.global_position - global_position
 				vers.y = 0.0
@@ -265,8 +288,9 @@ func _physics_process(delta: float) -> void:
 				_prochain_zebu_a_piller()
 				return
 			if _proche(cible_zebu, DIST_CAPTURE):
-				cible_zebu.suivre(self)
-				_prochain_zebu_a_piller()
+				if _attacher(delta):
+					cible_zebu.suivre(self)
+					_prochain_zebu_a_piller()
 				return
 			if agent.target_position.distance_to(cible_zebu.global_position) > 1.0:
 				agent.target_position = cible_zebu.global_position
@@ -275,7 +299,8 @@ func _physics_process(delta: float) -> void:
 				_stop()
 				return
 			if _proche(cible_zebu, DIST_CAPTURE):
-				_capturer(cible_zebu)
+				if zebus_escortes.size() >= GameRules.MAX_ZEBUS_ESCORTE or _attacher(delta):
+					_capturer(cible_zebu)
 				return
 			# Le zébu bouge : on remet à jour la cible s'il s'est éloigné.
 			if agent.target_position.distance_to(cible_zebu.global_position) > 1.0:
@@ -310,6 +335,60 @@ func _on_vitesse_calculee(vitesse_sure: Vector3) -> void:
 	if vitesse_sure.length() > 0.1:
 		look_at(global_position + vitesse_sure.normalized(), Vector3.UP)
 	move_and_slide()
+	for i in get_slide_collision_count():
+		var obstacle = get_slide_collision(i).get_collider()
+		if obstacle is Batiment and obstacle.type_batiment == "palissade" and obstacle.faction != faction:
+			_bloque_par_palissade(obstacle)
+			break
+
+
+## Une palissade adverse barre la route : un guerrier la sabote, puis reprend son ordre.
+## Les villageois et pisteurs restent simplement bloqués.
+func _bloque_par_palissade(palissade) -> void:
+	if not est_combattant() or (etat == Etat.ATTAQUE and cible_attaque == palissade):
+		return
+	attaquer(palissade)
+	_sabotage_auto = true
+
+
+# --- Capture : le temps de passer la corde ---
+
+## À appeler chaque tour au contact du zébu visé. Renvoie true quand il est attaché.
+func _attacher(delta: float) -> bool:
+	if _zebu_en_capture != cible_zebu:
+		_zebu_en_capture = cible_zebu
+		_chrono_capture = 0.0
+		cible_zebu.debut_detachement(self)
+	_chrono_capture += delta
+	velocity = Vector3.ZERO
+	cible_zebu.immobile_jusqua = GameClock.temps_ecoule + 0.3
+	var duree: float = cible_zebu.duree_capture()
+	_afficher_action("Corde… %d %%" % int(minf(1.0, _chrono_capture / duree) * 100.0))
+	if _chrono_capture < duree:
+		return false
+	_fin_capture()
+	return true
+
+
+func _fin_capture() -> void:
+	_zebu_en_capture = null
+	_chrono_capture = 0.0
+	if _etiquette_action:
+		_etiquette_action.visible = false
+
+
+func _afficher_action(texte: String) -> void:
+	if _etiquette_action == null:
+		_etiquette_action = Label3D.new()
+		_etiquette_action.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_etiquette_action.no_depth_test = true
+		_etiquette_action.pixel_size = 0.01
+		_etiquette_action.font_size = 36
+		_etiquette_action.outline_size = 8
+		_etiquette_action.position.y = 3.1
+		add_child(_etiquette_action)
+	_etiquette_action.text = texte
+	_etiquette_action.visible = true
 
 
 # --- Récolte ---
@@ -477,6 +556,7 @@ func _frapper(ennemi) -> void:
 
 
 func _mourir() -> void:
+	_fin_capture()
 	mort = true
 	etat = Etat.MORT
 	velocity = Vector3.ZERO
@@ -558,6 +638,9 @@ func _deplacer_vers(pos: Vector3) -> void:
 
 
 func _stop() -> void:
+	_fin_capture()
+	_derniere_commande = {}
+	_sabotage_auto = false
 	etat = Etat.INACTIF
 	_deplacement_demande = false
 	velocity = Vector3.ZERO

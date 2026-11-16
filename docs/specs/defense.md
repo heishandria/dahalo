@@ -1,6 +1,6 @@
 # Spec — Défense du village : Case des Hommes, palissade, améliorations
 
-> Statut : **prototype v0.6** (16/11/2026). Décrit ce qui est **réellement codé**.
+> Statut : **prototype v0.9** (16/11/2026). Décrit ce qui est **réellement codé**.
 > Valeurs : `data/game_rules.gd` (COUTS_BATIMENTS, FORMATIONS, PALISSADE_*, TECHNOLOGIES).
 
 ## 1. Case des Hommes (GDD §5)
@@ -18,17 +18,34 @@
 |---|---|
 | Coût | 15 bois par segment de 4 m |
 | Points de vie | 150 |
-| Effet | Les **ennemis** qui la traversent avancent à **35 %** de leur vitesse |
+| Effet | **Bloque les unités des autres clans.** Son propre clan et les zébus passent librement (pas besoin de porte) |
 | Vision | Comme un bâtiment (12 m, 7,2 m la nuit) : elle sert aussi de poste de guet |
 
-- **Pose** : bouton « Palissade », puis toucher le sol **autant de fois que de segments**. Le mode reste actif
-  jusqu'à « Aucun », Échap ou clic droit.
-- **Orientation automatique** : chaque segment est placé de face, perpendiculaire à la direction depuis
-  la Case centrale (il « regarde » vers l'extérieur du village).
-- Elle **ne bloque pas** le passage : c'est un frein, qui laisse le temps de réagir à un raid.
-- **Sabotage** : les guerriers ennemis peuvent l'attaquer (clic droit / toucher sur la palissade).
-  À 0 PV elle disparaît (message « Une palissade a été sabotée ! »).
-- L'engagement automatique ne cible pas les palissades : le sabotage est toujours un ordre explicite.
+- **Tracé de point en point** : bouton « Palissade », toucher un premier point (un piquet apparaît), puis
+  les points suivants. Chaque toucher relie le point précédent par des **segments jointifs** (autant de
+  segments de 4 m qu'il faut, répartis sans trou, 15 bois chacun). « Aucun », Échap ou clic droit termine.
+  Un segment qui tomberait sur un bâtiment ou une ressource n'est pas posé (ni payé).
+- **Sabotage automatique** : un **guerrier** adverse arrêté par la palissade l'attaque de lui-même, puis
+  **reprend son ordre** (pillage, capture, déplacement) une fois le segment détruit. Un Dahalo seul met
+  **12,5 s** par segment (150 PV, 12 dégâts/s) ; trois Dahalo, ~4 s. Villageois et Pisteurs adverses restent bloqués.
+- Le joueur peut aussi ordonner le sabotage (clic droit / toucher sur une palissade ennemie).
+- **Alerte** dès que votre palissade est frappée : message « Votre palissade est attaquée ! » et cercle rouge
+  sur la mini-carte (au plus toutes les 6 s par segment).
+- Un raideur enfermé doit aussi percer pour **ressortir** s'il ne repasse pas par sa brèche.
+- Les épines **ralentissent** aussi les ennemis à 35 % de leur vitesse dans une bande de 1,3 m de chaque côté
+  (y compris dans une brèche, à cause des segments voisins).
+- Technique : le chemin calculé ignore les palissades ; c'est la collision (un calque par clan) qui arrête l'unité.
+
+## 2 bis. Temps de capture (raids)
+
+| Action du Dahalo | Durée |
+|---|---|
+| Passer la corde à un zébu sauvage, ou reprendre un zébu escorté par l'ennemi | **1,5 s** |
+| **Détacher un zébu dans un enclos adverse** | **4 s par zébu** (20 s pour un raid complet de 5) |
+
+- Pendant ce temps le Dahalo est immobile, le zébu aussi ; une étiquette « Corde… 60 % » s'affiche au-dessus de lui.
+- **L'enclos donne l'alerte dès le début** du détachement (message + mini-carte), pas après le vol.
+- Si le Dahalo est frappé et riposte, ou reçoit un autre ordre, la progression est perdue.
 
 ## 3. Améliorations
 
@@ -43,19 +60,19 @@ Une seule recherche à la fois par bâtiment. Toutes les technologies : voir `ag
 
 - Construit sa **Case des Hommes** dès qu'elle a 4 villageois et 120 bois, puis y forme Dahalo et Lanceurs.
 - Recherche Sagaies acérées et Raid éclair selon son plan (voir `ages.md`).
-- **Pas encore** : palissades, sabotage.
+- Ses guerriers **sabotent automatiquement** vos palissades quand elles leur barrent la route.
+- **Pas encore** : construire ses propres palissades.
 
 ## 5. Écarts avec le GDD
 
 | GDD | Prototype | Statut |
 |---|---|---|
 | Case des Hommes : convertit des villageois en Dahalo | Forme des guerriers neufs (coût en ressources) | À trancher : conversion de villageois ? |
-| Palissade : ralentit l'intrusion des Dahalo | Ralentit **tous** les ennemis à 35 % | **Fait** |
-| Dahalo : sabotage de palissades | Tout guerrier peut l'attaquer | **Fait** |
+| Palissade : ralentit l'intrusion des Dahalo | **Bloque** les ennemis jusqu'au sabotage | **Décidé** (16/11) : plus fort que le GDD |
+| Dahalo : sabotage de palissades | Tout guerrier la sabote, automatiquement s'il est bloqué | **Fait** |
 | « Sagaies acérées » en Âge 2 | Âge 2 | **Fait** (voir `ages.md`) |
 
 ## 6. Questions ouvertes
 
-1. Palissade **bloquante** (vrai mur avec portes) plutôt que ralentissante ?
 2. Les Dahalo doivent-ils saboter **plus vite** que les autres guerriers (bonus d'infiltration) ?
 3. Former un guerrier en **convertissant un villageois** (comme le dit le GDD) ?

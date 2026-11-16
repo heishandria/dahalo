@@ -94,12 +94,12 @@ func creer_unite(role: String, faction: int, pos: Vector3) -> Unite:
 
 
 ## Crée un bâtiment (Batiment) ou une source construite (champ, puits : NoeudRessource).
-func creer_batiment(type_batiment: String, faction: int, pos: Vector3) -> Node3D:
+func creer_batiment(type_batiment: String, faction: int, pos: Vector3, rotation_y: float = NAN) -> Node3D:
 	var b: Node3D = SCENES_BATIMENTS[type_batiment].instantiate()
 	b.faction = faction
 	b.position = _borner(pos)
 	if type_batiment == "palissade":
-		b.rotation.y = orientation_palissade(faction, b.position)
+		b.rotation.y = orientation_palissade(faction, b.position) if is_nan(rotation_y) else rotation_y
 	if type_batiment in BATIMENTS_OBSTACLES:
 		demander_recuisson()
 	entites.add_child(b)
@@ -133,7 +133,7 @@ func creer_ressource(variante: String, pos: Vector3) -> NoeudRessource:
 	return r
 
 
-func construire(faction: int, type_batiment: String, pos: Vector3) -> void:
+func construire(faction: int, type_batiment: String, pos: Vector3, rotation_y: float = NAN) -> void:
 	if not GameRules.COUTS_BATIMENTS.has(type_batiment):
 		return
 	var nom: String = GameRules.NOMS_BATIMENTS.get(type_batiment, type_batiment)
@@ -154,7 +154,7 @@ func construire(faction: int, type_batiment: String, pos: Vector3) -> void:
 		if faction == GameRules.PLAYER:
 			EventBus.message.emit("%s : il faut %s." % [nom, ResourceManager.texte_cout(cout)])
 		return
-	creer_batiment(type_batiment, faction, pos)
+	creer_batiment(type_batiment, faction, pos, rotation_y)
 	if faction == GameRules.PLAYER:
 		if type_batiment == "palissade":
 			pass  # pas de message à chaque segment

@@ -44,6 +44,7 @@ var _ecart_pincement := 0.0
 # Aperçu de construction (bâtiment fantôme vert / rouge)
 var _fantome: MeshInstance3D
 var _mat_fantome := StandardMaterial3D.new()
+var _point_palissade := Vector3.INF   # dernier point du tracé de palissade en cours
 var _fantome_pose := false      # tactile : un aperçu est affiché, un 2e toucher au même endroit confirme
 
 
@@ -150,12 +151,15 @@ func definir_mode_construction(type_batiment: String) -> void:
 	mode_construction = type_batiment
 	mode_construction_change.emit(mode_construction)
 	_fantome_pose = false
+	_point_palissade = Vector3.INF
 	_maj_forme_fantome()
 	if type_batiment != "":
 		var nom: String = GameRules.NOMS_BATIMENTS.get(type_batiment, type_batiment)
 		var cout: Dictionary = GameRules.COUTS_BATIMENTS.get(type_batiment, {})
 		var geste := "touchez le sol (2 fois pour confirmer)" if DisplayServer.is_touchscreen_available() \
-				and type_batiment != "palissade" else "touchez le sol pour le placer"
+				else "touchez le sol pour le placer"
+		if type_batiment == "palissade":
+			geste = "touchez un premier point, puis les suivants : la palissade se trace de point en point"
 		EventBus.message.emit("%s (%s) : %s." % [nom, ResourceManager.texte_cout(cout), geste])
 
 
@@ -175,8 +179,10 @@ func _maj_forme_fantome() -> void:
 		return
 	var e: Vector2 = GameRules.EMPRISES.get(mode_construction, Vector2(3, 3))
 	var boite := BoxMesh.new()
-	var hauteur := 1.2 if mode_construction == "palissade" else 0.4
-	boite.size = Vector3(e.x, hauteur, e.y)
+	if mode_construction == "palissade":
+		boite.size = Vector3(1.0, 1.4, 1.0)   # piquet : marque le point du tracé
+	else:
+		boite.size = Vector3(e.x, 0.4, e.y)
 	_fantome.mesh = boite
 
 
@@ -186,8 +192,7 @@ func _placer_fantome(pos: Vector3) -> bool:
 		return false
 	var valide: bool = CommandBus.monde.raison_emplacement_invalide(GameRules.PLAYER, mode_construction, pos) == ""
 	_fantome.global_position = Vector3(pos.x, 0.3, pos.z)
-	_fantome.rotation.y = CommandBus.monde.orientation_palissade(GameRules.PLAYER, pos) \
-			if mode_construction == "palissade" else 0.0
+	_fantome.rotation.y = 0.0
 	_mat_fantome.albedo_color = Color(0.3, 1.0, 0.4, 0.45) if valide else Color(1.0, 0.25, 0.2, 0.45)
 	_fantome.visible = true
 	return valide
@@ -362,18 +367,42 @@ func _construire_sous_souris(type_batiment: String) -> void:
 
 
 func _poser_batiment(pos: Vector2) -> void:
+	var hit := _raycast(pos, MASQUE_SOL)
+	if mode_construction == "palissade":
+		# Le mode reste actif : on trace de point en point jusqu'à « Aucun » / Échap / clic droit.
+		if not hit.is_empty():
+			_tracer_palissade(hit.position)
+		return
 	var type_batiment := mode_construction
 	definir_mode_construction("")
-	var hit := _raycast(pos, MASQUE_SOL)
 	if hit.is_empty() or type_batiment == "":
 		return
 	CommandBus.emettre({"type": "construire", "faction": GameRules.PLAYER,
 			"type_batiment": type_batiment, "position": hit.position})
-	if type_batiment == "palissade":
-		# On enchaîne les segments : le mode reste actif jusqu'à « Aucun » / Échap / clic droit.
-		mode_construction = "palissade"
-		mode_construction_change.emit(mode_construction)
-		_maj_forme_fantome()
+
+
+## Tracé de palissade : le 1er point pose un piquet, chaque point suivant relie le précédent
+## par des segments jointifs (4 m chacun, répartis sans trou).
+func _tracer_palissade(point: Vector3) -> void:
+	point.y = 0.0
+	_placer_fantome(point)
+	if _point_palissade == Vector3.INF:
+		_point_palissade = point
+		EventBus.message.emit("Premier piquet posé : touchez le point suivant.")
+		return
+	var trace := point - _point_palissade
+	var longueur := trace.length()
+	if longueur < 1.0:
+		return
+	var direction := trace / longueur
+	var longueur_segment: float = GameRules.EMPRISES["palissade"].x
+	var nombre := int(ceil(longueur / longueur_segment))
+	var pas := longueur / nombre
+	var rotation_y := atan2(-direction.z, direction.x)
+	for i in nombre:
+		CommandBus.emettre({"type": "construire", "faction": GameRules.PLAYER, "type_batiment": "palissade",
+				"position": _point_palissade + direction * pas * (i + 0.5), "rotation_y": rotation_y})
+	_point_palissade = point
 
 
 # --- Ciblage : les unités et zébus passent avant les bâtiments ---

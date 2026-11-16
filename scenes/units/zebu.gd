@@ -18,6 +18,7 @@ var rayon_errance := 6.0
 var id := 0
 var vole := false                 # pris dans l'enclos ou l'escorte d'un autre clan
 var victime := GameRules.WILD     # clan à qui il a été volé (pour les traces)
+var immobile_jusqua := -INF       # tenu par un Dahalo qui le détache : il ne bouge pas
 var date_securisation := -INF     # temps de jeu de la dernière mise en enclos
 
 var _cible_errance := Vector3.ZERO
@@ -38,6 +39,18 @@ func peut_etre_capture_par(faction: int) -> bool:
 		# Contre-attaque : on peut reprendre un zébu escorté par un clan adverse.
 		return is_instance_valid(meneur) and meneur.faction != faction
 	return proprietaire != faction
+
+
+func duree_capture() -> float:
+	if etat == Etat.ENCLOS and proprietaire != GameRules.WILD:
+		return GameRules.DUREE_DETACHER_S
+	return GameRules.DUREE_CAPTURE_SAUVAGE_S
+
+
+## Un Dahalo commence à le détacher : l'enclos donne l'alerte.
+func debut_detachement(_par) -> void:
+	if etat == Etat.ENCLOS and is_instance_valid(enclos) and enclos.has_method("signaler_intrusion"):
+		enclos.signaler_intrusion()
 
 
 func suivre(unite) -> void:
@@ -117,6 +130,9 @@ func _relacher() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if etat != Etat.SUIT and GameClock.temps_ecoule < immobile_jusqua:
+		velocity = Vector3.ZERO
+		return
 	var cible := _cible_errance
 	var vitesse := VITESSE_ERRANCE
 	var tolerance := 0.3

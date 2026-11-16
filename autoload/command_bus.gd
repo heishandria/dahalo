@@ -14,6 +14,7 @@ extends Node
 ##   deposer    : "unites": [ids], "cible_id": id d'un Batiment
 ##   former     : "batiment": id, "unite": "villageois" | "dahalo" | "pisteur"
 ##   construire : "type_batiment": "enclos" | "champ" | "camp_bois" | "puits" | "tsena", "position": Vector3
+##                (palissade : "rotation_y" facultatif, pour aligner le segment sur un tracé)
 ##   rechercher : "technologie": clé de GameRules.TECHNOLOGIES (dans le bâtiment adapté)
 ##   commerce   : "action": "vendre_zebu" | "vendre_bois" | "vendre_nourriture" | "acheter_bois" | "acheter_nourriture" | "acheter_zebu" (nécessite un Tsena)
 
@@ -57,7 +58,8 @@ func emettre(cmd: Dictionary) -> void:
 				b.former(cmd.get("unite", ""))
 		"construire":
 			if monde != null:
-				monde.construire(faction, cmd.get("type_batiment", ""), cmd.get("position", Vector3.ZERO))
+				monde.construire(faction, cmd.get("type_batiment", ""), cmd.get("position", Vector3.ZERO),
+						cmd.get("rotation_y", NAN))
 		"rechercher":
 			var tech: String = cmd.get("technologie", "")
 			for b in get_tree().get_nodes_in_group("batiments_%d" % faction):

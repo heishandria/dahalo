@@ -1,6 +1,6 @@
 # Spec — Interface et confort de jeu
 
-> Statut : **prototype v0.7.2** (16/11/2026). Décrit ce qui est **réellement codé**.
+> Statut : **prototype v0.9** (16/11/2026). Décrit ce qui est **réellement codé**.
 > Code : `ui/hud.gd`, `ui/mini_carte.gd`, `systems/selection_manager.gd`, `scenes/main.gd` (validité des emplacements).
 > Règle : tout est jouable **à la souris ET au doigt** (cible mobile : Safari iOS).
 
@@ -20,7 +20,7 @@
   **vert** = emplacement libre, **rouge** = impossible.
   - **Souris** : le fantôme suit le curseur ; clic gauche pour construire, clic droit pour annuler.
   - **Tactile** : 1er toucher = aperçu ; **2e toucher à moins de 3 m** = construire ; toucher ailleurs = déplacer l'aperçu.
-  - **Palissade** : posée directement à chaque toucher, le mode reste actif pour enchaîner les segments.
+  - **Palissade** : tracée de point en point (un piquet marque le dernier point) ; voir `defense.md`.
 - **Emplacement refusé** (message au joueur) si :
   - trop près du bord de la carte ;
   - **zone inexplorée** ;
@@ -48,7 +48,8 @@
 | Points d'eau, baobabs | Oui | Oui | |
 | Clôtures d'enclos | Oui | Non | On entre **par l'ouverture** (côté sud) ; les zébus ne s'y accrochent pas |
 | Arbres épineux, raketa | Non | Oui | Les unités butent dessus et glissent ; un arbre abattu n'est plus un obstacle |
-| Champs, palissades | Non | Non | Le champ se cultive dessus ; la palissade **ralentit** sans bloquer |
+| Champs | Non | Non | Le champ se cultive dessus |
+| Palissades | Non | **Oui, pour les autres clans seulement** | Bloque l'ennemi jusqu'au sabotage ; son clan et les zébus passent |
 | Autres unités | Évitement | Non | Les unités s'écartent les unes des autres (évitement réciproque) |
 
 Les zébus heurtent bâtiments et arbres, mais pas les clôtures ni les autres unités.

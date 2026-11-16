@@ -7,6 +7,7 @@ const INTERVALLE_SCAN := 0.3
 @onready var zone: Area3D = $Zone
 var _t := 0.0
 var _delai_alerte := 0.0
+var _delai_intrusion := 0.0
 
 
 func _ready() -> void:
@@ -17,6 +18,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_t += delta
 	_delai_alerte = maxf(0.0, _delai_alerte - delta)
+	_delai_intrusion = maxf(0.0, _delai_intrusion - delta)
 	if _t < INTERVALLE_SCAN:
 		return
 	_t = 0.0
@@ -28,3 +30,13 @@ func _physics_process(delta: float) -> void:
 			elif faction == GameRules.PLAYER and _delai_alerte <= 0.0:
 				_delai_alerte = 6.0
 				EventBus.message.emit("Enclos pleins ! Construisez un nouvel enclos (touche E).")
+
+
+## Appelé quand un Dahalo adverse commence à détacher un zébu : alerte immédiate, avant le vol.
+func signaler_intrusion() -> void:
+	if faction != GameRules.PLAYER:
+		return
+	EventBus.alerte.emit(global_position)
+	if _delai_intrusion <= 0.0:
+		_delai_intrusion = 8.0
+		EventBus.message.emit("Alerte : des Dahalo forcent votre enclos ! (%d s par zébu)" % int(GameRules.DUREE_DETACHER_S))

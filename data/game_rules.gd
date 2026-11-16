@@ -175,6 +175,8 @@ const ACHATS := {
 
 # --- Escorte (GDD §7) ---
 const MAX_ZEBUS_ESCORTE := 5
+const DUREE_CAPTURE_SAUVAGE_S := 1.5   # passer la corde à un zébu sauvage (ou repris à une escorte)
+const DUREE_DETACHER_S := 4.0          # détacher un zébu dans un enclos adverse : le temps de réagir
 const MALUS_VITESSE_ESCORTE := 0.6     # un troupeau en fuite avance lentement
 
 
