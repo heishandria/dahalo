@@ -42,7 +42,7 @@ Un test automatique rejoue ces trois duels à chaque mise à jour (rapport de pa
 La recherche Sagaies acérées (+30 %) s'ajoute aux bonus du triangle.
 
 Villageois et Pisteurs sont formés à la Case centrale ; **Dahalo, Lanceur et Tireur à la Case des Hommes**
-(touches 1 à 5 ou ligne « Former »). La recherche **Sagaies acérées** (Âge 2) donne +30 % de dégâts aux armes à sagaie.
+(touches 1 à 5 ou ligne « Former »). Le message de formation rappelle le rôle tactique de l'unité.
 Les guerriers peuvent aussi **saboter les palissades** ennemies (voir `defense.md`).
 
 ## 3. Comportements
