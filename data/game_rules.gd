@@ -52,7 +52,7 @@ const CHAMP_RESEMIS := {"bois": 15.0}
 const POUSSE_SECHERESSE := 0.5         # la sécheresse ralentit la pousse
 
 # --- Sources naturelles ---
-const ARBRE_BOIS := 100.0
+const ARBRE_BOIS := 50.0              # ~5 allers-retours de villageois, puis l'arbre disparaît
 const ARBRE_REPOUSSE_S := 240.0
 const RAKETA_RENDEMENT := 0.6          # cueillette lente…
 const RAKETA_BONUS_EAU := 0.5          # …mais en sécheresse, le raketa abreuve aussi

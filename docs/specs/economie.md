@@ -1,6 +1,6 @@
 # Spec — Économie : nourriture, eau, bois, Ariary, zébus
 
-> Statut : **prototype v0.3** (16/11/2026). Décrit ce qui est **réellement codé**.
+> Statut : **prototype v0.3.1** (16/11/2026). Décrit ce qui est **réellement codé**.
 > Le GDD donne la vision ; cette spec donne les règles et les chiffres en vigueur.
 > Valeurs : `data/game_rules.gd` et `data/units/*.tres`. Toute modification de ces fichiers met à jour cette page.
 
@@ -43,7 +43,7 @@ Prélevé en continu, uniquement pour les zébus **sécurisés en enclos** (pas 
 | **Raketa** (cactus, nature) | Nourriture | Infinie | ×0,6 | En sécheresse, chaque unité récoltée donne aussi **+0,5 eau** au clan |
 | **Point d'eau** (nature) | Eau | Infinie | Normale | ×0,3 en sécheresse, rétrécit à l'écran |
 | **Puits** (construit) | Eau | Infinie | Normale | ×0,6 en sécheresse ; réservé à son clan |
-| **Épineux** (nature, en forêts) | Bois | 100 par arbre | Normale | Coupé → **souche**, repousse en 240 s |
+| **Épineux** (nature, en forêts) | Bois | 50 par arbre (~5 allers-retours) | Normale | **Rapetisse à chaque coupe puis disparaît** ; un nouvel arbre repousse au même endroit 240 s plus tard |
 | Baobab | — | — | — | **Décor uniquement**, jamais coupé |
 
 Les sources naturelles sont accessibles à tous les clans ; champs et puits seulement à leur propriétaire.
@@ -64,7 +64,7 @@ Chaque clan démarre avec **2 champs mûrs**.
 - **Dépôts** : Case centrale (tout) et **Camp de bûcherons** (bois seulement), à placer près des forêts.
 - **Cadence** : 2 unités/s (paquets d'une seconde) × rendement de la source ; **capacité 10**.
 - **Portées** : récolte < 2,2 m de la source, dépôt < 3,5 m du bâtiment.
-- **Source indisponible** : champ qui pousse → attendre ; souche ou source disparue → source du même type
+- **Source indisponible** : champ qui pousse → attendre ; arbre abattu ou source disparue → source du même type
   la plus proche (< 30 m), sinon arrêt.
 - Changer de type de ressource fait perdre la charge en cours.
 

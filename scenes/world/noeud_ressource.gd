@@ -96,6 +96,8 @@ func extraire(q: float, f: int) -> float:
 		quantite -= q
 		if quantite <= 0.0:
 			_sur_epuisement()
+		else:
+			_maj_visuel_arbre()
 	return q
 
 
@@ -109,10 +111,24 @@ func _sur_epuisement() -> void:
 
 
 func _maj_visuel_repousse() -> void:
-	# Arbre coupé : il ne reste qu'une souche jusqu'à la repousse.
-	var feuillage := get_node_or_null("Epineux/Feuillage") as Node3D
-	if feuillage:
-		feuillage.visible = not en_repousse
+	# Arbre abattu : il disparaît complètement (plus cliquable) jusqu'à la repousse.
+	var arbre := get_node_or_null("Epineux") as Node3D
+	if arbre == null or variante != "epineux":
+		return
+	arbre.visible = not en_repousse
+	var collision := get_node_or_null("Collision") as CollisionShape3D
+	if collision:
+		collision.set_deferred("disabled", en_repousse)
+	_maj_visuel_arbre()
+
+
+## L'arbre rapetisse à chaque coup de hache, jusqu'à disparaître.
+func _maj_visuel_arbre() -> void:
+	var arbre := get_node_or_null("Epineux") as Node3D
+	if arbre == null or variante != "epineux" or _quantite_max <= 0.0:
+		return
+	var reste := clampf(quantite / _quantite_max, 0.0, 1.0)
+	arbre.scale = Vector3.ONE * (0.4 + 0.6 * reste)
 
 
 func _on_meteo(secheresse: bool) -> void:
