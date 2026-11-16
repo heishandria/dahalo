@@ -14,6 +14,7 @@ var _barre: Label
 var _info: Label
 var _message: Label
 var _actions: PanelContainer
+var _mini_carte: Control
 var _boutons_construction := {}   # type_batiment -> Button
 var _bouton_vente: Button
 var _fin: PanelContainer
@@ -40,7 +41,7 @@ func _process(delta: float) -> void:
 
 ## Utilisé par la sélection tactile pour ne pas traverser les boutons.
 func est_sur_interface(pos: Vector2) -> bool:
-	for c in [_actions, _fin]:
+	for c in [_actions, _fin, _mini_carte]:
 		if c.visible and c.get_global_rect().has_point(pos):
 			return true
 	return false
@@ -128,6 +129,11 @@ func _construire_ui() -> void:
 	_barre.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_barre.add_theme_font_size_override("font_size", 18)
 	haut.add_child(_barre)
+
+	# Mini-carte (haut gauche, sous le bandeau)
+	_mini_carte = preload("res://ui/mini_carte.gd").new()
+	add_child(_mini_carte)
+	_mini_carte.position = Vector2(8, 46)
 
 	# Infos de sélection (bas gauche)
 	var bas := PanelContainer.new()

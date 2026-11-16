@@ -32,6 +32,8 @@ Squelette Godot 4 du RTS : premier prototype jouable **en solo contre une IA**, 
 | Marché | Boutons « Tsena » : vendre un zébu, acheter du bois ou de la nourriture |
 | Caméra | ZQSD / WASD, flèches, bords de l'écran · molette = zoom |
 | Désélectionner | Échap |
+| Mini-carte | En haut à gauche : toucher / cliquer pour déplacer la caméra ; cercles rouges = raids et attaques |
+| Aperçu de construction | Fantôme vert (libre) / rouge (occupé) ; au doigt : toucher 2 fois pour confirmer |
 | **Tactile** | Toucher une unité, puis toucher sa cible · glisser = caméra · pincer = zoom · boutons en bas à droite pour choisir, créer, poser un enclos |
 
 **But** : 50 zébus sécurisés dans vos enclos, ou le plus grand cheptel au bout de 30 minutes.

@@ -20,3 +20,5 @@ signal unite_creee(unite: Node)
 signal message(texte: String)
 @warning_ignore("unused_signal")
 signal vision_maj()
+@warning_ignore("unused_signal")
+signal alerte(position: Vector3)   # raid, attaque : clignote sur la mini-carte

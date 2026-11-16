@@ -59,6 +59,19 @@ const NOMS_BATIMENTS := {
 	"palissade": "Palissade épineuse",
 }
 
+# Emprise au sol (largeur x profondeur, en m) pour l'aperçu et l'anti-chevauchement.
+const EMPRISES := {
+	"case_centrale": Vector2(4, 4),
+	"enclos": Vector2(8, 8),
+	"champ": Vector2(6, 6),
+	"camp_bois": Vector2(3, 3),
+	"puits": Vector2(2.6, 2.6),
+	"tsena": Vector2(5, 4),
+	"case_hommes": Vector2(4.5, 3.5),
+	"palissade": Vector2(4, 0.6),
+}
+const RAYONS_SOURCES := {"bois": 1.2, "eau": 1.9, "nourriture": 1.0}
+
 # --- Formation : quel bâtiment forme quelles unités ---
 const FORMATIONS := {
 	"case_centrale": ["villageois", "pisteur"],

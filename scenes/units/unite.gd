@@ -40,6 +40,7 @@ var _chrono_guet := 0.0
 var _materiau_barre := StandardMaterial3D.new()
 var _derniere_trace := Vector3.INF
 var ralentissements := 0     # nombre de palissades ennemies traversées en ce moment
+var _derniere_alerte := -INF
 
 @onready var agent: NavigationAgent3D = $NavigationAgent3D
 @onready var anneau: MeshInstance3D = $Anneau
@@ -151,6 +152,9 @@ func subir(degats: float, attaquant) -> void:
 		return
 	pv -= degats
 	_maj_barre_vie()
+	if faction == GameRules.PLAYER and GameClock.temps_ecoule - _derniere_alerte > 5.0:
+		_derniere_alerte = GameClock.temps_ecoule
+		EventBus.alerte.emit(global_position)
 	if pv <= 0.0:
 		_mourir()
 		return

@@ -86,12 +86,7 @@ func creer_batiment(type_batiment: String, faction: int, pos: Vector3) -> Node3D
 	b.faction = faction
 	b.position = _borner(pos)
 	if type_batiment == "palissade":
-		# Orientée face à l'extérieur du village : perpendiculaire à la direction depuis la Case centrale.
-		for c in get_tree().get_nodes_in_group("case_centrale"):
-			if c.faction == faction:
-				var dir: Vector3 = b.position - c.global_position
-				b.rotation.y = atan2(dir.x, dir.z)
-				break
+		b.rotation.y = orientation_palissade(faction, b.position)
 	entites.add_child(b)
 	return b
 
@@ -131,6 +126,14 @@ func construire(faction: int, type_batiment: String, pos: Vector3) -> void:
 		if faction == GameRules.PLAYER:
 			EventBus.message.emit("Votre clan a déjà un Tsena.")
 		return
+	var raison := raison_emplacement_invalide(faction, type_batiment, pos)
+	if raison != "" and faction != GameRules.PLAYER:
+		pos = _chercher_emplacement(faction, type_batiment, pos)   # l'IA se décale toute seule
+		raison = "" if pos != Vector3.INF else "aucun emplacement libre"
+	if raison != "":
+		if faction == GameRules.PLAYER:
+			EventBus.message.emit("%s : %s." % [nom, raison])
+		return
 	var cout: Dictionary = GameRules.COUTS_BATIMENTS[type_batiment]
 	if not ResourceManager.payer(faction, cout):
 		if faction == GameRules.PLAYER:
@@ -144,6 +147,60 @@ func construire(faction: int, type_batiment: String, pos: Vector3) -> void:
 			EventBus.message.emit("Champ construit : envoyez des villageois pour le cultiver.")
 		else:
 			EventBus.message.emit("%s construit." % nom)
+
+
+## Orientée face à l'extérieur du village : perpendiculaire à la direction depuis la Case centrale.
+func orientation_palissade(faction: int, pos: Vector3) -> float:
+	for c in get_tree().get_nodes_in_group("case_centrale"):
+		if c.faction == faction:
+			var dir: Vector3 = pos - c.global_position
+			return atan2(dir.x, dir.z)
+	return 0.0
+
+
+## "" si l'emplacement est valide, sinon la raison (affichée au joueur).
+func raison_emplacement_invalide(faction: int, type_batiment: String, pos: Vector3) -> String:
+	var r := _rayon_type(type_batiment)
+	if absf(pos.x) > LIMITE_CARTE - r or absf(pos.z) > LIMITE_CARTE - r:
+		return "trop près du bord de la carte"
+	if not Vision.est_explore(faction, pos):
+		return "zone inexplorée"
+	for groupe in ["batiments", "ressources", "decor"]:
+		for n in get_tree().get_nodes_in_group(groupe):
+			if not is_instance_valid(n) or n.is_queued_for_deletion():
+				continue
+			if type_batiment == "palissade" and n.get("type_batiment") == "palissade":
+				continue  # les segments de palissade peuvent se toucher
+			if pos.distance_to(n.global_position) < (r + _rayon_noeud(n)) * 0.85:
+				return "emplacement occupé"
+	return ""
+
+
+func _rayon_type(type_batiment: String) -> float:
+	if type_batiment == "palissade":
+		return 1.0
+	var e: Vector2 = GameRules.EMPRISES.get(type_batiment, Vector2(3, 3))
+	return maxf(e.x, e.y) * 0.5
+
+
+func _rayon_noeud(n: Node) -> float:
+	var t = n.get("type_batiment")
+	if t is String and t != "":
+		return _rayon_type(t)
+	if n is NoeudRessource:
+		return float(GameRules.RAYONS_SOURCES.get(n.type_ressource, 1.5))
+	return 2.0  # décor (baobab)
+
+
+## Cherche un emplacement libre en spirale autour de pos (IA). Vector3.INF si rien trouvé.
+func _chercher_emplacement(faction: int, type_batiment: String, pos: Vector3) -> Vector3:
+	for anneau in range(1, 5):
+		for k in 8:
+			var a := TAU * k / 8.0
+			var essai := pos + Vector3(cos(a), 0.0, sin(a)) * anneau * 4.0
+			if raison_emplacement_invalide(faction, type_batiment, essai) == "":
+				return essai
+	return Vector3.INF
 
 
 func possede(faction: int, type_batiment: String) -> bool:

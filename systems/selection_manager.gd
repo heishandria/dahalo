@@ -39,6 +39,11 @@ var _ecart_pincement := 0.0
 
 @onready var _camera_rig = get_node_or_null("../../CameraRig")
 
+# Aperçu de construction (bâtiment fantôme vert / rouge)
+var _fantome: MeshInstance3D
+var _mat_fantome := StandardMaterial3D.new()
+var _fantome_pose := false      # tactile : un aperçu est affiché, un 2e toucher au même endroit confirme
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	# Les clics « émulés » depuis le tactile sont ignorés : le tactile a sa propre logique.
@@ -82,6 +87,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	var mm := event as InputEventMouseMotion
 	if mm != null:
+		if mode_construction != "":
+			var sol := _raycast(mm.position, MASQUE_SOL)
+			if not sol.is_empty():
+				_placer_fantome(sol.position)
 		if _appui:
 			_actuel = mm.position
 			if _debut.distance_to(_actuel) > SEUIL_CADRE:
@@ -138,10 +147,48 @@ func rechercher(tech: String) -> void:
 func definir_mode_construction(type_batiment: String) -> void:
 	mode_construction = type_batiment
 	mode_construction_change.emit(mode_construction)
+	_fantome_pose = false
+	_maj_forme_fantome()
 	if type_batiment != "":
 		var nom: String = GameRules.NOMS_BATIMENTS.get(type_batiment, type_batiment)
 		var cout: Dictionary = GameRules.COUTS_BATIMENTS.get(type_batiment, {})
-		EventBus.message.emit("%s (%s) : touchez le sol pour le placer." % [nom, ResourceManager.texte_cout(cout)])
+		var geste := "touchez le sol (2 fois pour confirmer)" if DisplayServer.is_touchscreen_available() \
+				and type_batiment != "palissade" else "touchez le sol pour le placer"
+		EventBus.message.emit("%s (%s) : %s." % [nom, ResourceManager.texte_cout(cout), geste])
+
+
+# --- Aperçu de construction ---
+
+func _maj_forme_fantome() -> void:
+	if _fantome == null:
+		_fantome = MeshInstance3D.new()
+		_mat_fantome.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_mat_fantome.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_mat_fantome.no_depth_test = true
+		_fantome.material_override = _mat_fantome
+		_fantome.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		get_tree().current_scene.add_child.call_deferred(_fantome)
+	_fantome.visible = false
+	if mode_construction == "":
+		return
+	var e: Vector2 = GameRules.EMPRISES.get(mode_construction, Vector2(3, 3))
+	var boite := BoxMesh.new()
+	var hauteur := 1.2 if mode_construction == "palissade" else 0.4
+	boite.size = Vector3(e.x, hauteur, e.y)
+	_fantome.mesh = boite
+
+
+## Place le fantôme en pos (monde) et le colore selon la validité. Renvoie true si valide.
+func _placer_fantome(pos: Vector3) -> bool:
+	if _fantome == null or mode_construction == "" or CommandBus.monde == null:
+		return false
+	var valide: bool = CommandBus.monde.raison_emplacement_invalide(GameRules.PLAYER, mode_construction, pos) == ""
+	_fantome.global_position = Vector3(pos.x, 0.3, pos.z)
+	_fantome.rotation.y = CommandBus.monde.orientation_palissade(GameRules.PLAYER, pos) \
+			if mode_construction == "palissade" else 0.0
+	_mat_fantome.albedo_color = Color(0.3, 1.0, 0.4, 0.45) if valide else Color(1.0, 0.25, 0.2, 0.45)
+	_fantome.visible = true
+	return valide
 
 
 func commercer(action: String) -> void:
@@ -201,7 +248,17 @@ func _glisser_doigt(sd: InputEventScreenDrag) -> void:
 
 func _toucher_simple(pos: Vector2) -> void:
 	if mode_construction != "":
-		_poser_batiment(pos)
+		var sol := _raycast(pos, MASQUE_SOL)
+		if sol.is_empty():
+			return
+		# Tactile : 1er toucher = aperçu ; 2e toucher près de l'aperçu = construire (palissade : direct).
+		var proche: bool = _fantome_pose and _fantome != null \
+				and _fantome.global_position.distance_to(Vector3(sol.position.x, 0.3, sol.position.z)) < 3.0
+		if mode_construction == "palissade" or proche:
+			_poser_batiment(pos)
+		else:
+			_placer_fantome(sol.position)
+			_fantome_pose = true
 		return
 	var hit := _raycast(pos, MASQUE_SOL | MASQUE_UNITES | MASQUE_INTERACTIFS)
 	if hit.is_empty():
@@ -319,6 +376,7 @@ func _poser_batiment(pos: Vector2) -> void:
 		# On enchaîne les segments : le mode reste actif jusqu'à « Aucun » / Échap / clic droit.
 		mode_construction = "palissade"
 		mode_construction_change.emit(mode_construction)
+		_maj_forme_fantome()
 
 
 # --- Utilitaires ---

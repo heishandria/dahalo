@@ -43,6 +43,8 @@ func peut_etre_capture_par(faction: int) -> bool:
 func suivre(unite) -> void:
 	vole = proprietaire != GameRules.WILD and proprietaire != unite.faction
 	victime = proprietaire if vole else GameRules.WILD
+	if victime == GameRules.PLAYER:
+		EventBus.alerte.emit(global_position)
 	if etat == Etat.ENCLOS and proprietaire != GameRules.WILD:
 		ResourceManager.zebu_perdu(proprietaire)
 		if proprietaire == GameRules.PLAYER:
