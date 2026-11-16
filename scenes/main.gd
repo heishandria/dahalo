@@ -27,6 +27,8 @@ const LIMITE_CARTE := 56.0
 const BATIMENTS_OBSTACLES := ["case_centrale", "case_hommes", "camp_bois", "tsena", "puits", "enclos"]
 
 var _recuisson_demandee := false
+var _test_accelere := false
+var _prochain_rapport := 300.0
 
 # Nuit : clair de lune lisible (assez sombre pour sentir la nuit, assez clair pour jouer).
 const SOLEIL_NUIT := 0.45
@@ -52,8 +54,11 @@ func _ready() -> void:
 	# Test de fumée (CI) : `godot --headless -- --accelerer` joue une partie en accéléré.
 	if "--accelerer" in OS.get_cmdline_user_args():
 		Engine.time_scale = 8.0
+		_test_accelere = true
 		print("[test] partie accélérée x8")
+		EventBus.partie_terminee.connect(_fin_du_test)
 	EventBus.meteo_change.connect(_on_meteo)
+	EventBus.cycle_change.connect(_on_cycle)
 
 	# Navmesh cuit au lancement à partir du sol (obstacles ajoutés plus tard).
 	_generer_carte()
@@ -66,6 +71,9 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	if _test_accelere and GameClock.temps_ecoule >= _prochain_rapport:
+		_prochain_rapport += 300.0
+		_rapport_test()
 	_maj_lumiere()
 
 
@@ -264,9 +272,10 @@ func _generer_carte() -> void:
 		_baobab(p)
 
 	# Troupeaux sauvages, à égale distance des deux bases.
-	_troupeau(Vector3.ZERO, 8)
-	_troupeau(Vector3(-30.0, 0.0, -30.0), 6)
-	_troupeau(Vector3(30.0, 0.0, 30.0), 6)
+	var depart: Array = GameRules.ZEBUS_SAUVAGES_DEPART
+	_troupeau(Vector3.ZERO, depart[0])
+	_troupeau(Vector3(-30.0, 0.0, -30.0), depart[1])
+	_troupeau(Vector3(30.0, 0.0, 30.0), depart[2])
 
 
 func creer_champ_mur(faction: int, pos: Vector3) -> Node3D:
@@ -322,6 +331,54 @@ func _baobab(pos: Vector3) -> void:
 	arbre.position = _borner(pos)
 	arbre.add_to_group("decor")
 	entites.add_child(arbre)
+
+
+# --- Migration : de nouveaux troupeaux sauvages arrivent à l'aube ---
+
+func _on_cycle(est_nuit: bool) -> void:
+	if est_nuit:
+		return
+	var periode := GameRules.CYCLES_ENTRE_SECHERESSES + GameRules.DUREE_SECHERESSE_CYCLES
+	var jour := int(floor(GameClock.temps_ecoule / GameRules.DUREE_JOUR_S))
+	if jour <= 0 or jour % periode >= GameRules.CYCLES_ENTRE_SECHERESSES:
+		return  # pas d'arrivée le premier matin ni à l'aube d'une sécheresse
+	var apres_secheresse := (jour - 1) % periode >= GameRules.CYCLES_ENTRE_SECHERESSES
+	var nombre := GameRules.MIGRATION_PLUIES if apres_secheresse else GameRules.MIGRATION_NORMALE
+	var sauvages := 0
+	for z in get_tree().get_nodes_in_group("zebus"):
+		if z.etat == Zebu.Etat.SAUVAGE:
+			sauvages += 1
+	nombre = mini(nombre, GameRules.ZEBUS_SAUVAGES_MAX - sauvages)
+	if nombre <= 0:
+		return
+	var points: Array = GameRules.POINTS_MIGRATION
+	_troupeau(points[randi() % points.size()], nombre)
+	# Le lieu n'est pas révélé : c'est le travail des Pisteurs.
+	if apres_secheresse:
+		EventBus.message.emit("Les pluies ramènent un grand troupeau sauvage dans la brousse. Envoyez vos Pisteurs !")
+	else:
+		EventBus.message.emit("Un troupeau sauvage a été aperçu dans la brousse.")
+
+
+# --- Test de fumée : rapports chiffrés lus par la CI ---
+
+func _rapport_test() -> void:
+	var sauvages := 0
+	for z in get_tree().get_nodes_in_group("zebus"):
+		if z.etat == Zebu.Etat.SAUVAGE:
+			sauvages += 1
+	var ia := GameRules.AI
+	print("[test] t=%d min | zebus joueur=%d IA=%d sauvages=%d | IA : age=%d, Ar=%d, unites=%d, batiments=%d" % [
+		int(GameClock.temps_ecoule / 60.0), ResourceManager.nb_zebus(GameRules.PLAYER), ResourceManager.nb_zebus(ia),
+		sauvages, ResourceManager.age(ia), int(ResourceManager.quantite(ia, "ariary")),
+		get_tree().get_nodes_in_group("unites_%d" % ia).size(),
+		get_tree().get_nodes_in_group("batiments_%d" % ia).size()])
+
+
+func _fin_du_test(gagnant: int) -> void:
+	_rapport_test()
+	print("[test] fin de partie, gagnant=%d" % gagnant)
+	get_tree().quit()
 
 
 func _troupeau(centre: Vector3, nombre: int) -> void:

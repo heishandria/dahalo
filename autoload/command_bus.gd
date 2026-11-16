@@ -15,7 +15,7 @@ extends Node
 ##   former     : "batiment": id, "unite": "villageois" | "dahalo" | "pisteur"
 ##   construire : "type_batiment": "enclos" | "champ" | "camp_bois" | "puits" | "tsena", "position": Vector3
 ##   rechercher : "technologie": clé de GameRules.TECHNOLOGIES (dans le bâtiment adapté)
-##   commerce   : "action": "vendre_zebu" | "acheter_bois" | "acheter_nourriture" (nécessite un Tsena)
+##   commerce   : "action": "vendre_zebu" | "vendre_bois" | "vendre_nourriture" | "acheter_bois" | "acheter_nourriture" | "acheter_zebu" (nécessite un Tsena)
 
 var monde = null           # référence vers main.gd (création d'entités)
 var entites := {}          # id -> Node

@@ -1,6 +1,6 @@
 # Spec — Économie : nourriture, eau, bois, Ariary, zébus
 
-> Statut : **prototype v0.4** (16/11/2026). Décrit ce qui est **réellement codé**.
+> Statut : **prototype v0.9** (16/11/2026). Décrit ce qui est **réellement codé**.
 > Le GDD donne la vision ; cette spec donne les règles et les chiffres en vigueur.
 > Valeurs : `data/game_rules.gd` et `data/units/*.tres`. Toute modification de ces fichiers met à jour cette page.
 
@@ -11,8 +11,8 @@
 | **Nourriture** | Champs de maïs / sorgho, raketa | Villageois | Former les unités, **nourrir les zébus** | 150 |
 | **Eau** | Points d'eau, puits | Villageois | **Abreuver les zébus** | 100 |
 | **Bois** | Forêts d'épineux | Villageois | Construire, resemer les champs | 150 |
-| **Ariary** | Vente de zébus au Tsena | — | Acheter au Tsena, puits | 50 |
-| *Zébus* | Troupeaux sauvages, enclos rivaux | Dahalo | Victoire, vente | 0 |
+| **Ariary** | Vente de **surplus** (bois, nourriture) et de zébus au Tsena | — | Âges, technologies, Tireurs, puits, achats | 50 |
+| *Zébus* | Troupeaux sauvages (**nouvelles arrivées à l'aube**, §9), enclos rivaux, veaux, achat | Dahalo | Victoire, vente | 0 |
 
 Décisions de design (16/11/2026) :
 - **Les hommes ne consomment rien.** Seuls les zébus en enclos mangent et boivent.
@@ -88,7 +88,7 @@ Chaque clan démarre avec **2 champs mûrs**.
 | Pisteur | 40 nourriture + 10 bois, 8 s | Unité rapide (vision : à venir) |
 | Dahalo armé | 60 nourriture + 20 bois, 10 s | Capture, escorte, raids, combat au contact |
 | Lanceur de sagaies | 50 nourriture + 25 bois, 10 s | Combat à distance (voir `combat.md`) |
-| Tireur (fusil) | 60 nourriture + 20 bois + 60 Ar, 14 s | Âge 2 + Tsena (voir `combat.md`) |
+| Tireur (fusil) | 60 nourriture + 20 bois + 45 Ar, 14 s | Âge 2 + Tsena (voir `combat.md`) |
 
 Construction immédiate, avec aperçu et refus des emplacements occupés (voir `interface.md`).
 
@@ -98,11 +98,16 @@ Construction immédiate, avec aperçu et refus des emplacements occupés (voir `
 |---|---|
 | **Vendre un zébu** | +40 Ar ; **×0,5 pendant la sécheresse** (tout le monde vend, les prix chutent) |
 | Zébu **volé depuis moins de 3 min** | Prix ×0,4 (les marchands se méfient). Le Tsena vend d'abord un zébu « en règle » |
+| **Vendre du bois** | 50 bois → 15 Ar |
+| **Vendre de la nourriture** | 50 nourriture → 15 Ar |
 | Acheter du bois | 50 bois pour 30 Ar |
 | Acheter de la nourriture | 50 nourriture pour 30 Ar |
 | Acheter un zébu reproducteur | 80 Ar, livré à l'enclos (**Maîtres du Tsena**, Âge 3) |
 
-Avec **Maîtres du Tsena** : zébus vendus +25 %, achats de bois et de nourriture à 20 Ar. Toutes les
+Les surplus sont la source **normale** d'Ariary (un villageois au bois rapporte l'équivalent d'environ
+15 à 20 Ar par minute) ; vendre un zébu reste le moyen rapide, au prix du score.
+
+Avec **Maîtres du Tsena** : zébus et surplus vendus +25 %, achats de bois et de nourriture à 20 Ar. Toutes les
 technologies qui modifient l'économie (Cultures traditionnelles, Vannerie et cuirs, Puits profonds, Pacte des
 grands éleveurs…) sont décrites dans `ages.md`.
 
@@ -114,8 +119,16 @@ Vendre fait **baisser le cheptel** : c'est un arbitrage entre score de victoire 
 - **Sécheresse** : le 3ᵉ jour de chaque série de 3 jours. Sur une partie de 30 min : **8–12 min** et **20–24 min**.
 - Effets : points d'eau ×0,3, puits ×0,6, champs poussent 2× moins vite, raketa donne de l'eau, zébu vendu moitié prix.
 
-## 9. Victoire
+## 9. Zébus disponibles et victoire
 
+- **Départ** : 20 zébus sauvages (troupeaux de 8, 6 et 6, à égale distance des deux bases).
+- **Arrivées à l'aube** (lieu tiré au sort parmi 5 points à égale distance des bases, **non révélé** :
+  il faut l'explorer) :
+  - jour normal : **+5** ; aube qui suit une sécheresse (retour des pluies) : **+10** ;
+  - aucune arrivée le premier matin, ni à l'aube d'une sécheresse ;
+  - pas d'arrivée au-delà de **30 zébus sauvages** présents sur la carte.
+  - Sur 30 min : +5 à 4, 16 et 28 min, +10 à 12 et 24 min, soit **35 arrivées** (55 zébus au total).
+- **Veaux** (Pacte des grands éleveurs) : 12 naissances au plus par clan. **Achat** au Tsena (Maîtres du Tsena).
 - Capacité de cheptel = 10 × nombre d'enclos. Un zébu escorté n'entre pas si les enclos sont pleins.
 - **50 zébus sécurisés**, ou le plus grand cheptel au bout de **30 min** (égalité possible).
 
@@ -123,7 +136,8 @@ Vendre fait **baisser le cheptel** : c'est un arbitrage entre score de victoire 
 
 Récolte selon ses besoins (objectifs d'eau et de nourriture qui grandissent avec son cheptel, eau ×2 en
 sécheresse), construit des champs (1 pour 3 villageois, 4 max) et des enclos. Elle construit un Tsena et vend
-quelques zébus pour financer ses âges (voir `ages.md`). **Pas encore** de puits ni de camp de bûcherons pour l'IA.
+ses surplus (bois au-delà de 350, nourriture au-delà de 400), puis des zébus en dernier recours, pour financer
+ses âges (voir `ages.md`). **Pas encore** de puits ni de camp de bûcherons pour l'IA.
 
 ## 11. Écarts avec le GDD (à reporter dans le GDD)
 

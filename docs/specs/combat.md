@@ -18,7 +18,7 @@
 | Pisteur | — | 40 | — | — | — | 40 nourr. + 10 bois | Ne combat pas |
 | **Dahalo armé** | Sagaie, coupe-coupe | 120 | 12 | 1,8 m (contact) | 1 s | 60 nourr. + 20 bois | **Seul à capturer et escorter** |
 | **Lanceur de sagaies** | Sagaies de jet | 70 | 9 | 9 m | 1,6 s | 50 nourr. + 25 bois | Soutien à distance |
-| **Tireur** | Fusil de traite | 80 | 30 | 15 m | 3,5 s (rechargement) | 60 nourr. + 20 bois + **60 Ar** | **Âge 2** + **Tsena** (armes achetées aux marchands) |
+| **Tireur** | Fusil de traite | 80 | 30 | 15 m | 3,5 s (rechargement) | 60 nourr. + 20 bois + **45 Ar** | **Âge 2** + **Tsena** (armes achetées aux marchands) |
 
 Dégâts par seconde : Dahalo 12, Lanceur ~5,6, Tireur ~8,6. Le Dahalo domine au contact ; le Tireur
 frappe fort et de loin, mais lentement : il doit être protégé.

@@ -1,5 +1,5 @@
 extends Batiment
-## Tsena : le marché du clan. Vente de zébus contre des Ariary, achat de bois et de nourriture.
+## Tsena : le marché du clan. Vente de zébus et de surplus contre des Ariary, achat de bois et de nourriture.
 ## Spec : docs/specs/economie.md (§ Tsena)
 
 
@@ -7,6 +7,10 @@ func commercer(action: String) -> void:
 	match action:
 		"vendre_zebu":
 			_vendre_zebu()
+		"vendre_bois":
+			_vendre_surplus("bois")
+		"vendre_nourriture":
+			_vendre_surplus("nourriture")
 		"acheter_bois":
 			_acheter("bois")
 		"acheter_nourriture":
@@ -35,6 +39,16 @@ func _vendre_zebu() -> void:
 		_message("Zébu volé vendu au rabais : %d Ar. Les marchands se méfient." % int(prix))
 	else:
 		_message("Zébu vendu au Tsena : %d Ar." % int(prix))
+
+
+func _vendre_surplus(ressource: String) -> void:
+	var offre: Dictionary = GameRules.VENTES[ressource]
+	if not ResourceManager.payer(faction, {ressource: offre["quantite"]}):
+		_message("Pas assez de %s à vendre (%d)." % [ressource, int(offre["quantite"])])
+		return
+	var prix := GameRules.prix_vente_surplus(faction, float(offre["prix"]))
+	ResourceManager.ajouter(faction, "ariary", prix)
+	_message("Vendu : %d %s pour %d Ar." % [int(offre["quantite"]), ressource, int(prix)])
 
 
 func _acheter(ressource: String) -> void:

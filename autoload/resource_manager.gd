@@ -10,6 +10,7 @@ var _chrono_fuite := {}
 var technologies := {}   # faction -> Array des technologies acquises
 var ages := {}           # faction -> 1, 2 ou 3
 var _chrono_reproduction := {}
+var naissances := {}     # faction -> veaux nés grâce au Pacte (plafonné)
 var partie_finie := false
 
 
@@ -26,6 +27,7 @@ func initialiser(factions: Array) -> void:
 	for f in factions:
 		technologies[f] = []
 		ages[f] = 1
+		naissances[f] = 0
 		_chrono_reproduction[f] = 0.0
 		stocks[f] = GameRules.RESSOURCES_DEPART.duplicate()
 		zebus[f] = 0
@@ -199,9 +201,9 @@ func _faire_fuir_un_zebu(f: int) -> void:
 func _faire_naitre_veaux(f: int) -> void:
 	if CommandBus.monde == null:
 		return
-	var naissances := 0
+	var nes := 0
 	for e in get_tree().get_nodes_in_group("enclos"):
-		if e.faction != f or not a_place(f):
+		if e.faction != f or not a_place(f) or int(naissances.get(f, 0)) >= GameRules.PACTE_NAISSANCES_MAX:
 			continue
 		var presents := 0
 		for z in get_tree().get_nodes_in_group("zebus"):
@@ -210,9 +212,10 @@ func _faire_naitre_veaux(f: int) -> void:
 		if presents >= 2:
 			var veau = CommandBus.monde.creer_zebu(e.global_position, e.global_position)
 			veau.securiser(e)
-			naissances += 1
-	if naissances > 0 and f == GameRules.PLAYER:
-		EventBus.message.emit("%d veau(x) né(s) dans vos enclos !" % naissances)
+			nes += 1
+			naissances[f] = int(naissances.get(f, 0)) + 1
+	if nes > 0 and f == GameRules.PLAYER:
+		EventBus.message.emit("%d veau(x) né(s) dans vos enclos !" % nes)
 
 
 # --- Fin de partie ---

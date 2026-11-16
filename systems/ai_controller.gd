@@ -197,7 +197,14 @@ func _gerer_tsena(case, nb_villageois: int) -> void:
 			_cmd({"type": "construire", "type_batiment": "tsena", "position": case.global_position + Vector3(-12, 0, 0)})
 		return
 	var besoin := _ariary_manquants()
-	if besoin > 0.0 and ResourceManager.nb_zebus(faction) >= 6 and not GameClock.secheresse:
+	if besoin <= 0.0:
+		return
+	# D'abord les surplus ; les zébus seulement en dernier recours.
+	if ResourceManager.quantite(faction, "bois") > 350.0:
+		_cmd({"type": "commerce", "action": "vendre_bois"})
+	elif ResourceManager.quantite(faction, "nourriture") > 400.0:
+		_cmd({"type": "commerce", "action": "vendre_nourriture"})
+	elif ResourceManager.nb_zebus(faction) >= 6 and not GameClock.secheresse:
 		_cmd({"type": "commerce", "action": "vendre_zebu"})
 
 

@@ -211,6 +211,8 @@ func _construire_ui() -> void:
 		["Vendre zébu", selection_mgr.commercer.bind("vendre_zebu")],
 		["+50 bois\n30 Ar", selection_mgr.commercer.bind("acheter_bois")],
 		["+50 nourr.\n30 Ar", selection_mgr.commercer.bind("acheter_nourriture")],
+		["Vendre\n50 bois", selection_mgr.commercer.bind("vendre_bois")],
+		["Vendre\n50 nourr.", selection_mgr.commercer.bind("vendre_nourriture")],
 		["Acheter\nzébu", selection_mgr.commercer.bind("acheter_zebu")],
 	])
 	lignes.add_child(ligne_tsena)

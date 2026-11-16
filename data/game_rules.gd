@@ -29,6 +29,14 @@ const DUREE_TRACES_S := 90.0
 const PORTEE_LECTURE_TRACES := 15.0    # distance à laquelle un Pisteur repère une trace
 const ECART_TRACES_M := 3.0
 
+# --- Troupeaux sauvages : arrivées au fil de la partie (spec : docs/specs/economie.md §9) ---
+const ZEBUS_SAUVAGES_DEPART := [8, 6, 6]   # centre + deux troupeaux à égale distance des bases
+const MIGRATION_NORMALE := 5               # à l'aube d'un jour normal
+const MIGRATION_PLUIES := 10               # à l'aube qui suit une sécheresse (retour des pluies)
+const ZEBUS_SAUVAGES_MAX := 30             # pas d'arrivée au-delà (évite d'encombrer la carte)
+# Points d'arrivée, tous à égale distance des deux bases (diagonale de la carte).
+const POINTS_MIGRATION := [Vector3(-48, 0, -48), Vector3(48, 0, 48), Vector3(-18, 0, -18), Vector3(18, 0, 18), Vector3(0, 0, 0)]
+
 # --- Ressources ---
 const RESSOURCES := ["nourriture", "eau", "bois", "ariary"]
 const RESSOURCES_DEPART := {"nourriture": 150.0, "eau": 100.0, "bois": 150.0, "ariary": 50.0}
@@ -91,7 +99,7 @@ const TECHNOLOGIES := {
 		"batiment": "case_centrale", "cout": {"nourriture": 250.0, "bois": 200.0, "ariary": 60.0}, "temps": 40.0,
 		"effet": "Débloque les technologies et le Tireur de l'Âge 2"},
 	"age_3": {"nom": "Âge 3 : Seigneurs des Zébus", "court": "Âge 3", "age": 2, "passage_age": 3,
-		"batiment": "case_centrale", "cout": {"nourriture": 400.0, "bois": 300.0, "ariary": 150.0}, "temps": 60.0,
+		"batiment": "case_centrale", "cout": {"nourriture": 400.0, "bois": 300.0, "ariary": 120.0}, "temps": 60.0,
 		"effet": "Débloque les technologies de l'Âge 3"},
 	# Âge 1 – Le Clan de la Brousse
 	"cultures_traditionnelles": {"nom": "Cultures traditionnelles", "court": "Cultures", "age": 1,
@@ -115,13 +123,13 @@ const TECHNOLOGIES := {
 		"effet": "Pénalité de sécheresse sur l'eau réduite de moitié"},
 	# Âge 3 – Les Seigneurs des Zébus
 	"pacte_eleveurs": {"nom": "Pacte des grands éleveurs", "court": "Pacte", "age": 3,
-		"batiment": "case_centrale", "cout": {"nourriture": 200.0, "ariary": 100.0}, "temps": 45.0,
-		"effet": "Naissance d'un veau par enclos bien tenu toutes les 90 s"},
+		"batiment": "case_centrale", "cout": {"nourriture": 200.0, "ariary": 120.0}, "temps": 45.0,
+		"effet": "Naissance d'un veau par enclos bien tenu toutes les 90 s (12 naissances au plus)"},
 	"raid_eclair": {"nom": "Raid éclair", "court": "Raid éclair", "age": 3,
 		"batiment": "case_hommes", "cout": {"nourriture": 150.0, "ariary": 80.0}, "temps": 40.0,
 		"effet": "Les Dahalo escortant un troupeau vont presque à pleine vitesse"},
 	"maitres_tsena": {"nom": "Maîtres du Tsena", "court": "Maîtres Tsena", "age": 3,
-		"batiment": "tsena", "cout": {"bois": 100.0, "ariary": 120.0}, "temps": 40.0,
+		"batiment": "tsena", "cout": {"bois": 100.0, "ariary": 80.0}, "temps": 40.0,
 		"effet": "Zébus vendus +25 %, achats −1/3, achat de zébus reproducteurs"},
 }
 const BONUS_SAGAIES_ACEREES := 1.3       # dégâts des armes « sagaie » et « sagaie_jet »
@@ -130,6 +138,7 @@ const BONUS_MARCHEURS := 1.15
 const BONUS_VANNERIE := 1.5
 const MALUS_VITESSE_ESCORTE_RAID_ECLAIR := 0.85
 const REPRODUCTION_S := 90.0
+const PACTE_NAISSANCES_MAX := 12           # au-delà, il faut capturer, acheter ou voler
 const BONUS_VENTE_MAITRES := 1.25
 const REMISE_ACHAT_MAITRES := 2.0 / 3.0
 const PRIX_ZEBU_REPRODUCTEUR := 80.0
@@ -154,6 +163,11 @@ const PRIX_ZEBU := 40.0
 const PRIX_ZEBU_SECHERESSE := 0.5      # tout le monde vend pendant la sécheresse : les prix chutent
 const DECOTE_ZEBU_VOLE := 0.4
 const DELAI_ZEBU_VOLE_S := 180.0
+# Vente de surplus (GDD §5 : le Tsena échange les surplus de bois et de nourriture)
+const VENTES := {
+	"bois": {"quantite": 50.0, "prix": 15.0},
+	"nourriture": {"quantite": 50.0, "prix": 15.0},
+}
 const ACHATS := {
 	"bois": {"quantite": 50.0, "prix": 30.0},
 	"nourriture": {"quantite": 50.0, "prix": 30.0},
@@ -183,6 +197,12 @@ static func prix_zebu_actuel(vole_recemment: bool, faction: int = -1) -> float:
 	if faction >= 0 and ResourceManager.a_technologie(faction, "maitres_tsena"):
 		p *= BONUS_VENTE_MAITRES
 	return p
+
+
+static func prix_vente_surplus(faction: int, prix_de_base: float) -> float:
+	if ResourceManager.a_technologie(faction, "maitres_tsena"):
+		return roundf(prix_de_base * BONUS_VENTE_MAITRES)
+	return prix_de_base
 
 
 static func prix_achat(faction: int, prix_de_base: float) -> float:
