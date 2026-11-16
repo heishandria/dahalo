@@ -66,6 +66,37 @@ jobs:
           fi
           tail -5 test.log
 
+      - name: Captures d'écran (écran virtuel, rendu Compatibility comme le Web)
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          DOSSIER="$PWD/build/web/captures"
+          mkdir -p "$DOSSIER"
+          timeout 480 xvfb-run -a -s "-screen 0 1600x900x24" \
+            godot --path . --rendering-method gl_compatibility --audio-driver Dummy -- --captures="$DOSSIER" \
+            > captures.log 2>&1 || true
+          grep -F "[captures]" captures.log || tail -20 captures.log
+          # Galerie : https://heishandria.github.io/dahalo/captures/
+          {
+            echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">'
+            echo "<title>Dahalo : captures</title><body style=\"background:#222;color:#eee;font-family:sans-serif\">"
+            echo "<h1>Captures automatiques</h1><p>Commit ${GITHUB_SHA::7}, $(date -u '+%d/%m/%Y %H:%M') UTC</p>"
+            for f in "$DOSSIER"/*.png; do
+              [ -e "$f" ] || continue
+              n=$(basename "$f")
+              echo "<h2>${n%.png}</h2><a href=\"$n\"><img src=\"$n\" style=\"max-width:100%\"></a>"
+            done
+          } > "$DOSSIER/index.html"
+          echo "::notice title=Captures::$(ls "$DOSSIER"/*.png 2>/dev/null | wc -l) images, publiées dans /captures/"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: captures
+          path: build/web/captures
+          if-no-files-found: ignore
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web

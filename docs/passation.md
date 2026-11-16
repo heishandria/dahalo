@@ -14,6 +14,9 @@ Lire aussi `CLAUDE.md` (règles d'architecture) et `docs/specs/` (règles codée
 - CI : `.github/workflows/export-web.yml` exporte le build Web vers GitHub Pages
   (https://heishandria.github.io/dahalo/) et lance un test accéléré sans écran
   (`-- --accelerer`), dont le rapport sort en annotations.
+  Elle prend aussi 5 **captures d'écran** (départ, panneau de la Case centrale, nuit, base de l'IA à 5 min,
+  vue d'ensemble) sous écran virtuel, publiées sur https://heishandria.github.io/dahalo/captures/
+  (scénario : `systems/captures.gd` ; en local : `Godot --path . -- --captures=<dossier>`).
 - Graphismes : formes primitives (capsules, boîtes). Tout est à remplacer.
 - Interface contextuelle : toucher un bâtiment ouvre ses actions avec leurs coûts (`docs/specs/interface.md` §2 quater).
 - L'IA clôture son enclos garni de palissades et répare les brèches (voir `docs/specs/defense.md` §4).
@@ -52,6 +55,5 @@ couleurs ternes et poussiéreuses. Les personnages sont inventés, jamais copié
 
 ## Tâches proposées, pas encore lancées
 
-- Captures d'écran automatiques dans la CI.
 - Carte générée par le code (relief au-delà de ±60 m, zone de jeu plate à y = 0).
 - Mettre le GDD à jour avec les décisions prises ; vérifier les termes malgaches.

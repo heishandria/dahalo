@@ -58,6 +58,12 @@ func _ready() -> void:
 		print("[test] partie accélérée x8")
 		EventBus.partie_terminee.connect(_fin_du_test)
 		_lancer_duels.call_deferred()
+	# Captures d'écran (CI) : `godot --path . -- --captures=<dossier>` (voir systems/captures.gd).
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--captures"):
+			var captures := preload("res://systems/captures.gd").new()
+			captures.name = "Captures"
+			add_child(captures)
 	EventBus.meteo_change.connect(_on_meteo)
 	EventBus.cycle_change.connect(_on_cycle)
 
