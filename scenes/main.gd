@@ -20,6 +20,12 @@ const DONNEES_UNITES := {
 }
 const LIMITE_CARTE := 56.0
 
+# Nuit : clair de lune lisible (assez sombre pour sentir la nuit, assez clair pour jouer).
+const SOLEIL_NUIT := 0.4
+const AMBIANCE_NUIT := 0.45
+const CIEL_NUIT := 0.35
+const COULEUR_LUNE := Color(0.6, 0.68, 1.0)
+
 const COULEUR_SOL := Color(0.72, 0.36, 0.2)
 const COULEUR_SOL_SECHERESSE := Color(0.82, 0.5, 0.3)
 
@@ -228,10 +234,10 @@ func _maj_lumiere() -> void:
 		lum = 0.0                                                         # nuit
 	elif t >= 1.0 - transition:
 		lum = (t - (1.0 - transition)) / transition                       # aube
-	soleil.light_energy = lerpf(0.08, 1.3, lum)
-	soleil.light_color = Color(0.5, 0.58, 0.95).lerp(Color(1.0, 0.92, 0.78), lum)
-	environnement.environment.ambient_light_energy = lerpf(0.15, 0.7, lum)
-	environnement.environment.background_energy_multiplier = lerpf(0.1, 1.0, lum)
+	soleil.light_energy = lerpf(SOLEIL_NUIT, 1.3, lum)
+	soleil.light_color = COULEUR_LUNE.lerp(Color(1.0, 0.92, 0.78), lum)
+	environnement.environment.ambient_light_energy = lerpf(AMBIANCE_NUIT, 0.7, lum)
+	environnement.environment.background_energy_multiplier = lerpf(CIEL_NUIT, 1.0, lum)
 
 
 func _on_meteo(secheresse: bool) -> void:
