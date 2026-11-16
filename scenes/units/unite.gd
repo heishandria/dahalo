@@ -11,7 +11,7 @@ const DIST_RECOLTE := 2.2
 const DIST_DEPOT := 3.5
 const DIST_CAPTURE := 2.0
 const INTERVALLE_GUET := 0.5     # fréquence de recherche d'ennemis quand l'unité est inactive
-const PORTEE_DISTANCE := 3.0     # au-delà, l'attaque est à distance (trait visible)
+const PORTEE_DISTANCE := 3.0     # au-delà, l'attaque est à distance (projectile visible)
 const DUREE_CORPS_S := 5.0       # le corps reste au sol avant de disparaître
 
 @export var data: UnitData
@@ -461,18 +461,18 @@ func _maj_barre_vie() -> void:
 func _tracer_vers(cible: Vector3) -> void:
 	var depart := global_position + Vector3(0.0, 1.4, 0.0)
 	var arrivee := cible + Vector3(0.0, 1.0, 0.0)
-	var trait := MeshInstance3D.new()
+	var projectile := MeshInstance3D.new()
 	var maillage := BoxMesh.new()
 	maillage.size = Vector3(0.05, 0.05, depart.distance_to(arrivee))
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.albedo_color = Color(1.0, 0.9, 0.5) if data.arme == "fusil" else Color(0.55, 0.4, 0.25)
 	maillage.material = mat
-	trait.mesh = maillage
-	get_tree().current_scene.add_child(trait)
-	trait.global_position = (depart + arrivee) * 0.5
-	trait.look_at(arrivee, Vector3.UP)
-	get_tree().create_timer(0.12 if data.arme == "fusil" else 0.25).timeout.connect(trait.queue_free)
+	projectile.mesh = maillage
+	get_tree().current_scene.add_child(projectile)
+	projectile.global_position = (depart + arrivee) * 0.5
+	projectile.look_at(arrivee, Vector3.UP)
+	get_tree().create_timer(0.12 if data.arme == "fusil" else 0.25).timeout.connect(projectile.queue_free)
 
 
 func _ajouter_fusil() -> void:

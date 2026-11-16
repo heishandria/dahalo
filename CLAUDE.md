@@ -30,6 +30,7 @@ Les règles de jeu effectivement codées sont décrites dans `docs/specs/` (une 
 - GDScript typé (`: float`, `-> void`). Attention : `:=` est interdit quand la valeur est un `Variant`
   (accès dictionnaire, objet non typé) ; écrire le type explicitement.
 - Indentation par tabulations.
+- Mots réservés à éviter comme noms de variables (Godot 4.7) : `trait`, `class`, `signal`, `match`, `when`…
 - Une scène = un script du même nom, dans le même dossier.
 
 ## Culture
