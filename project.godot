@@ -1,0 +1,44 @@
+; Engine configuration file.
+; Fichier de configuration du projet Godot 4.
+
+config_version=5
+
+[application]
+
+config/name="Dahalo : Les Seigneurs des Zébus"
+config/description="RTS de gestion et de survie dans le grand Sud de Madagascar."
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.4", "Mobile")
+
+[autoload]
+
+EventBus="*res://autoload/event_bus.gd"
+InputSetup="*res://autoload/input_setup.gd"
+GameClock="*res://autoload/game_clock.gd"
+ResourceManager="*res://autoload/resource_manager.gd"
+CommandBus="*res://autoload/command_bus.gd"
+
+[display]
+
+window/size/viewport_width=1600
+window/size/viewport_height=900
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=4
+
+[input_devices]
+
+pointing/emulate_mouse_from_touch=true
+pointing/emulate_touch_from_mouse=false
+
+[layer_names]
+
+3d_physics/layer_1="terrain"
+3d_physics/layer_2="unites"
+3d_physics/layer_3="interactifs"
+
+[rendering]
+
+renderer/rendering_method="mobile"
+renderer/rendering_method.web="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true

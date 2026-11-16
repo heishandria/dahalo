@@ -1,0 +1,92 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scenes/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://systems/rts_camera.gd" id="2_camera"]
+[ext_resource type="Script" path="res://ui/hud.gd" id="3_hud"]
+[ext_resource type="Script" path="res://systems/selection_manager.gd" id="4_selection"]
+[ext_resource type="Script" path="res://systems/ai_controller.gd" id="5_ia"]
+
+[sub_resource type="ProceduralSkyMaterial" id="Ciel_mat"]
+sky_top_color = Color(0.42, 0.6, 0.85, 1)
+sky_horizon_color = Color(0.92, 0.8, 0.62, 1)
+ground_bottom_color = Color(0.35, 0.2, 0.12, 1)
+ground_horizon_color = Color(0.92, 0.8, 0.62, 1)
+
+[sub_resource type="Sky" id="Ciel"]
+sky_material = SubResource("Ciel_mat")
+
+[sub_resource type="Environment" id="Env"]
+background_mode = 2
+sky = SubResource("Ciel")
+ambient_light_source = 3
+ambient_light_energy = 0.7
+tonemap_mode = 2
+
+[sub_resource type="NavigationMesh" id="NavMesh"]
+agent_radius = 0.6
+
+[sub_resource type="PlaneMesh" id="Sol_mesh"]
+size = Vector2(120, 120)
+
+[sub_resource type="StandardMaterial3D" id="Sol_mat"]
+resource_local_to_scene = true
+albedo_color = Color(0.72, 0.36, 0.2, 1)
+roughness = 1.0
+
+[sub_resource type="BoxShape3D" id="Sol_forme"]
+size = Vector3(120, 1, 120)
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="Soleil" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, 0, 0.5, 0.4096, 0.5736, -0.7094, -0.2868, 0.8192, 0.4967, 0, 20, 0)
+light_energy = 1.3
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env")
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavMesh")
+
+[node name="Sol" type="MeshInstance3D" parent="NavigationRegion3D"]
+mesh = SubResource("Sol_mesh")
+material_override = SubResource("Sol_mat")
+
+[node name="SolPhysique" type="StaticBody3D" parent="NavigationRegion3D"]
+collision_mask = 0
+
+[node name="Forme" type="CollisionShape3D" parent="NavigationRegion3D/SolPhysique"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("Sol_forme")
+
+[node name="Entites" type="Node3D" parent="."]
+
+[node name="CameraRig" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0, 30)
+script = ExtResource("2_camera")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+projection = 1
+size = 40.0
+near = 0.1
+far = 300.0
+
+[node name="IA" type="Node" parent="."]
+script = ExtResource("5_ia")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+process_mode = 3
+script = ExtResource("3_hud")
+
+[node name="Selection" type="Control" parent="HUD"]
+process_mode = 1
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("4_selection")

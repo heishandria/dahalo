@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UnitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/unit_data.gd" id="1_data"]
+
+[resource]
+script = ExtResource("1_data")
+nom = "Dahalo armé"
+role = "dahalo"
+vitesse = 6.0
+pv = 120
+vision = 14.0
+peut_recolter = false
+peut_capturer = true
+cout = {"nourriture": 60.0, "bois": 20.0}
+temps_formation = 10.0
+couleur = Color(0.55, 0.2, 0.12, 1)

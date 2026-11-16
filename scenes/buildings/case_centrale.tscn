@@ -1,0 +1,56 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scenes/buildings/batiment.gd" id="1_bat"]
+
+[sub_resource type="BoxShape3D" id="Shape_case"]
+size = Vector3(4, 3.5, 4)
+
+[sub_resource type="StandardMaterial3D" id="Mat_torchis"]
+albedo_color = Color(0.7, 0.5, 0.33, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_murs"]
+material = SubResource("Mat_torchis")
+size = Vector3(4, 2.5, 4)
+
+[sub_resource type="StandardMaterial3D" id="Mat_chaume"]
+albedo_color = Color(0.82, 0.7, 0.4, 1)
+
+[sub_resource type="PrismMesh" id="Mesh_toit"]
+material = SubResource("Mat_chaume")
+size = Vector3(4.8, 1.6, 4.8)
+
+[sub_resource type="StandardMaterial3D" id="Mat_bois"]
+albedo_color = Color(0.35, 0.22, 0.12, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_mat"]
+material = SubResource("Mat_bois")
+size = Vector3(0.12, 2.5, 0.12)
+
+[sub_resource type="BoxMesh" id="Mesh_banniere"]
+size = Vector3(0.9, 0.55, 0.05)
+
+[node name="CaseCentrale" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_bat")
+type_batiment = "case_centrale"
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 0)
+shape = SubResource("Shape_case")
+
+[node name="Murs" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+mesh = SubResource("Mesh_murs")
+
+[node name="Toit" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.3, 0)
+mesh = SubResource("Mesh_toit")
+
+[node name="Mat" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, 1.25, 2.6)
+mesh = SubResource("Mesh_mat")
+
+[node name="Banniere" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.08, 2.2, 2.6)
+mesh = SubResource("Mesh_banniere")

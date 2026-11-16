@@ -1,0 +1,78 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scenes/buildings/enclos.gd" id="1_enclos"]
+
+[sub_resource type="BoxShape3D" id="Shape_clic"]
+size = Vector3(8, 0.3, 8)
+
+[sub_resource type="BoxShape3D" id="Shape_zone"]
+size = Vector3(10, 3, 10)
+
+[sub_resource type="StandardMaterial3D" id="Mat_bois"]
+albedo_color = Color(0.4, 0.27, 0.15, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_cote_x"]
+material = SubResource("Mat_bois")
+size = Vector3(8, 0.9, 0.2)
+
+[sub_resource type="BoxMesh" id="Mesh_cote_z"]
+material = SubResource("Mat_bois")
+size = Vector3(0.2, 0.9, 8)
+
+[sub_resource type="BoxMesh" id="Mesh_demi"]
+material = SubResource("Mat_bois")
+size = Vector3(3, 0.9, 0.2)
+
+[sub_resource type="BoxMesh" id="Mesh_mat"]
+material = SubResource("Mat_bois")
+size = Vector3(0.12, 2.2, 0.12)
+
+[sub_resource type="BoxMesh" id="Mesh_banniere"]
+size = Vector3(0.9, 0.55, 0.05)
+
+[node name="Enclos" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_enclos")
+type_batiment = "enclos"
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+shape = SubResource("Shape_clic")
+
+[node name="Nord" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, -4)
+mesh = SubResource("Mesh_cote_x")
+
+[node name="Est" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.45, 0)
+mesh = SubResource("Mesh_cote_z")
+
+[node name="Ouest" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.45, 0)
+mesh = SubResource("Mesh_cote_z")
+
+[node name="SudGauche" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.45, 4)
+mesh = SubResource("Mesh_demi")
+
+[node name="SudDroite" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.45, 4)
+mesh = SubResource("Mesh_demi")
+
+[node name="Mat" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1.1, -4)
+mesh = SubResource("Mesh_mat")
+
+[node name="Banniere" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.52, 1.9, -4)
+mesh = SubResource("Mesh_banniere")
+
+[node name="Zone" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="Forme" type="CollisionShape3D" parent="Zone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+shape = SubResource("Shape_zone")

@@ -1,0 +1,66 @@
+# Export web automatique : à chaque push sur main, GitHub lance Godot sur ses serveurs,
+# exporte le jeu (preset « Web ») et le publie sur GitHub Pages.
+# Prérequis (une seule fois) : Settings > Pages > Source = « GitHub Actions ».
+name: Export web et publication
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7"   # doit correspondre à la version de Godot utilisée sur le PC
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Installer Godot et les modèles d'export
+        run: |
+          V="${GODOT_VERSION}-stable"
+          BASE="https://github.com/godotengine/godot/releases/download/${V}"
+          wget -q "${BASE}/Godot_v${V}_linux.x86_64.zip"
+          wget -q "${BASE}/Godot_v${V}_export_templates.tpz"
+          unzip -q "Godot_v${V}_linux.x86_64.zip"
+          sudo mv "Godot_v${V}_linux.x86_64" /usr/local/bin/godot
+          DEST="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$DEST"
+          unzip -q "Godot_v${V}_export_templates.tpz"
+          mv templates/* "$DEST/"
+          godot --version
+
+      - name: Importer le projet
+        run: timeout 300 godot --headless --editor --quit || true
+
+      - name: Exporter (Web)
+        run: |
+          mkdir -p build/web
+          godot --headless --export-release "Web" build/web/index.html
+          test -f build/web/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  publication:
+    needs: export
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - id: deploiement
+        uses: actions/deploy-pages@v4
