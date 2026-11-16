@@ -14,6 +14,7 @@ extends Node
 ##   deposer    : "unites": [ids], "cible_id": id d'un Batiment
 ##   former     : "batiment": id, "unite": "villageois" | "dahalo" | "pisteur"
 ##   construire : "type_batiment": "enclos" | "champ" | "camp_bois" | "puits" | "tsena", "position": Vector3
+##   rechercher : "technologie": clé de GameRules.TECHNOLOGIES (dans le bâtiment adapté)
 ##   commerce   : "action": "vendre_zebu" | "acheter_bois" | "acheter_nourriture" (nécessite un Tsena)
 
 var monde = null           # référence vers main.gd (création d'entités)
@@ -57,6 +58,14 @@ func emettre(cmd: Dictionary) -> void:
 		"construire":
 			if monde != null:
 				monde.construire(faction, cmd.get("type_batiment", ""), cmd.get("position", Vector3.ZERO))
+		"rechercher":
+			var tech: String = cmd.get("technologie", "")
+			for b in get_tree().get_nodes_in_group("batiments_%d" % faction):
+				if b.has_method("recherche_possible") and b.recherche_possible(tech):
+					b.rechercher(tech)
+					return
+			if faction == GameRules.PLAYER:
+				EventBus.message.emit("Il faut le bâtiment adapté pour cette recherche.")
 		"commerce":
 			for t in get_tree().get_nodes_in_group("tsena"):
 				if t.faction == faction:

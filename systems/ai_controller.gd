@@ -107,15 +107,23 @@ func _type_prioritaire(affectes: Dictionary) -> String:
 # --- Formation et enclos ---
 
 func _gerer_formation(case, nb_villageois: int, nb_dahalos: int, nb_lanceurs: int) -> void:
-	if case.en_formation > 0:
-		return
 	var monde = CommandBus.monde
-	if nb_villageois < villageois_max and ResourceManager.peut_payer(faction, monde.donnees_unite("villageois").cout):
+	if case.en_formation == 0 and nb_villageois < villageois_max \
+			and ResourceManager.peut_payer(faction, monde.donnees_unite("villageois").cout):
 		_cmd({"type": "former", "batiment": case.id, "unite": "villageois"})
-	elif nb_dahalos < dahalo_max and ResourceManager.peut_payer(faction, monde.donnees_unite("dahalo").cout):
-		_cmd({"type": "former", "batiment": case.id, "unite": "dahalo"})
+	# Les guerriers se forment à la Case des Hommes : la construire dès que possible.
+	var hommes = _premier_batiment("case_hommes")
+	if hommes == null:
+		if nb_villageois >= 4 and ResourceManager.peut_payer(faction, GameRules.COUTS_BATIMENTS["case_hommes"]):
+			_cmd({"type": "construire", "type_batiment": "case_hommes",
+					"position": case.global_position + Vector3(-8, 0, 8)})
+		return
+	if hommes.en_formation > 0:
+		return
+	if nb_dahalos < dahalo_max and ResourceManager.peut_payer(faction, monde.donnees_unite("dahalo").cout):
+		_cmd({"type": "former", "batiment": hommes.id, "unite": "dahalo"})
 	elif nb_lanceurs < lanceurs_max and ResourceManager.peut_payer(faction, monde.donnees_unite("lanceur").cout):
-		_cmd({"type": "former", "batiment": case.id, "unite": "lanceur"})
+		_cmd({"type": "former", "batiment": hommes.id, "unite": "lanceur"})
 
 
 func _gerer_enclos(case) -> void:

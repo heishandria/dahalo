@@ -125,9 +125,14 @@ func selectionner_type(role: String) -> void:
 
 func former(role: String) -> void:
 	for b in get_tree().get_nodes_in_group("batiments_%d" % GameRules.PLAYER):
-		if b.type_batiment == "case_centrale":
+		if b.has_method("peut_former") and b.peut_former(role):
 			CommandBus.emettre({"type": "former", "faction": GameRules.PLAYER, "batiment": b.id, "unite": role})
 			return
+	EventBus.message.emit("Construisez d'abord une Case des Hommes pour former des guerriers.")
+
+
+func rechercher(tech: String) -> void:
+	CommandBus.emettre({"type": "rechercher", "faction": GameRules.PLAYER, "technologie": tech})
 
 
 func definir_mode_construction(type_batiment: String) -> void:
@@ -275,7 +280,8 @@ func _ordre(pos: Vector2) -> void:
 	if c is Node3D and not c.is_visible_in_tree():
 		c = null  # caché par le brouillard : on traite le clic comme un déplacement
 	var cmd := {"faction": GameRules.PLAYER, "unites": ids}
-	if c is Unite and c.faction != GameRules.PLAYER:
+	if (c is Unite and c.faction != GameRules.PLAYER) \
+			or (c is Batiment and c.type_batiment == "palissade" and c.faction != GameRules.PLAYER):
 		cmd["type"] = "attaquer"
 		cmd["cible_id"] = c.id
 	elif c is NoeudRessource:
@@ -309,6 +315,10 @@ func _poser_batiment(pos: Vector2) -> void:
 		return
 	CommandBus.emettre({"type": "construire", "faction": GameRules.PLAYER,
 			"type_batiment": type_batiment, "position": hit.position})
+	if type_batiment == "palissade":
+		# On enchaîne les segments : le mode reste actif jusqu'à « Aucun » / Échap / clic droit.
+		mode_construction = "palissade"
+		mode_construction_change.emit(mode_construction)
 
 
 # --- Utilitaires ---

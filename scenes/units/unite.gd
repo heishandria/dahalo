@@ -39,6 +39,7 @@ var _recharge := 0.0
 var _chrono_guet := 0.0
 var _materiau_barre := StandardMaterial3D.new()
 var _derniere_trace := Vector3.INF
+var ralentissements := 0     # nombre de palissades ennemies traversées en ce moment
 
 @onready var agent: NavigationAgent3D = $NavigationAgent3D
 @onready var anneau: MeshInstance3D = $Anneau
@@ -166,7 +167,16 @@ func vitesse_actuelle() -> float:
 	var v := data.vitesse
 	if not zebus_escortes.is_empty():
 		v *= GameRules.MALUS_VITESSE_ESCORTE
+	if ralentissements > 0:
+		v *= GameRules.PALISSADE_RALENTISSEMENT
 	return v
+
+
+func degats_actuels() -> float:
+	var d := data.degats
+	if data.arme in ["sagaie", "sagaie_jet"] and ResourceManager.a_technologie(faction, "sagaies_acerees"):
+		d *= GameRules.BONUS_SAGAIES_ACEREES
+	return d
 
 
 func aller_recolter(r) -> void:
@@ -435,7 +445,7 @@ func _frapper(ennemi) -> void:
 	_recharge = data.cadence
 	if data.portee > PORTEE_DISTANCE:
 		_tracer_vers(ennemi.global_position)
-	ennemi.subir(data.degats, self)
+	ennemi.subir(degats_actuels(), self)
 
 
 func _mourir() -> void:
@@ -469,8 +479,10 @@ func _mourir() -> void:
 	chute.tween_callback(queue_free)
 
 
+## Cible attaquable : unité ennemie vivante, ou palissade ennemie (sabotage).
 func _ennemi_valide(u) -> bool:
-	return _valide(u) and u is Unite and u.faction != faction and not u.mort
+	return _valide(u) and u.has_method("subir") and u.get("faction") != faction \
+			and u.get("faction") != GameRules.WILD and not u.mort
 
 
 func _maj_barre_vie() -> void:

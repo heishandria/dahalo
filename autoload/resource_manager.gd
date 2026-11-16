@@ -7,6 +7,7 @@ var zebus := {}       # faction -> int (zébus sécurisés dans les enclos)
 var enclos := {}      # faction -> int (nombre d'enclos)
 var en_manque := {}   # faction -> bool (plus d'eau ou plus de nourriture pour le cheptel)
 var _chrono_fuite := {}
+var technologies := {}   # faction -> Array des technologies acquises
 var partie_finie := false
 
 
@@ -17,7 +18,9 @@ func initialiser(factions: Array) -> void:
 	enclos.clear()
 	en_manque.clear()
 	_chrono_fuite.clear()
+	technologies.clear()
 	for f in factions:
+		technologies[f] = []
 		stocks[f] = GameRules.RESSOURCES_DEPART.duplicate()
 		zebus[f] = 0
 		enclos[f] = 0
@@ -64,6 +67,20 @@ static func texte_cout(cout: Dictionary) -> String:
 		var nom: String = "Ar" if r == "ariary" else String(r)
 		parties.append("%d %s" % [int(cout[r]), nom])
 	return " + ".join(parties)
+
+
+# --- Technologies ---
+
+func a_technologie(faction: int, tech: String) -> bool:
+	var acquises: Array = technologies.get(faction, [])
+	return tech in acquises
+
+
+func acquerir_technologie(faction: int, tech: String) -> void:
+	if not technologies.has(faction):
+		technologies[faction] = []
+	if not a_technologie(faction, tech):
+		technologies[faction].append(tech)
 
 
 # --- Cheptel ---

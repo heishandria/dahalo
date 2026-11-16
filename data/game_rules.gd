@@ -45,6 +45,8 @@ const COUTS_BATIMENTS := {
 	"camp_bois": {"bois": 80.0},
 	"puits": {"bois": 60.0, "ariary": 40.0},
 	"tsena": {"bois": 150.0},
+	"case_hommes": {"bois": 120.0},
+	"palissade": {"bois": 15.0},
 }
 const NOMS_BATIMENTS := {
 	"case_centrale": "Case centrale",
@@ -53,7 +55,30 @@ const NOMS_BATIMENTS := {
 	"camp_bois": "Camp de bûcherons",
 	"puits": "Puits",
 	"tsena": "Tsena",
+	"case_hommes": "Case des Hommes",
+	"palissade": "Palissade épineuse",
 }
+
+# --- Formation : quel bâtiment forme quelles unités ---
+const FORMATIONS := {
+	"case_centrale": ["villageois", "pisteur"],
+	"case_hommes": ["dahalo", "lanceur", "tireur"],
+}
+
+# --- Défense (spec : docs/specs/defense.md) ---
+const PALISSADE_PV := 150.0
+const PALISSADE_RALENTISSEMENT := 0.35   # vitesse des ennemis qui traversent une palissade
+
+# --- Technologies (recherchées dans un bâtiment) ---
+const TECHNOLOGIES := {
+	"sagaies_acerees": {
+		"nom": "Sagaies acérées",
+		"batiment": "case_hommes",
+		"cout": {"nourriture": 100.0, "bois": 50.0, "ariary": 40.0},
+		"temps": 30.0,
+	},
+}
+const BONUS_SAGAIES_ACEREES := 1.3       # dégâts des armes « sagaie » et « sagaie_jet »
 
 # --- Champs (maïs / sorgho) ---
 const CHAMP_POUSSE_S := 60.0          # temps de culture pour UN villageois (2 villageois = 2× plus vite)

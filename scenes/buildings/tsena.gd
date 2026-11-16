@@ -43,7 +43,3 @@ func _acheter(ressource: String) -> void:
 	ResourceManager.ajouter(faction, ressource, offre["quantite"])
 	_message("Acheté : %d %s." % [int(offre["quantite"]), ressource])
 
-
-func _message(texte: String) -> void:
-	if faction == GameRules.PLAYER:
-		EventBus.message.emit(texte)

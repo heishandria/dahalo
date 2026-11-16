@@ -161,18 +161,19 @@ func _construire_ui() -> void:
 		["+ Lanceur", selection_mgr.former.bind("lanceur")],
 		["+ Tireur", selection_mgr.former.bind("tireur")],
 	]))
-	var batiments := [["enclos", "Enclos"], ["champ", "Champ"], ["camp_bois", "Camp bois"],
-			["puits", "Puits"], ["tsena", "Tsena"]]
-	var defs: Array = []
-	for b in batiments:
-		defs.append([b[1], selection_mgr.definir_mode_construction.bind(b[0])])
-	var ligne_batir := _ligne_boutons("Bâtir", defs)
-	lignes.add_child(ligne_batir)
-	for i in batiments.size():
-		var bouton: Button = ligne_batir.get_child(i + 1)
-		var cout: Dictionary = GameRules.COUTS_BATIMENTS[batiments[i][0]]
-		bouton.tooltip_text = ResourceManager.texte_cout(cout)
-		_boutons_construction[batiments[i][0]] = bouton
+	_ajouter_ligne_construction(lignes, "Village", [["enclos", "Enclos"], ["champ", "Champ"],
+			["camp_bois", "Camp bois"], ["puits", "Puits"]])
+	var ligne_clan := _ajouter_ligne_construction(lignes, "Clan", [["tsena", "Tsena"],
+			["case_hommes", "Case\nHommes"], ["palissade", "Palissade"]])
+	var bouton_sagaies := Button.new()
+	bouton_sagaies.text = "Sagaies\nacérées"
+	bouton_sagaies.custom_minimum_size = TAILLE_BOUTON
+	bouton_sagaies.add_theme_font_size_override("font_size", 16)
+	bouton_sagaies.focus_mode = Control.FOCUS_NONE
+	var tech: Dictionary = GameRules.TECHNOLOGIES["sagaies_acerees"]
+	bouton_sagaies.tooltip_text = "+30 %% dégâts sagaies (%s, Case des Hommes)" % ResourceManager.texte_cout(tech["cout"])
+	bouton_sagaies.pressed.connect(selection_mgr.rechercher.bind("sagaies_acerees"))
+	ligne_clan.add_child(bouton_sagaies)
 	var ligne_tsena := _ligne_boutons("Tsena", [
 		["Vendre zébu", selection_mgr.commercer.bind("vendre_zebu")],
 		["+50 bois\n30 Ar", selection_mgr.commercer.bind("acheter_bois")],
@@ -218,6 +219,20 @@ func _construire_ui() -> void:
 	rejouer.add_theme_font_size_override("font_size", 22)
 	rejouer.pressed.connect(_rejouer)
 	boite.add_child(rejouer)
+
+
+func _ajouter_ligne_construction(lignes: VBoxContainer, titre: String, batiments: Array) -> HBoxContainer:
+	var defs: Array = []
+	for b in batiments:
+		defs.append([b[1], selection_mgr.definir_mode_construction.bind(b[0])])
+	var ligne := _ligne_boutons(titre, defs)
+	lignes.add_child(ligne)
+	for i in batiments.size():
+		var bouton: Button = ligne.get_child(i + 1)
+		var cout: Dictionary = GameRules.COUTS_BATIMENTS[batiments[i][0]]
+		bouton.tooltip_text = ResourceManager.texte_cout(cout)
+		_boutons_construction[batiments[i][0]] = bouton
+	return ligne
 
 
 func _ligne_boutons(titre: String, boutons: Array) -> HBoxContainer:

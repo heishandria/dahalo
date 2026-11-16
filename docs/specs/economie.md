@@ -82,7 +82,9 @@ Chaque clan démarre avec **2 champs mûrs**.
 | Camp de bûcherons | 80 bois | Dépôt de bois au plus près des forêts |
 | Puits | 60 bois + 40 Ar | Eau infinie, moins sensible à la sécheresse |
 | Tsena | 150 bois (1 par clan) | Marché : vente de zébus, achats |
-| Villageois | 50 nourriture, 6 s | Récolte |
+| Case des Hommes | 120 bois | Forme les guerriers, recherche Sagaies acérées (voir `defense.md`) |
+| Palissade épineuse | 15 bois par segment | Ralentit les ennemis (voir `defense.md`) |
+| Villageois (Case centrale) | 50 nourriture, 6 s | Récolte |
 | Pisteur | 40 nourriture + 10 bois, 8 s | Unité rapide (vision : à venir) |
 | Dahalo armé | 60 nourriture + 20 bois, 10 s | Capture, escorte, raids, combat au contact |
 | Lanceur de sagaies | 50 nourriture + 25 bois, 10 s | Combat à distance (voir `combat.md`) |

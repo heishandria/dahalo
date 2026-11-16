@@ -10,6 +10,8 @@ const SCENES_BATIMENTS := {
 	"enclos": preload("res://scenes/buildings/enclos.tscn"),
 	"camp_bois": preload("res://scenes/buildings/camp_bois.tscn"),
 	"tsena": preload("res://scenes/buildings/tsena.tscn"),
+	"case_hommes": preload("res://scenes/buildings/case_hommes.tscn"),
+	"palissade": preload("res://scenes/buildings/palissade.tscn"),
 	"champ": preload("res://scenes/world/champ.tscn"),
 	"puits": preload("res://scenes/world/puits.tscn"),
 }
@@ -83,6 +85,13 @@ func creer_batiment(type_batiment: String, faction: int, pos: Vector3) -> Node3D
 	var b: Node3D = SCENES_BATIMENTS[type_batiment].instantiate()
 	b.faction = faction
 	b.position = _borner(pos)
+	if type_batiment == "palissade":
+		# Orientée face à l'extérieur du village : perpendiculaire à la direction depuis la Case centrale.
+		for c in get_tree().get_nodes_in_group("case_centrale"):
+			if c.faction == faction:
+				var dir: Vector3 = b.position - c.global_position
+				b.rotation.y = atan2(dir.x, dir.z)
+				break
 	entites.add_child(b)
 	return b
 
@@ -129,7 +138,9 @@ func construire(faction: int, type_batiment: String, pos: Vector3) -> void:
 		return
 	creer_batiment(type_batiment, faction, pos)
 	if faction == GameRules.PLAYER:
-		if type_batiment == "champ":
+		if type_batiment == "palissade":
+			pass  # pas de message à chaque segment
+		elif type_batiment == "champ":
 			EventBus.message.emit("Champ construit : envoyez des villageois pour le cultiver.")
 		else:
 			EventBus.message.emit("%s construit." % nom)

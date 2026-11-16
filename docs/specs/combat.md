@@ -8,7 +8,7 @@
 - Le combat sert à **protéger ou attaquer un troupeau**, pas à anéantir l'adversaire : la victoire reste le cheptel.
 - **Les unités meurent au combat** (décision du 16/11/2026) : à 0 PV, l'unité tombe, reste au sol 5 s puis disparaît,
   sans effet sanglant. Les **zébus ne sont jamais blessés ni tués**.
-- Les bâtiments ne peuvent pas encore être attaqués (palissade et sabotage : à venir).
+- Seules les **palissades** peuvent être attaquées (sabotage) ; les autres bâtiments pas encore.
 
 ## 2. Unités
 
@@ -23,7 +23,9 @@
 Dégâts par seconde : Dahalo 12, Lanceur ~5,6, Tireur ~8,6. Le Dahalo domine au contact ; le Tireur
 frappe fort et de loin, mais lentement : il doit être protégé.
 
-Tous sont formés à la Case centrale (touches 1 à 5 ou ligne « Former »). La Case des Hommes du GDD viendra ensuite.
+Villageois et Pisteurs sont formés à la Case centrale ; **Dahalo, Lanceur et Tireur à la Case des Hommes**
+(touches 1 à 5 ou ligne « Former »). La recherche **Sagaies acérées** donne +30 % de dégâts aux armes à sagaie.
+Les guerriers peuvent aussi **saboter les palissades** ennemies (voir `defense.md`).
 
 ## 3. Comportements
 
@@ -58,9 +60,9 @@ Villageois et pisteurs peuvent aussi être tués s'ils sont attaqués.
 | GDD | Prototype | Statut |
 |---|---|---|
 | Dahalo armé (sagaies, coupe-coupe) | Dahalo + Lanceur + Tireur | **Décidé** (16/11) : fusils via le Tsena |
-| « Sagaies acérées » (Âge 2) : + dégâts | Absente | À brancher sur `degats` |
+| « Sagaies acérées » (Âge 2) : + dégâts | +30 %, recherche à la Case des Hommes | **Fait** (sans âges) |
 | « Raid éclair » (Âge 3) : + vitesse en fuite | Absente | À brancher sur l'escorte |
-| Sabotage de palissades, infiltration | Absents | Avec la palissade |
+| Sabotage de palissades | Attaque des palissades ennemies | **Fait** (voir `defense.md`) |
 | Pénalité de vision la nuit | Vision ×0,6 la nuit (×0,9 Pisteur) | **Fait** (voir `vision.md`) |
 
 ## 7. Questions ouvertes
