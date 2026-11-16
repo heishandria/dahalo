@@ -105,12 +105,34 @@ func _gerer_raids(dahalos: Array) -> void:
 		if not d.est_inactif():
 			continue
 		var escorte: int = d.zebus_escortes.size()
+		if escorte == 0 and GameClock.est_nuit:
+			var proie = _enclos_a_piller()
+			if proie != null:
+				_cmd({"type": "piller", "unites": [d.id], "cible_id": proie.id})
+				continue
 		var cible = _zebu_cible(d)
 		if escorte > 0 and (escorte >= taille_raid or cible == null):
 			if enclos != null:
 				_cmd({"type": "deposer", "unites": [d.id], "cible_id": enclos.id})
 		elif cible != null:
 			_cmd({"type": "capturer", "unites": [d.id], "cible_id": cible.id})
+
+
+## La nuit, l'IA vise l'enclos adverse le mieux garni (pillage automatique).
+func _enclos_a_piller():
+	var meilleur = null
+	var max_zebus := 0
+	for e in get_tree().get_nodes_in_group("enclos"):
+		if e.faction == faction or not _valide(e):
+			continue
+		var n := 0
+		for z in get_tree().get_nodes_in_group("zebus"):
+			if z.enclos == e and z.etat == Zebu.Etat.ENCLOS:
+				n += 1
+		if n > max_zebus:
+			max_zebus = n
+			meilleur = e
+	return meilleur
 
 
 func _zebu_cible(dahalo):

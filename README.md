@@ -24,7 +24,7 @@ Squelette Godot 4 du RTS : premier prototype jouable **en solo contre une IA**, 
 | Action | Commande |
 |---|---|
 | Sélectionner | Clic gauche (Maj = ajouter), glisser = cadre |
-| Ordre contextuel | Clic droit : sur une ressource = récolter, sur un zébu = capturer (Dahalo), sur votre enclos = ramener le troupeau, sur le sol = déplacer |
+| Ordre contextuel | Clic droit : sur une ressource = récolter, sur un zébu = capturer (Dahalo), sur un **enclos rival = raid automatique** (jusqu'à 5 zébus puis retour), sur votre enclos = ramener le troupeau, sur le sol = déplacer |
 | Former | `1` Villageois · `2` Dahalo · `3` Pisteur (depuis la Case centrale) |
 | Construire un enclos | `E` sous la souris (100 bois) |
 | Caméra | ZQSD / WASD, flèches, bords de l'écran · molette = zoom |

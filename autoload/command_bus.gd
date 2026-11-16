@@ -9,6 +9,7 @@ extends Node
 ##   deplacer   : "unites": [ids], "cible": Vector3
 ##   recolter   : "unites": [ids], "cible_id": id d'un NoeudRessource
 ##   capturer   : "unites": [ids], "cible_id": id d'un Zebu
+##   piller     : "unites": [ids], "cible_id": id d'un enclos adverse (vol automatique, puis retour)
 ##   deposer    : "unites": [ids], "cible_id": id d'un Batiment
 ##   former     : "batiment": id, "unite": "villageois" | "dahalo" | "pisteur"
 ##   construire : "type_batiment": "enclos", "position": Vector3
@@ -40,7 +41,7 @@ func get_entite(id: int) -> Node:
 func emettre(cmd: Dictionary) -> void:
 	var faction: int = cmd.get("faction", -99)
 	match cmd.get("type", ""):
-		"deplacer", "recolter", "capturer", "deposer":
+		"deplacer", "recolter", "capturer", "piller", "deposer":
 			var rang := 0
 			for id in cmd.get("unites", []):
 				var u = get_entite(id)

@@ -268,6 +268,9 @@ func _ordre(pos: Vector2) -> void:
 	elif c is Zebu:
 		cmd["type"] = "capturer"
 		cmd["cible_id"] = c.id
+	elif c is Batiment and c.type_batiment == "enclos" and c.faction != GameRules.PLAYER:
+		cmd["type"] = "piller"
+		cmd["cible_id"] = c.id
 	elif c is Batiment and c.faction == GameRules.PLAYER:
 		cmd["type"] = "deposer"
 		cmd["cible_id"] = c.id

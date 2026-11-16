@@ -3,7 +3,7 @@ extends CharacterBody3D
 ## Unité du clan (villageois, pisteur, Dahalo). Le rôle vient de `data` (UnitData).
 ## Machine à états simple ; les ordres arrivent uniquement via executer(), appelé par CommandBus.
 
-enum Etat { INACTIF, DEPLACEMENT, VERS_RESSOURCE, RECOLTE, RETOUR_DEPOT, CAPTURE }
+enum Etat { INACTIF, DEPLACEMENT, VERS_RESSOURCE, RECOLTE, RETOUR_DEPOT, CAPTURE, PILLAGE }
 
 const DIST_RECOLTE := 2.2
 const DIST_DEPOT := 3.5
@@ -24,6 +24,7 @@ var _timer_recolte := 0.0
 # Raids
 var cible_zebu = null        # Zebu
 var zebus_escortes: Array = []
+var cible_enclos = null     # Batiment (enclos adverse) pendant un pillage
 
 @onready var agent: NavigationAgent3D = $NavigationAgent3D
 @onready var anneau: MeshInstance3D = $Anneau
@@ -72,6 +73,16 @@ func executer(cmd: Dictionary, rang: int = 0) -> void:
 				agent.target_position = z.global_position
 			else:
 				_deplacer_vers(z.global_position + _decalage(rang))
+		"piller":
+			var e = CommandBus.get_entite(cmd.get("cible_id", 0))
+			if e == null:
+				return
+			if data.peut_capturer:
+				cible_enclos = e
+				etat = Etat.PILLAGE
+				_prochain_zebu_a_piller()
+			else:
+				_deplacer_vers(e.global_position + _decalage(rang))
 		"deposer":
 			var b = CommandBus.get_entite(cmd.get("cible_id", 0))
 			if b == null:
@@ -138,6 +149,16 @@ func _physics_process(delta: float) -> void:
 			if _proche(_depot, DIST_DEPOT):
 				_deposer()
 				return
+		Etat.PILLAGE:
+			if not _valide(cible_zebu) or not cible_zebu.peut_etre_capture_par(faction):
+				_prochain_zebu_a_piller()
+				return
+			if _proche(cible_zebu, DIST_CAPTURE):
+				cible_zebu.suivre(self)
+				_prochain_zebu_a_piller()
+				return
+			if agent.target_position.distance_to(cible_zebu.global_position) > 1.0:
+				agent.target_position = cible_zebu.global_position
 		Etat.CAPTURE:
 			if not _valide(cible_zebu) or not cible_zebu.peut_etre_capture_par(faction):
 				_stop()
@@ -235,6 +256,38 @@ func _capturer(z) -> void:
 		EventBus.message.emit("Zébu capturé (%d/%d). Clic droit sur votre enclos pour le ramener."
 				% [zebus_escortes.size(), GameRules.MAX_ZEBUS_ESCORTE])
 	_stop()
+
+
+## Pillage : vide l'enclos adverse zébu par zébu, puis rentre seul à l'enclos du clan.
+func _prochain_zebu_a_piller() -> void:
+	if zebus_escortes.size() < GameRules.MAX_ZEBUS_ESCORTE and _valide(cible_enclos):
+		var dans_enclos := func(z) -> bool:
+			return z.etat == Zebu.Etat.ENCLOS and z.enclos == cible_enclos and z.peut_etre_capture_par(faction)
+		var proie = _plus_proche(get_tree().get_nodes_in_group("zebus"), dans_enclos)
+		if proie != null:
+			cible_zebu = proie
+			etat = Etat.PILLAGE
+			agent.target_position = proie.global_position
+			return
+	_ramener_troupeau()
+
+
+func _ramener_troupeau() -> void:
+	cible_enclos = null
+	cible_zebu = null
+	if zebus_escortes.is_empty():
+		if faction == GameRules.PLAYER:
+			EventBus.message.emit("Aucun zébu à prendre dans cet enclos.")
+		_stop()
+		return
+	var est_enclos := func(b) -> bool: return b.type_batiment == "enclos"
+	var maison = _plus_proche(get_tree().get_nodes_in_group("batiments_%d" % faction), est_enclos)
+	if maison == null:
+		_stop()
+		return
+	if faction == GameRules.PLAYER:
+		EventBus.message.emit("Raid réussi : %d zébus en route vers votre enclos !" % zebus_escortes.size())
+	_deplacer_vers(maison.global_position)
 
 
 # --- Utilitaires ---
