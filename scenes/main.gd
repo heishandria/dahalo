@@ -119,7 +119,10 @@ func construire(faction: int, type_batiment: String, pos: Vector3) -> void:
 		return
 	creer_batiment(type_batiment, faction, pos)
 	if faction == GameRules.PLAYER:
-		EventBus.message.emit("%s construit." % nom)
+		if type_batiment == "champ":
+			EventBus.message.emit("Champ construit : envoyez des villageois pour le cultiver.")
+		else:
+			EventBus.message.emit("%s construit." % nom)
 
 
 func _possede(faction: int, type_batiment: String) -> bool:

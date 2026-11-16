@@ -196,7 +196,12 @@ func _recolter(delta: float) -> void:
 	var perdue: bool = not _valide(cible_ressource) or cible_ressource.epuise()
 	if not perdue and not cible_ressource.disponible():
 		if cible_ressource.attendre_recolte():
-			return  # champ qui pousse : on patiente sur place
+			# Champ qui pousse : on dépose d'abord sa charge, puis on cultive (sans villageois, rien ne pousse).
+			if charge > 0.0:
+				_aller_deposer()
+			elif cible_ressource.has_method("cultiver"):
+				cible_ressource.cultiver(delta)
+			return
 		perdue = true  # arbre coupé (souche) : on cherche ailleurs
 	if perdue:
 		var voisine = _ressource_voisine(type_charge)

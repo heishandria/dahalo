@@ -31,6 +31,16 @@ shape = SubResource("Shape_champ")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
 mesh = SubResource("Mesh_terre")
 
+[node name="Etiquette" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+pixel_size = 0.01
+billboard = 1
+no_depth_test = true
+modulate = Color(1, 0.95, 0.8, 1)
+outline_size = 8
+font_size = 40
+text = "Champ"
+
 [node name="Culture" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
 mesh = SubResource("Mesh_culture")

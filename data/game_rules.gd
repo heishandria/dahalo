@@ -46,7 +46,8 @@ const NOMS_BATIMENTS := {
 }
 
 # --- Champs (maïs / sorgho) ---
-const CHAMP_POUSSE_S := 60.0
+const CHAMP_POUSSE_S := 60.0          # temps de culture pour UN villageois (2 villageois = 2× plus vite)
+const MAX_CULTIVATEURS := 3            # au-delà, les villageois en plus n'accélèrent plus la pousse
 const CHAMP_RECOLTE := 150.0
 const CHAMP_RESEMIS := {"bois": 15.0}
 const POUSSE_SECHERESSE := 0.5         # la sécheresse ralentit la pousse

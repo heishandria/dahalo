@@ -1,6 +1,6 @@
 # Spec — Économie : nourriture, eau, bois, Ariary, zébus
 
-> Statut : **prototype v0.3.1** (16/11/2026). Décrit ce qui est **réellement codé**.
+> Statut : **prototype v0.3.2** (16/11/2026). Décrit ce qui est **réellement codé**.
 > Le GDD donne la vision ; cette spec donne les règles et les chiffres en vigueur.
 > Valeurs : `data/game_rules.gd` et `data/units/*.tres`. Toute modification de ces fichiers met à jour cette page.
 
@@ -39,7 +39,7 @@ Prélevé en continu, uniquement pour les zébus **sécurisés en enclos** (pas 
 
 | Source | Type | Quantité | Récolte | Particularité |
 |---|---|---|---|---|
-| **Champ** (construit) | Nourriture | 150 par récolte | Normale | Pousse 60 s (120 s en sécheresse), voir §4 |
+| **Champ** (construit) | Nourriture | 150 par récolte | Normale | **Ne pousse que si des villageois le cultivent**, voir §4 |
 | **Raketa** (cactus, nature) | Nourriture | Infinie | ×0,6 | En sécheresse, chaque unité récoltée donne aussi **+0,5 eau** au clan |
 | **Point d'eau** (nature) | Eau | Infinie | Normale | ×0,3 en sécheresse, rétrécit à l'écran |
 | **Puits** (construit) | Eau | Infinie | Normale | ×0,6 en sécheresse ; réservé à son clan |
@@ -50,11 +50,16 @@ Les sources naturelles sont accessibles à tous les clans ; champs et puits seul
 
 ## 4. Champs (façon fermes d'Age of Empires)
 
-1. Construit par le joueur (bouton « Champ », 60 bois), il est **semé automatiquement** et pousse (vert → doré).
-2. **Mûr** : 150 nourriture à récolter. Les villageois envoyés sur un champ qui pousse **attendent sur place**.
-3. **Vide** : il est **resemé automatiquement pour 15 bois**. Sans bois, il passe **en friche** et réessaie
-   toutes les 2 s dès que le bois revient.
-4. La sécheresse divise la vitesse de pousse par 2.
+1. **Le joueur pose le champ** (bouton « Champ », 60 bois). Il est semé, mais **ne pousse pas tout seul**.
+2. **Culture** : il faut **envoyer des villageois dessus**. Chaque villageois présent fait avancer la pousse :
+   1 villageois = 60 s, 2 = 30 s, 3 = 20 s. Au-delà de **3**, les villageois en plus n'accélèrent plus.
+   La sécheresse divise la vitesse de culture par 2. Un villageois chargé va d'abord déposer, puis revient cultiver.
+3. **Mûr** (doré) : 150 nourriture. Les mêmes villageois **récoltent automatiquement**.
+4. **Vide** : il est **resemé automatiquement pour 15 bois** et repasse en culture : les villageois restés
+   sur le champ enchaînent (cultiver → récolter → déposer → cultiver…). Sans bois, il passe **en friche**
+   et réessaie toutes les 2 s dès que le bois revient.
+5. Une **étiquette** au-dessus du champ indique l'état : « En culture 40 % – 2 villageois », « Mûr : 150 nourriture »,
+   « En friche ».
 
 Chaque clan démarre avec **2 champs mûrs**.
 

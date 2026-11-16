@@ -1,6 +1,7 @@
 extends NoeudRessource
 ## Champ de maïs / sorgho (façon ferme d'Age of Empires). Spec : docs/specs/economie.md
-## Cycle : pousse -> mûr (récoltable) -> vide -> resemé automatiquement (bois) ou en friche.
+## Cycle : en culture -> mûr (récoltable) -> vide -> resemé automatiquement (bois) ou en friche.
+## Le champ ne pousse QUE si des villageois y travaillent (1 à 3 ; chacun accélère la pousse).
 
 enum EtatChamp { POUSSE, MUR, FRICHE }
 
@@ -11,9 +12,12 @@ const DORE := Color(0.9, 0.75, 0.3)
 var etat_champ := EtatChamp.POUSSE
 var croissance := 0.0          # 0 -> 1
 var _chrono_resemis := 0.0
+var _cultivateurs_ce_tour := 0
+var nb_cultivateurs := 0       # villageois qui ont travaillé au dernier tour physique
 var _materiau_culture := StandardMaterial3D.new()
 
 @onready var culture: MeshInstance3D = $Culture
+@onready var etiquette: Label3D = $Etiquette
 
 
 func _ready() -> void:
@@ -28,19 +32,33 @@ func _ready() -> void:
 	_maj_visuel()
 
 
+func _physics_process(_delta: float) -> void:
+	nb_cultivateurs = _cultivateurs_ce_tour
+	_cultivateurs_ce_tour = 0
+
+
 func _process(delta: float) -> void:
 	match etat_champ:
-		EtatChamp.POUSSE:
-			var vitesse := GameRules.POUSSE_SECHERESSE if GameClock.secheresse else 1.0
-			croissance = minf(1.0, croissance + delta * vitesse / GameRules.CHAMP_POUSSE_S)
-			if croissance >= 1.0:
-				_murir()
+		EtatChamp.POUSSE, EtatChamp.MUR:
 			_maj_visuel()
 		EtatChamp.FRICHE:
 			_chrono_resemis += delta
 			if _chrono_resemis >= INTERVALLE_RESEMIS:
 				_chrono_resemis = 0.0
 				_essayer_resemer(false)
+
+
+## Appelé chaque tour par un villageois qui travaille sur le champ en culture.
+func cultiver(delta: float) -> void:
+	if etat_champ != EtatChamp.POUSSE:
+		return
+	_cultivateurs_ce_tour += 1
+	if _cultivateurs_ce_tour > GameRules.MAX_CULTIVATEURS:
+		return
+	var vitesse := GameRules.POUSSE_SECHERESSE if GameClock.secheresse else 1.0
+	croissance = minf(1.0, croissance + delta * vitesse / GameRules.CHAMP_POUSSE_S)
+	if croissance >= 1.0:
+		_murir()
 
 
 func disponible() -> bool:
@@ -87,3 +105,15 @@ func _maj_visuel() -> void:
 	culture.scale = Vector3(1.0, hauteur, 1.0)
 	culture.position.y = 0.6 * hauteur * 0.5
 	_materiau_culture.albedo_color = DORE if etat_champ == EtatChamp.MUR else VERT.lerp(DORE, croissance * 0.5)
+	if etiquette == null:
+		return
+	match etat_champ:
+		EtatChamp.POUSSE:
+			if nb_cultivateurs == 0:
+				etiquette.text = "En culture %d %%\nEnvoyez des villageois" % int(croissance * 100.0)
+			else:
+				etiquette.text = "En culture %d %%\n%d villageois" % [int(croissance * 100.0), mini(nb_cultivateurs, GameRules.MAX_CULTIVATEURS)]
+		EtatChamp.MUR:
+			etiquette.text = "Mûr : %d nourriture" % int(quantite)
+		EtatChamp.FRICHE:
+			etiquette.text = "En friche (%s)" % ResourceManager.texte_cout(GameRules.CHAMP_RESEMIS)
