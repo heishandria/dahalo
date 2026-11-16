@@ -6,9 +6,9 @@ extends CanvasLayer
 @onready var selection_mgr = $Selection
 
 const TAILLE_BOUTON := Vector2(124, 54)
-const AIDE_PC := "Clic gauche : sélectionner (glisser = cadre)  |  Clic droit : récolter, capturer, ramener à l'enclos, déplacer\n" \
-		+ "1/2/3 : former  |  E : enclos sous la souris  |  ZQSD / flèches / bords : caméra  |  Molette : zoom"
-const AIDE_TACTILE := "Touchez une unité puis une cible (ressource, zébu, enclos, sol)  |  Glisser : caméra  |  Pincer : zoom"
+const AIDE_PC := "Clic gauche : sélectionner (glisser = cadre)  |  Clic droit : attaquer, récolter, capturer, piller, ramener à l'enclos, déplacer\n" \
+		+ "1 à 5 : former  |  E : enclos sous la souris  |  ZQSD / flèches / bords : caméra  |  Molette : zoom"
+const AIDE_TACTILE := "Touchez une unité puis une cible (ennemi, ressource, zébu, enclos, sol)  |  Glisser : caméra  |  Pincer : zoom"
 
 var _barre: Label
 var _info: Label
@@ -150,6 +150,7 @@ func _construire_ui() -> void:
 	lignes.add_child(_ligne_boutons("Choisir", [
 		["Villageois", selection_mgr.selectionner_type.bind("villageois")],
 		["Dahalo", selection_mgr.selectionner_type.bind("dahalo")],
+		["Guerriers", selection_mgr.selectionner_type.bind("guerriers")],
 		["Pisteur", selection_mgr.selectionner_type.bind("pisteur")],
 		["Aucun", selection_mgr.annuler],
 	]))
@@ -157,6 +158,8 @@ func _construire_ui() -> void:
 		["+ Villageois", selection_mgr.former.bind("villageois")],
 		["+ Dahalo", selection_mgr.former.bind("dahalo")],
 		["+ Pisteur", selection_mgr.former.bind("pisteur")],
+		["+ Lanceur", selection_mgr.former.bind("lanceur")],
+		["+ Tireur", selection_mgr.former.bind("tireur")],
 	]))
 	var batiments := [["enclos", "Enclos"], ["champ", "Champ"], ["camp_bois", "Camp bois"],
 			["puits", "Puits"], ["tsena", "Tsena"]]

@@ -1,13 +1,17 @@
 class_name Unite
 extends CharacterBody3D
-## Unité du clan (villageois, pisteur, Dahalo). Le rôle vient de `data` (UnitData).
+## Unité du clan (villageois, pisteur, Dahalo, lanceur, tireur). Le rôle vient de `data` (UnitData).
+## Combat : une unité à 0 PV n'est pas tuée, elle est « hors de combat » : elle lâche son troupeau,
+## rentre blessée au village et quitte la partie (spec : docs/specs/combat.md).
 ## Machine à états simple ; les ordres arrivent uniquement via executer(), appelé par CommandBus.
 
-enum Etat { INACTIF, DEPLACEMENT, VERS_RESSOURCE, RECOLTE, RETOUR_DEPOT, CAPTURE, PILLAGE }
+enum Etat { INACTIF, DEPLACEMENT, VERS_RESSOURCE, RECOLTE, RETOUR_DEPOT, CAPTURE, PILLAGE, ATTAQUE, HORS_COMBAT }
 
 const DIST_RECOLTE := 2.2
 const DIST_DEPOT := 3.5
 const DIST_CAPTURE := 2.0
+const INTERVALLE_GUET := 0.5     # fréquence de recherche d'ennemis quand l'unité est inactive
+const PORTEE_DISTANCE := 3.0     # au-delà, l'attaque est à distance (trait visible)
 
 @export var data: UnitData
 var faction := GameRules.PLAYER
@@ -26,10 +30,19 @@ var cible_zebu = null        # Zebu
 var zebus_escortes: Array = []
 var cible_enclos = null     # Batiment (enclos adverse) pendant un pillage
 
+# Combat
+var pv := 1.0
+var hors_combat := false
+var cible_attaque = null     # Unite ennemie
+var _recharge := 0.0
+var _chrono_guet := 0.0
+var _materiau_barre := StandardMaterial3D.new()
+
 @onready var agent: NavigationAgent3D = $NavigationAgent3D
 @onready var anneau: MeshInstance3D = $Anneau
 @onready var corps: MeshInstance3D = $Corps
 @onready var tete: MeshInstance3D = $Tete
+@onready var barre_vie: MeshInstance3D = $BarreVie
 
 
 func _ready() -> void:
@@ -45,12 +58,32 @@ func _ready() -> void:
 	mt.albedo_color = GameRules.couleur_faction(faction)
 	tete.material_override = mt
 
+	pv = data.pv
+	_materiau_barre.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_materiau_barre.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	_materiau_barre.billboard_keep_scale = true
+	_materiau_barre.no_depth_test = true
+	barre_vie.material_override = _materiau_barre
+	_maj_barre_vie()
+	if data.arme == "fusil":
+		_ajouter_fusil()
+
 
 
 # --- API publique ---
 
 func executer(cmd: Dictionary, rang: int = 0) -> void:
+	if hors_combat:
+		return
 	match cmd.get("type", ""):
+		"attaquer":
+			var ennemi = CommandBus.get_entite(cmd.get("cible_id", 0))
+			if ennemi == null:
+				return
+			if est_combattant():
+				attaquer(ennemi)
+			else:
+				_deplacer_vers(ennemi.global_position + _decalage(rang))
 		"deplacer":
 			_deplacer_vers(cmd.get("cible", global_position) + _decalage(rang))
 		"recolter":
@@ -94,7 +127,33 @@ func executer(cmd: Dictionary, rang: int = 0) -> void:
 
 
 func set_selectionne(valeur: bool) -> void:
-	anneau.visible = valeur
+	anneau.visible = valeur and not hors_combat
+
+
+func est_combattant() -> bool:
+	return data.degats > 0.0
+
+
+func attaquer(ennemi) -> void:
+	if not _ennemi_valide(ennemi):
+		return
+	cible_attaque = ennemi
+	etat = Etat.ATTAQUE
+	agent.target_position = ennemi.global_position
+
+
+## Reçoit des dégâts. À 0 PV : hors de combat (jamais de mort à l'écran).
+func subir(degats: float, attaquant) -> void:
+	if hors_combat:
+		return
+	pv -= degats
+	_maj_barre_vie()
+	if pv <= 0.0:
+		_mettre_hors_combat()
+		return
+	# Riposte si l'unité n'était pas déjà occupée à se battre.
+	if est_combattant() and etat != Etat.ATTAQUE and _ennemi_valide(attaquant) and zebus_escortes.is_empty():
+		attaquer(attaquant)
 
 
 func est_inactif() -> bool:
@@ -128,9 +187,32 @@ func aller_recolter(r) -> void:
 # --- Boucle ---
 
 func _physics_process(delta: float) -> void:
+	_recharge = maxf(0.0, _recharge - delta)
 	match etat:
 		Etat.INACTIF:
+			_guetter(delta)
 			return
+		Etat.HORS_COMBAT:
+			if not _valide(_depot) or _proche(_depot, DIST_DEPOT):
+				queue_free()  # rentré au village : l'unité quitte la partie
+				return
+		Etat.ATTAQUE:
+			if not _ennemi_valide(cible_attaque):
+				cible_attaque = null
+				_stop()
+				return
+			var distance := global_position.distance_to(cible_attaque.global_position)
+			if distance <= data.portee:
+				velocity = Vector3.ZERO
+				var vers: Vector3 = cible_attaque.global_position - global_position
+				vers.y = 0.0
+				if vers.length() > 0.05:
+					look_at(global_position + vers.normalized(), Vector3.UP)
+				if _recharge <= 0.0:
+					_frapper(cible_attaque)
+				return
+			if agent.target_position.distance_to(cible_attaque.global_position) > 1.0:
+				agent.target_position = cible_attaque.global_position
 		Etat.RECOLTE:
 			_recolter(delta)
 			return
@@ -308,6 +390,100 @@ func _ramener_troupeau() -> void:
 	if faction == GameRules.PLAYER:
 		EventBus.message.emit("Raid réussi : %d zébus en route vers votre enclos !" % zebus_escortes.size())
 	_deplacer_vers(maison.global_position)
+
+
+# --- Combat ---
+
+func _guetter(delta: float) -> void:
+	if not est_combattant():
+		return
+	_chrono_guet += delta
+	if _chrono_guet < INTERVALLE_GUET:
+		return
+	_chrono_guet = 0.0
+	var f := faction
+	var ennemi_proche := func(u) -> bool:
+		return u.faction != f and not u.hors_combat
+	var ennemi = _plus_proche(get_tree().get_nodes_in_group("unites"), ennemi_proche)
+	if ennemi != null and global_position.distance_to(ennemi.global_position) <= data.vision:
+		attaquer(ennemi)
+
+
+func _frapper(ennemi) -> void:
+	_recharge = data.cadence
+	if data.portee > PORTEE_DISTANCE:
+		_tracer_vers(ennemi.global_position)
+	ennemi.subir(data.degats, self)
+
+
+func _mettre_hors_combat() -> void:
+	hors_combat = true
+	etat = Etat.HORS_COMBAT
+	cible_attaque = null
+	cible_zebu = null
+	cible_enclos = null
+	# Le troupeau escorté est lâché sur place : il redevient sauvage et peut être repris.
+	for z in zebus_escortes.duplicate():
+		if is_instance_valid(z):
+			z.liberer()
+	zebus_escortes.clear()
+	remove_from_group("unites")
+	remove_from_group("unites_%d" % faction)
+	collision_layer = 0
+	anneau.visible = false
+	barre_vie.visible = false
+	var mat_corps := corps.material_override as StandardMaterial3D
+	if mat_corps:
+		mat_corps.albedo_color = data.couleur.darkened(0.5)
+	if faction == GameRules.PLAYER:
+		EventBus.message.emit("%s blessé : il rentre au village." % data.nom)
+	var est_case := func(b) -> bool: return b.type_batiment == "case_centrale"
+	_depot = _plus_proche(get_tree().get_nodes_in_group("batiments_%d" % faction), est_case)
+	if _depot == null:
+		queue_free()
+		return
+	agent.target_position = _depot.global_position
+
+
+func _ennemi_valide(u) -> bool:
+	return _valide(u) and u is Unite and u.faction != faction and not u.hors_combat
+
+
+func _maj_barre_vie() -> void:
+	var ratio := clampf(pv / maxf(float(data.pv), 1.0), 0.0, 1.0)
+	barre_vie.visible = ratio < 1.0 and not hors_combat
+	barre_vie.scale = Vector3(ratio, 1.0, 1.0)
+	_materiau_barre.albedo_color = Color(0.9, 0.2, 0.15).lerp(Color(0.3, 0.9, 0.3), ratio)
+
+
+## Trait bref entre le tireur et sa cible (sagaie lancée ou coup de fusil).
+func _tracer_vers(cible: Vector3) -> void:
+	var depart := global_position + Vector3(0.0, 1.4, 0.0)
+	var arrivee := cible + Vector3(0.0, 1.0, 0.0)
+	var trait := MeshInstance3D.new()
+	var maillage := BoxMesh.new()
+	maillage.size = Vector3(0.05, 0.05, depart.distance_to(arrivee))
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(1.0, 0.9, 0.5) if data.arme == "fusil" else Color(0.55, 0.4, 0.25)
+	maillage.material = mat
+	trait.mesh = maillage
+	get_tree().current_scene.add_child(trait)
+	trait.global_position = (depart + arrivee) * 0.5
+	trait.look_at(arrivee, Vector3.UP)
+	get_tree().create_timer(0.12 if data.arme == "fusil" else 0.25).timeout.connect(trait.queue_free)
+
+
+func _ajouter_fusil() -> void:
+	var fusil := MeshInstance3D.new()
+	var maillage := BoxMesh.new()
+	maillage.size = Vector3(0.08, 0.08, 1.1)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.2, 0.18, 0.15)
+	maillage.material = mat
+	fusil.mesh = maillage
+	fusil.position = Vector3(0.35, 1.2, -0.3)
+	add_child(fusil)
 
 
 # --- Utilitaires ---

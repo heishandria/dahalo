@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scenes/units/unite.gd" id="1_unite"]
 
@@ -22,6 +22,9 @@ outer_radius = 0.78
 shading_mode = 0
 albedo_color = Color(0.35, 1, 0.45, 1)
 
+[sub_resource type="QuadMesh" id="Mesh_barre"]
+size = Vector2(1.2, 0.14)
+
 [node name="Unite" type="CharacterBody3D"]
 collision_layer = 2
 collision_mask = 0
@@ -44,6 +47,10 @@ mesh = SubResource("Mesh_tete")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
 mesh = SubResource("Mesh_anneau")
 surface_material_override/0 = SubResource("Mat_anneau")
+
+[node name="BarreVie" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, 0)
+mesh = SubResource("Mesh_barre")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 0.6

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="UnitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/unit_data.gd" id="1_data"]
+
+[resource]
+script = ExtResource("1_data")
+nom = "Lanceur de sagaies"
+role = "lanceur"
+vitesse = 6.0
+pv = 70
+vision = 14.0
+peut_recolter = false
+peut_capturer = false
+arme = "sagaie_jet"
+degats = 9.0
+portee = 9.0
+cadence = 1.6
+cout = {"nourriture": 50.0, "bois": 25.0}
+temps_formation = 10.0
+couleur = Color(0.62, 0.42, 0.2, 1)

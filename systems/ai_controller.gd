@@ -9,6 +9,8 @@ extends Node
 @export var intervalle := 1.5
 @export var villageois_max := 9
 @export var dahalo_max := 3
+@export var lanceurs_max := 2
+@export var rayon_defense := 22.0
 @export var taille_raid := 3
 
 const OBJECTIFS := {"bois": 250.0, "eau": 200.0, "nourriture": 250.0}
@@ -35,14 +37,22 @@ func _reflechir() -> void:
 		return
 	var villageois: Array = []
 	var dahalos: Array = []
+	var combattants: Array = []
+	var nb_lanceurs := 0
 	for u in get_tree().get_nodes_in_group("unites_%d" % faction):
 		match u.data.role:
 			"villageois":
 				villageois.append(u)
 			"dahalo":
 				dahalos.append(u)
+			"lanceur":
+				nb_lanceurs += 1
+		if u.est_combattant():
+			combattants.append(u)
+	if _defendre(case, combattants):
+		dahalos = []  # tout le monde est mobilisé pour la défense ce tour-ci
 	_gerer_economie(villageois)
-	_gerer_formation(case, villageois.size(), dahalos.size())
+	_gerer_formation(case, villageois.size(), dahalos.size(), nb_lanceurs)
 	_gerer_enclos(case)
 	_gerer_champs(case, villageois.size())
 	_gerer_raids(dahalos)
@@ -86,7 +96,7 @@ func _type_prioritaire(affectes: Dictionary) -> String:
 
 # --- Formation et enclos ---
 
-func _gerer_formation(case, nb_villageois: int, nb_dahalos: int) -> void:
+func _gerer_formation(case, nb_villageois: int, nb_dahalos: int, nb_lanceurs: int) -> void:
 	if case.en_formation > 0:
 		return
 	var monde = CommandBus.monde
@@ -94,6 +104,8 @@ func _gerer_formation(case, nb_villageois: int, nb_dahalos: int) -> void:
 		_cmd({"type": "former", "batiment": case.id, "unite": "villageois"})
 	elif nb_dahalos < dahalo_max and ResourceManager.peut_payer(faction, monde.donnees_unite("dahalo").cout):
 		_cmd({"type": "former", "batiment": case.id, "unite": "dahalo"})
+	elif nb_lanceurs < lanceurs_max and ResourceManager.peut_payer(faction, monde.donnees_unite("lanceur").cout):
+		_cmd({"type": "former", "batiment": case.id, "unite": "lanceur"})
 
 
 func _gerer_enclos(case) -> void:
@@ -127,6 +139,34 @@ func _sources_recoltables(type: String) -> Array:
 				and (n.disponible() or n.attendre_recolte()):
 			sources.append(n)
 	return sources
+
+
+# --- Défense ---
+
+## Si des unités ennemies approchent du village ou des enclos, tous les guerriers
+## (sauf ceux qui escortent un troupeau) attaquent l'intrus le plus proche.
+func _defendre(case, combattants: Array) -> bool:
+	var points: Array = [case.global_position]
+	for e in get_tree().get_nodes_in_group("enclos"):
+		if e.faction == faction:
+			points.append(e.global_position)
+	var intrus: Array = []
+	for u in get_tree().get_nodes_in_group("unites"):
+		if u.faction == faction:
+			continue
+		for p in points:
+			if u.global_position.distance_to(p) <= rayon_defense:
+				intrus.append(u)
+				break
+	if intrus.is_empty():
+		return false
+	for c in combattants:
+		if not c.zebus_escortes.is_empty() or (c.etat == Unite.Etat.ATTAQUE and c.cible_attaque in intrus):
+			continue
+		var cible = _plus_proche(c.global_position, intrus)
+		if cible != null:
+			_cmd({"type": "attaquer", "unites": [c.id], "cible_id": cible.id})
+	return true
 
 
 # --- Raids ---

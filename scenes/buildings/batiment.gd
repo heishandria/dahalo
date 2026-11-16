@@ -39,9 +39,14 @@ func former(role: String) -> void:
 	var data: UnitData = CommandBus.monde.donnees_unite(role)
 	if data == null:
 		return
+	if data.requiert != "" and not CommandBus.monde.possede(faction, data.requiert):
+		if faction == GameRules.PLAYER:
+			var nom: String = GameRules.NOMS_BATIMENTS.get(data.requiert, data.requiert)
+			EventBus.message.emit("%s : il faut d'abord un %s (les fusils s'achètent aux marchands)." % [data.nom, nom])
+		return
 	if not ResourceManager.payer(faction, data.cout):
 		if faction == GameRules.PLAYER:
-			EventBus.message.emit("Ressources insuffisantes pour former : %s" % data.nom)
+			EventBus.message.emit("%s : il faut %s." % [data.nom, ResourceManager.texte_cout(data.cout)])
 		return
 	if faction == GameRules.PLAYER:
 		EventBus.message.emit("Formation en cours : %s (%d s)" % [data.nom, int(data.temps_formation)])

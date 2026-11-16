@@ -95,6 +95,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		former("dahalo")
 	elif event.is_action_pressed("former_pisteur"):
 		former("pisteur")
+	elif event.is_action_pressed("former_lanceur"):
+		former("lanceur")
+	elif event.is_action_pressed("former_tireur"):
+		former("tireur")
 	elif event.is_action_pressed("construire_enclos"):
 		_construire_sous_souris("enclos")
 	elif event.is_action_pressed("annuler"):
@@ -110,10 +114,11 @@ func _draw() -> void:
 
 # --- API utilisée par le HUD (boutons) ---
 
+## role = "guerriers" sélectionne toutes les unités qui combattent.
 func selectionner_type(role: String) -> void:
 	_vider()
 	for u in get_tree().get_nodes_in_group("unites_%d" % GameRules.PLAYER):
-		if u.data.role == role:
+		if u.data.role == role or (role == "guerriers" and u.est_combattant()):
 			_ajouter(u)
 	selection_changee.emit(selection)
 
@@ -268,7 +273,10 @@ func _ordre(pos: Vector2) -> void:
 	var ids: Array = selection.map(func(u) -> int: return u.id)
 	var c = hit.collider
 	var cmd := {"faction": GameRules.PLAYER, "unites": ids}
-	if c is NoeudRessource:
+	if c is Unite and c.faction != GameRules.PLAYER:
+		cmd["type"] = "attaquer"
+		cmd["cible_id"] = c.id
+	elif c is NoeudRessource:
 		cmd["type"] = "recolter"
 		cmd["cible_id"] = c.id
 	elif c is Zebu:

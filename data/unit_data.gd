@@ -4,7 +4,7 @@ extends Resource
 ## Pour équilibrer le jeu, modifier les .tres plutôt que le code.
 
 @export var nom := "Villageois"
-@export_enum("villageois", "pisteur", "dahalo") var role: String = "villageois"
+@export_enum("villageois", "pisteur", "dahalo", "lanceur", "tireur") var role: String = "villageois"
 @export var vitesse := 5.0
 @export var pv := 50
 @export var vision := 12.0
@@ -12,10 +12,16 @@ extends Resource
 @export var peut_recolter := true
 @export var capacite := 10.0
 @export var vitesse_recolte := 2.0   # unités de ressource par seconde
+@export_group("Combat")
+@export var arme := ""               # "sagaie", "sagaie_jet", "fusil"… (affichage, effets)
+@export var degats := 0.0            # 0 = ne combat pas
+@export var portee := 1.8            # > 3 m = attaque à distance
+@export var cadence := 1.0           # secondes entre deux attaques
 @export_group("Raids")
 @export var peut_capturer := false
 @export_group("Formation")
 @export var cout := {}
 @export var temps_formation := 6.0
+@export var requiert := ""           # bâtiment nécessaire pour former l'unité (ex. "tsena" pour les fusils)
 @export_group("Visuel")
 @export var couleur := Color(0.85, 0.72, 0.55)

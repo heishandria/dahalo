@@ -17,6 +17,8 @@ const DONNEES_UNITES := {
 	"villageois": preload("res://data/units/villageois.tres"),
 	"pisteur": preload("res://data/units/pisteur.tres"),
 	"dahalo": preload("res://data/units/dahalo.tres"),
+	"lanceur": preload("res://data/units/lanceur.tres"),
+	"tireur": preload("res://data/units/tireur.tres"),
 }
 const LIMITE_CARTE := 56.0
 
@@ -108,7 +110,7 @@ func construire(faction: int, type_batiment: String, pos: Vector3) -> void:
 	if not GameRules.COUTS_BATIMENTS.has(type_batiment):
 		return
 	var nom: String = GameRules.NOMS_BATIMENTS.get(type_batiment, type_batiment)
-	if type_batiment == "tsena" and _possede(faction, "tsena"):
+	if type_batiment == "tsena" and possede(faction, "tsena"):
 		if faction == GameRules.PLAYER:
 			EventBus.message.emit("Votre clan a déjà un Tsena.")
 		return
@@ -125,7 +127,7 @@ func construire(faction: int, type_batiment: String, pos: Vector3) -> void:
 			EventBus.message.emit("%s construit." % nom)
 
 
-func _possede(faction: int, type_batiment: String) -> bool:
+func possede(faction: int, type_batiment: String) -> bool:
 	for b in get_tree().get_nodes_in_group(type_batiment):
 		if b.faction == faction:
 			return true

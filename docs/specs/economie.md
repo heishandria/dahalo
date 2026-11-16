@@ -1,6 +1,6 @@
 # Spec — Économie : nourriture, eau, bois, Ariary, zébus
 
-> Statut : **prototype v0.3.2** (16/11/2026). Décrit ce qui est **réellement codé**.
+> Statut : **prototype v0.4** (16/11/2026). Décrit ce qui est **réellement codé**.
 > Le GDD donne la vision ; cette spec donne les règles et les chiffres en vigueur.
 > Valeurs : `data/game_rules.gd` et `data/units/*.tres`. Toute modification de ces fichiers met à jour cette page.
 
@@ -84,7 +84,9 @@ Chaque clan démarre avec **2 champs mûrs**.
 | Tsena | 150 bois (1 par clan) | Marché : vente de zébus, achats |
 | Villageois | 50 nourriture, 6 s | Récolte |
 | Pisteur | 40 nourriture + 10 bois, 8 s | Unité rapide (vision : à venir) |
-| Dahalo armé | 60 nourriture + 20 bois, 10 s | Capture, escorte, raids |
+| Dahalo armé | 60 nourriture + 20 bois, 10 s | Capture, escorte, raids, combat au contact |
+| Lanceur de sagaies | 50 nourriture + 25 bois, 10 s | Combat à distance (voir `combat.md`) |
+| Tireur (fusil) | 60 nourriture + 20 bois + 60 Ar, 14 s | Nécessite un Tsena (voir `combat.md`) |
 
 Construction immédiate, sans prévisualisation ni contrôle de chevauchement (à venir).
 

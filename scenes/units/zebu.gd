@@ -98,6 +98,11 @@ func fuir() -> void:
 	_maj_marque()
 
 
+## Lâché par son escorte (Dahalo mis hors de combat) : redevient sauvage sur place.
+func liberer() -> void:
+	_relacher()
+
+
 func _relacher() -> void:
 	etat = Etat.SAUVAGE
 	meneur = null

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="UnitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/unit_data.gd" id="1_data"]
+
+[resource]
+script = ExtResource("1_data")
+nom = "Tireur (fusil de traite)"
+role = "tireur"
+vitesse = 5.5
+pv = 80
+vision = 18.0
+peut_recolter = false
+peut_capturer = false
+arme = "fusil"
+degats = 30.0
+portee = 15.0
+cadence = 3.5
+cout = {"nourriture": 60.0, "bois": 20.0, "ariary": 60.0}
+temps_formation = 14.0
+requiert = "tsena"
+couleur = Color(0.3, 0.28, 0.25, 1)

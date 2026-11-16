@@ -10,6 +10,8 @@ func _ready() -> void:
 	_touche("former_villageois", [KEY_1, KEY_KP_1])
 	_touche("former_dahalo", [KEY_2, KEY_KP_2])
 	_touche("former_pisteur", [KEY_3, KEY_KP_3])
+	_touche("former_lanceur", [KEY_4, KEY_KP_4])
+	_touche("former_tireur", [KEY_5, KEY_KP_5])
 	_touche("construire_enclos", [KEY_E])
 	_touche("annuler", [KEY_ESCAPE])
 
