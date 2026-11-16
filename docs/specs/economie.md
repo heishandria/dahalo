@@ -88,9 +88,9 @@ Chaque clan démarre avec **2 champs mûrs**.
 | Pisteur | 40 nourriture + 10 bois, 8 s | Unité rapide (vision : à venir) |
 | Dahalo armé | 60 nourriture + 20 bois, 10 s | Capture, escorte, raids, combat au contact |
 | Lanceur de sagaies | 50 nourriture + 25 bois, 10 s | Combat à distance (voir `combat.md`) |
-| Tireur (fusil) | 60 nourriture + 20 bois + 60 Ar, 14 s | Nécessite un Tsena (voir `combat.md`) |
+| Tireur (fusil) | 60 nourriture + 20 bois + 60 Ar, 14 s | Âge 2 + Tsena (voir `combat.md`) |
 
-Construction immédiate, sans prévisualisation ni contrôle de chevauchement (à venir).
+Construction immédiate, avec aperçu et refus des emplacements occupés (voir `interface.md`).
 
 ## 7. Tsena (marché) et Ariary
 
@@ -142,5 +142,4 @@ quelques zébus pour financer ses âges (voir `ages.md`). **Pas encore** de puit
 
 1. Caravanes de marchands à intervalles (fenêtres de vente) plutôt qu'un Tsena toujours ouvert ?
 2. Plafonner les stocks (greniers, citernes) pour forcer des choix ?
-3. Achat de zébus reproducteurs au Tsena (GDD Âge 3) : prix ?
-4. Pierre à l'Âge 2 pour les constructions avancées ?
+3. Pierre à l'Âge 2 pour les constructions avancées ?

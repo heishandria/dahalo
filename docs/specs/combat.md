@@ -53,7 +53,7 @@ Villageois et pisteurs peuvent aussi être tués s'ils sont attaqués.
 
 - **Défense** : si une unité ennemie approche à moins de 22 m de sa Case centrale ou d'un de ses enclos,
   tous ses guerriers (sauf ceux qui escortent) attaquent l'intrus le plus proche.
-- **Armée** : jusqu'à 3 Dahalo et 2 Lanceurs. **Pas de Tireurs** (l'IA ne construit pas encore de Tsena).
+- **Armée** : jusqu'à 3 Dahalo et 2 Lanceurs. **Pas encore de Tireurs** (elle a un Tsena, mais ne les forme pas).
 
 ## 6. Écarts avec le GDD
 
