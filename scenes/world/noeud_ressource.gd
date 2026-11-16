@@ -5,9 +5,10 @@ extends StaticBody3D
 ##  - construite (appartient à un clan) : puits (eau) ; les champs héritent de ce script (champ.gd)
 
 const VARIANTES := {
-	"epineux": {"type": "bois", "noeud": "Epineux"},
-	"point_eau": {"type": "eau", "noeud": "PointEau"},
-	"raketa": {"type": "nourriture", "noeud": "Raketa"},
+	# calque 8 = obstacle contourné par le calcul de chemin ; 16 = obstacle physique seulement
+	"epineux": {"type": "bois", "noeud": "Epineux", "calque": 16, "rayon": 0.45},
+	"point_eau": {"type": "eau", "noeud": "PointEau", "calque": 8, "rayon": 1.0},
+	"raketa": {"type": "nourriture", "noeud": "Raketa", "calque": 16, "rayon": 0.6},
 }
 
 @export var variante := ""        # pour les sources naturelles : clé de VARIANTES
@@ -30,6 +31,7 @@ var _chrono_repousse := 0.0
 func _ready() -> void:
 	if variante != "" and VARIANTES.has(variante):
 		type_ressource = VARIANTES[variante]["type"]
+		_configurer_obstacle()
 	for v in VARIANTES:
 		var n := get_node_or_null(String(VARIANTES[v]["noeud"])) as Node3D
 		if n:
@@ -113,15 +115,29 @@ func _sur_epuisement() -> void:
 		queue_free()
 
 
+## Collision « physique » de la source (les unités butent dessus) selon sa variante.
+func _configurer_obstacle() -> void:
+	var obstacle := get_node_or_null("Obstacle") as StaticBody3D
+	var forme := get_node_or_null("Obstacle/Forme") as CollisionShape3D
+	if obstacle == null or forme == null:
+		return
+	obstacle.collision_layer = int(VARIANTES[variante]["calque"])
+	var cylindre := CylinderShape3D.new()
+	cylindre.radius = float(VARIANTES[variante]["rayon"])
+	cylindre.height = 3.0
+	forme.shape = cylindre
+
+
 func _maj_visuel_repousse() -> void:
-	# Arbre abattu : il disparaît complètement (plus cliquable) jusqu'à la repousse.
+	# Arbre abattu : il disparaît complètement (plus cliquable, plus d'obstacle) jusqu'à la repousse.
 	var arbre := get_node_or_null("Epineux") as Node3D
 	if arbre == null or variante != "epineux":
 		return
 	arbre.visible = not en_repousse
-	var collision := get_node_or_null("Collision") as CollisionShape3D
-	if collision:
-		collision.set_deferred("disabled", en_repousse)
+	for chemin in ["Collision", "Obstacle/Forme"]:
+		var collision := get_node_or_null(chemin) as CollisionShape3D
+		if collision:
+			collision.set_deferred("disabled", en_repousse)
 	_maj_visuel_arbre()
 
 

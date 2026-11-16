@@ -5,7 +5,7 @@ render_mode unshaded, cull_disabled, depth_draw_never, shadows_disabled;
 
 uniform sampler2D carte_vision : filter_linear;
 uniform float demi_carte = 60.0;
-uniform float opacite_exploree = 0.55;
+uniform float opacite_exploree = 0.45;
 
 void fragment() {
 	vec3 monde = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -13,6 +13,6 @@ void fragment() {
 	vec4 v = texture(carte_vision, uv);
 	float alpha = mix(1.0, opacite_exploree, v.g);   // inexploré : noir ; exploré : assombri
 	alpha = mix(alpha, 0.0, v.r);                     // visible : clair
-	ALBEDO = vec3(0.02, 0.02, 0.04);
+	ALBEDO = vec3(0.05, 0.035, 0.03);   // brun très sombre, neutre de jour comme de nuit
 	ALPHA = alpha;
 }

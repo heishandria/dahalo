@@ -29,7 +29,7 @@ size = Vector2(1.2, 0.14)
 
 [node name="Unite" type="CharacterBody3D"]
 collision_layer = 2
-collision_mask = 0
+collision_mask = 24
 motion_mode = 1
 script = ExtResource("1_unite")
 
@@ -57,3 +57,7 @@ mesh = SubResource("Mesh_barre")
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 0.6
 target_desired_distance = 0.8
+avoidance_enabled = true
+radius = 0.5
+neighbor_distance = 6.0
+max_speed = 10.0

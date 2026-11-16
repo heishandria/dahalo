@@ -41,6 +41,7 @@ var _materiau_barre := StandardMaterial3D.new()
 var _derniere_trace := Vector3.INF
 var ralentissements := 0     # nombre de palissades ennemies traversées en ce moment
 var _derniere_alerte := -INF
+var _deplacement_demande := false   # avoidance : vrai si _avancer a demandé un pas ce tour-ci
 
 @onready var agent: NavigationAgent3D = $NavigationAgent3D
 @onready var anneau: MeshInstance3D = $Anneau
@@ -51,6 +52,7 @@ var _derniere_alerte := -INF
 
 func _ready() -> void:
 	id = CommandBus.enregistrer(self)
+	agent.velocity_computed.connect(_on_vitesse_calculee)
 	add_to_group("unites")
 	add_to_group("unites_%d" % faction)
 	anneau.visible = false
@@ -293,8 +295,20 @@ func _avancer() -> void:
 	if dir.length() < 0.05:
 		return
 	dir = dir.normalized()
-	velocity = dir * vitesse_actuelle()
-	look_at(global_position + dir, Vector3.UP)
+	# Évitement entre unités (RVO) : l'agent corrige la vitesse voulue, appliquée dans _on_vitesse_calculee.
+	_deplacement_demande = true
+	agent.max_speed = vitesse_actuelle()
+	agent.velocity = dir * vitesse_actuelle()
+
+
+func _on_vitesse_calculee(vitesse_sure: Vector3) -> void:
+	if not _deplacement_demande or mort:
+		return
+	_deplacement_demande = false
+	vitesse_sure.y = 0.0
+	velocity = vitesse_sure
+	if vitesse_sure.length() > 0.1:
+		look_at(global_position + vitesse_sure.normalized(), Vector3.UP)
 	move_and_slide()
 
 
@@ -545,6 +559,7 @@ func _deplacer_vers(pos: Vector3) -> void:
 
 func _stop() -> void:
 	etat = Etat.INACTIF
+	_deplacement_demande = false
 	velocity = Vector3.ZERO
 	agent.target_position = global_position
 

@@ -1,6 +1,6 @@
 # Spec — Interface et confort de jeu
 
-> Statut : **prototype v0.7.1** (16/11/2026). Décrit ce qui est **réellement codé**.
+> Statut : **prototype v0.7.2** (16/11/2026). Décrit ce qui est **réellement codé**.
 > Code : `ui/hud.gd`, `ui/mini_carte.gd`, `systems/selection_manager.gd`, `scenes/main.gd` (validité des emplacements).
 > Règle : tout est jouable **à la souris ET au doigt** (cible mobile : Safari iOS).
 
@@ -39,6 +39,19 @@
 - L'**anneau de sélection** est dessiné par-dessus les bâtiments : une unité sélectionnée cachée derrière
   une case reste repérable.
 - Les unités cachées par le brouillard ne sont jamais ciblées.
+
+## 2 ter. Déplacements et collisions
+
+| Obstacle | Contourné par le chemin | Collision physique | Remarque |
+|---|---|---|---|
+| Case centrale, Case des Hommes, camp de bûcherons, Tsena, puits | Oui | Oui | Chemin recalculé à chaque construction |
+| Points d'eau, baobabs | Oui | Oui | |
+| Clôtures d'enclos | Oui | Non | On entre **par l'ouverture** (côté sud) ; les zébus ne s'y accrochent pas |
+| Arbres épineux, raketa | Non | Oui | Les unités butent dessus et glissent ; un arbre abattu n'est plus un obstacle |
+| Champs, palissades | Non | Non | Le champ se cultive dessus ; la palissade **ralentit** sans bloquer |
+| Autres unités | Évitement | Non | Les unités s'écartent les unes des autres (évitement réciproque) |
+
+Les zébus heurtent bâtiments et arbres, mais pas les clôtures ni les autres unités.
 
 ## 3. Mini-carte
 

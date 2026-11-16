@@ -23,12 +23,16 @@ const DONNEES_UNITES := {
 	"tireur": preload("res://data/units/tireur.tres"),
 }
 const LIMITE_CARTE := 56.0
+# Bâtiments que les unités contournent (navmesh recalculé à leur construction)
+const BATIMENTS_OBSTACLES := ["case_centrale", "case_hommes", "camp_bois", "tsena", "puits", "enclos"]
+
+var _recuisson_demandee := false
 
 # Nuit : clair de lune lisible (assez sombre pour sentir la nuit, assez clair pour jouer).
-const SOLEIL_NUIT := 0.4
-const AMBIANCE_NUIT := 0.45
-const CIEL_NUIT := 0.35
-const COULEUR_LUNE := Color(0.6, 0.68, 1.0)
+const SOLEIL_NUIT := 0.45
+const AMBIANCE_NUIT := 0.5
+const CIEL_NUIT := 0.4
+const COULEUR_LUNE := Color(0.8, 0.83, 0.95)   # clair de lune presque neutre (moins bleu)
 
 const COULEUR_SOL := Color(0.72, 0.36, 0.2)
 const COULEUR_SOL_SECHERESSE := Color(0.82, 0.5, 0.3)
@@ -52,8 +56,9 @@ func _ready() -> void:
 	EventBus.meteo_change.connect(_on_meteo)
 
 	# Navmesh cuit au lancement à partir du sol (obstacles ajoutés plus tard).
-	navigation.bake_navigation_mesh(false)
 	_generer_carte()
+	# Navmesh cuit APRÈS la carte : il contourne bâtiments, points d'eau, baobabs et clôtures.
+	navigation.bake_navigation_mesh(false)
 	Vision.initialiser([GameRules.PLAYER, GameRules.AI])
 	var brouillard := preload("res://systems/brouillard.gd").new()
 	brouillard.name = "Brouillard"
@@ -87,6 +92,8 @@ func creer_batiment(type_batiment: String, faction: int, pos: Vector3) -> Node3D
 	b.position = _borner(pos)
 	if type_batiment == "palissade":
 		b.rotation.y = orientation_palissade(faction, b.position)
+	if type_batiment in BATIMENTS_OBSTACLES:
+		demander_recuisson()
 	entites.add_child(b)
 	return b
 
@@ -203,6 +210,18 @@ func _chercher_emplacement(faction: int, type_batiment: String, pos: Vector3) ->
 	return Vector3.INF
 
 
+## Recalcule le navmesh (regroupé : une seule fois même si plusieurs bâtiments arrivent d'un coup).
+func demander_recuisson() -> void:
+	if _recuisson_demandee or not is_inside_tree():
+		return
+	_recuisson_demandee = true
+	await get_tree().create_timer(0.3).timeout
+	while navigation.is_baking():
+		await get_tree().create_timer(0.2).timeout
+	_recuisson_demandee = false
+	navigation.bake_navigation_mesh(true)
+
+
 func possede(faction: int, type_batiment: String) -> bool:
 	for b in get_tree().get_nodes_in_group(type_batiment):
 		if b.faction == faction:
@@ -289,6 +308,17 @@ func _baobab(pos: Vector3) -> void:
 	couronne.mesh = m_couronne
 	couronne.position.y = 6.3
 	arbre.add_child(couronne)
+	var obstacle := StaticBody3D.new()
+	obstacle.collision_layer = 8   # contourné par le calcul de chemin
+	obstacle.collision_mask = 0
+	var forme := CollisionShape3D.new()
+	var cylindre := CylinderShape3D.new()
+	cylindre.radius = 1.2
+	cylindre.height = 6.0
+	forme.shape = cylindre
+	forme.position.y = 3.0
+	obstacle.add_child(forme)
+	arbre.add_child(obstacle)
 	arbre.position = _borner(pos)
 	arbre.add_to_group("decor")
 	entites.add_child(arbre)

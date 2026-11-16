@@ -16,7 +16,9 @@ Référence de design : le GDD (projet Claude « Dahalo », doc `GDD-Dahalo.md`)
    Groupes : `unites_<faction>`, `batiments_<faction>`, `zebus`, `ressource_<type>`.
 5. **Toujours jouable à la souris ET au doigt** : toute nouvelle action doit avoir un bouton dans le HUD
    (les raccourcis clavier sont un bonus PC). Cible de test mobile : export Web dans Safari iOS.
-6. **Calques physiques** : 1 = terrain, 2 = unités et zébus, 3 = interactifs (bâtiments, ressources).
+6. **Calques physiques** : 1 = terrain, 2 = unités et zébus, 3 = interactifs (clic : bâtiments, ressources),
+   4 = obstacles (navmesh + collisions : bâtiments, puits, points d'eau, baobabs), 5 = arbres et raketa
+   (collisions seulement), 6 = clôtures d'enclos (navmesh seulement). Navmesh recalculé à chaque construction.
 
 ## Specs
 
