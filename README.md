@@ -36,7 +36,7 @@ Squelette Godot 4 du RTS : premier prototype jouable **en solo contre une IA**, 
 | Aperçu de construction | Fantôme vert (libre) / rouge (occupé) ; au doigt : toucher 2 fois pour confirmer |
 | **Tactile** | Toucher une unité, puis toucher sa cible · glisser = caméra · pincer = zoom · boutons en bas à droite pour choisir, créer, poser un enclos |
 
-**But** : 50 zébus sécurisés dans vos enclos, ou le plus grand cheptel au bout de 30 minutes.
+**But** : 40 zébus sécurisés dans vos enclos, ou le plus grand cheptel au bout de 30 minutes.
 
 ## Tester sur iPhone (version web)
 

@@ -9,7 +9,7 @@ const AI := 1
 const WILD := -1
 
 # --- Victoire (GDD §3) ---
-const ZEBUS_VICTOIRE := 50
+const ZEBUS_VICTOIRE := 40              # décidé le 16/11/2026 (le GDD donnait 50 en exemple)
 const DUREE_PARTIE_S := 30.0 * 60.0
 const CAPACITE_PAR_ENCLOS := 10
 

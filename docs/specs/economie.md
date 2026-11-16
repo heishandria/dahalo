@@ -130,7 +130,8 @@ Vendre fait **baisser le cheptel** : c'est un arbitrage entre score de victoire 
   - Sur 30 min : +5 à 4, 16 et 28 min, +10 à 12 et 24 min, soit **35 arrivées** (55 zébus au total).
 - **Veaux** (Pacte des grands éleveurs) : 12 naissances au plus par clan. **Achat** au Tsena (Maîtres du Tsena).
 - Capacité de cheptel = 10 × nombre d'enclos. Un zébu escorté n'entre pas si les enclos sont pleins.
-- **50 zébus sécurisés**, ou le plus grand cheptel au bout de **30 min** (égalité possible).
+- **40 zébus sécurisés**, ou le plus grand cheptel au bout de **30 min** (égalité possible).
+  Seuil abaissé de 50 à 40 le 16/11/2026 : en partie de test, une IA sans adversaire finissait à 36 zébus.
 
 ## 10. IA (prototype)
 
@@ -151,6 +152,7 @@ ses âges (voir `ages.md`). **Pas encore** de puits ni de camp de bûcherons pou
 | Marché : surplus contre zébus | Vente de zébus contre Ariary, achats en Ariary | **Décidé** ; achat de zébus à l'Âge 3 |
 | Barre d'hydratation par unité | Stock d'eau global du clan | À confirmer |
 | Technologies (Vannerie, Puits profonds, Maîtres du Tsena…) | Les 9 technologies + 3 âges | **Fait** (voir `ages.md`) |
+| Seuil de victoire : « ex : 50 zébus » | **40 zébus** | **Décidé** (16/11) |
 
 ## 12. Questions ouvertes
 
