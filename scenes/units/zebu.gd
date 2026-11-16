@@ -98,7 +98,7 @@ func fuir() -> void:
 	_maj_marque()
 
 
-## Lâché par son escorte (Dahalo mis hors de combat) : redevient sauvage sur place.
+## Lâché par son escorte (Dahalo tué) : redevient sauvage sur place.
 func liberer() -> void:
 	_relacher()
 

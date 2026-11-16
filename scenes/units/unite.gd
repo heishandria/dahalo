@@ -1,17 +1,18 @@
 class_name Unite
 extends CharacterBody3D
 ## Unité du clan (villageois, pisteur, Dahalo, lanceur, tireur). Le rôle vient de `data` (UnitData).
-## Combat : une unité à 0 PV n'est pas tuée, elle est « hors de combat » : elle lâche son troupeau,
-## rentre blessée au village et quitte la partie (spec : docs/specs/combat.md).
+## Combat : à 0 PV, l'unité meurt : elle lâche son troupeau, tombe au sol puis disparaît
+## (spec : docs/specs/combat.md). Les zébus, eux, ne sont jamais tués.
 ## Machine à états simple ; les ordres arrivent uniquement via executer(), appelé par CommandBus.
 
-enum Etat { INACTIF, DEPLACEMENT, VERS_RESSOURCE, RECOLTE, RETOUR_DEPOT, CAPTURE, PILLAGE, ATTAQUE, HORS_COMBAT }
+enum Etat { INACTIF, DEPLACEMENT, VERS_RESSOURCE, RECOLTE, RETOUR_DEPOT, CAPTURE, PILLAGE, ATTAQUE, MORT }
 
 const DIST_RECOLTE := 2.2
 const DIST_DEPOT := 3.5
 const DIST_CAPTURE := 2.0
 const INTERVALLE_GUET := 0.5     # fréquence de recherche d'ennemis quand l'unité est inactive
 const PORTEE_DISTANCE := 3.0     # au-delà, l'attaque est à distance (trait visible)
+const DUREE_CORPS_S := 5.0       # le corps reste au sol avant de disparaître
 
 @export var data: UnitData
 var faction := GameRules.PLAYER
@@ -32,7 +33,7 @@ var cible_enclos = null     # Batiment (enclos adverse) pendant un pillage
 
 # Combat
 var pv := 1.0
-var hors_combat := false
+var mort := false
 var cible_attaque = null     # Unite ennemie
 var _recharge := 0.0
 var _chrono_guet := 0.0
@@ -73,7 +74,7 @@ func _ready() -> void:
 # --- API publique ---
 
 func executer(cmd: Dictionary, rang: int = 0) -> void:
-	if hors_combat:
+	if mort:
 		return
 	match cmd.get("type", ""):
 		"attaquer":
@@ -127,7 +128,7 @@ func executer(cmd: Dictionary, rang: int = 0) -> void:
 
 
 func set_selectionne(valeur: bool) -> void:
-	anneau.visible = valeur and not hors_combat
+	anneau.visible = valeur and not mort
 
 
 func est_combattant() -> bool:
@@ -142,14 +143,14 @@ func attaquer(ennemi) -> void:
 	agent.target_position = ennemi.global_position
 
 
-## Reçoit des dégâts. À 0 PV : hors de combat (jamais de mort à l'écran).
+## Reçoit des dégâts. À 0 PV : l'unité meurt.
 func subir(degats: float, attaquant) -> void:
-	if hors_combat:
+	if mort:
 		return
 	pv -= degats
 	_maj_barre_vie()
 	if pv <= 0.0:
-		_mettre_hors_combat()
+		_mourir()
 		return
 	# Riposte si l'unité n'était pas déjà occupée à se battre.
 	if est_combattant() and etat != Etat.ATTAQUE and _ennemi_valide(attaquant) and zebus_escortes.is_empty():
@@ -192,10 +193,8 @@ func _physics_process(delta: float) -> void:
 		Etat.INACTIF:
 			_guetter(delta)
 			return
-		Etat.HORS_COMBAT:
-			if not _valide(_depot) or _proche(_depot, DIST_DEPOT):
-				queue_free()  # rentré au village : l'unité quitte la partie
-				return
+		Etat.MORT:
+			return
 		Etat.ATTAQUE:
 			if not _ennemi_valide(cible_attaque):
 				cible_attaque = null
@@ -403,7 +402,7 @@ func _guetter(delta: float) -> void:
 	_chrono_guet = 0.0
 	var f := faction
 	var ennemi_proche := func(u) -> bool:
-		return u.faction != f and not u.hors_combat
+		return u.faction != f and not u.mort
 	var ennemi = _plus_proche(get_tree().get_nodes_in_group("unites"), ennemi_proche)
 	if ennemi != null and global_position.distance_to(ennemi.global_position) <= data.vision:
 		attaquer(ennemi)
@@ -416,9 +415,10 @@ func _frapper(ennemi) -> void:
 	ennemi.subir(data.degats, self)
 
 
-func _mettre_hors_combat() -> void:
-	hors_combat = true
-	etat = Etat.HORS_COMBAT
+func _mourir() -> void:
+	mort = true
+	etat = Etat.MORT
+	velocity = Vector3.ZERO
 	cible_attaque = null
 	cible_zebu = null
 	cible_enclos = null
@@ -436,22 +436,23 @@ func _mettre_hors_combat() -> void:
 	if mat_corps:
 		mat_corps.albedo_color = data.couleur.darkened(0.5)
 	if faction == GameRules.PLAYER:
-		EventBus.message.emit("%s blessé : il rentre au village." % data.nom)
-	var est_case := func(b) -> bool: return b.type_batiment == "case_centrale"
-	_depot = _plus_proche(get_tree().get_nodes_in_group("batiments_%d" % faction), est_case)
-	if _depot == null:
-		queue_free()
-		return
-	agent.target_position = _depot.global_position
+		EventBus.message.emit("%s est tombé au combat." % data.nom)
+	# Chute au sol, puis le corps s'efface après quelques secondes (sans effet sanglant).
+	var chute := create_tween()
+	chute.tween_property(self, "rotation:x", -PI / 2.0, 0.35).set_ease(Tween.EASE_IN)
+	chute.parallel().tween_property(self, "position:y", 0.35, 0.35)
+	chute.tween_interval(DUREE_CORPS_S)
+	chute.tween_property(self, "scale", Vector3(1.0, 0.05, 1.0), 0.6)
+	chute.tween_callback(queue_free)
 
 
 func _ennemi_valide(u) -> bool:
-	return _valide(u) and u is Unite and u.faction != faction and not u.hors_combat
+	return _valide(u) and u is Unite and u.faction != faction and not u.mort
 
 
 func _maj_barre_vie() -> void:
 	var ratio := clampf(pv / maxf(float(data.pv), 1.0), 0.0, 1.0)
-	barre_vie.visible = ratio < 1.0 and not hors_combat
+	barre_vie.visible = ratio < 1.0 and not mort
 	barre_vie.scale = Vector3(ratio, 1.0, 1.0)
 	_materiau_barre.albedo_color = Color(0.9, 0.2, 0.15).lerp(Color(0.3, 0.9, 0.3), ratio)
 

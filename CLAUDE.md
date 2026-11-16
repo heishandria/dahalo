@@ -36,5 +36,5 @@ Les règles de jeu effectivement codées sont décrites dans `docs/specs/` (une 
 
 Rester respectueux de la culture malgache et des pratiques autour du zébu.
 Le zébu n'est jamais tué dans le jeu : il est capturé, escorté, repris ou sécurisé.
-Personne ne meurt à l'écran : une unité à 0 PV est « hors de combat » et rentre blessée au village.
+Les unités peuvent mourir au combat (chute, puis disparition), sans effet sanglant.
 Vérifier les termes malgaches avant de les introduire dans le jeu.

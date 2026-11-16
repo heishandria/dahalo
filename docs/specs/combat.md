@@ -1,13 +1,13 @@
 # Spec — Combat et armes
 
-> Statut : **prototype v0.4** (16/11/2026). Décrit ce qui est **réellement codé**.
+> Statut : **prototype v0.4.1** (16/11/2026). Décrit ce qui est **réellement codé**.
 > Valeurs : `data/units/*.tres` (dégâts, portée, cadence, PV) et `scenes/units/unite.gd` (comportements).
 
 ## 1. Principes
 
 - Le combat sert à **protéger ou attaquer un troupeau**, pas à anéantir l'adversaire : la victoire reste le cheptel.
-- **Personne ne meurt à l'écran.** Une unité à 0 PV est **hors de combat** : elle lâche tout, rentre blessée
-  au village et quitte la partie. Les zébus ne sont jamais blessés.
+- **Les unités meurent au combat** (décision du 16/11/2026) : à 0 PV, l'unité tombe, reste au sol 5 s puis disparaît,
+  sans effet sanglant. Les **zébus ne sont jamais blessés ni tués**.
 - Les bâtiments ne peuvent pas encore être attaqués (palissade et sabotage : à venir).
 
 ## 2. Unités
@@ -37,12 +37,14 @@ Tous sont formés à la Case centrale (touches 1 à 5 ou ligne « Former »). La
 - Attaques à distance : un trait bref est affiché (brun pour la sagaie, jaune pour le fusil).
 - **Barre de vie** au-dessus de l'unité dès qu'elle est blessée (vert → rouge). Pas de régénération.
 
-## 4. Hors de combat
+## 4. Mort
 
 À 0 PV, l'unité :
 1. **lâche son troupeau** : les zébus escortés redeviennent sauvages sur place (chacun peut les capturer) ;
-2. devient non sélectionnable et non ciblable, prend une teinte sombre ;
-3. **rentre à pied à sa Case centrale**, puis quitte la partie (message « … blessé : il rentre au village »).
+2. devient immédiatement non sélectionnable et non ciblable, prend une teinte sombre ;
+3. **tombe au sol**, reste 5 s, puis s'efface (message « … est tombé au combat » pour le joueur).
+
+Villageois et pisteurs peuvent aussi être tués s'ils sont attaqués.
 
 ## 5. IA
 
@@ -62,6 +64,5 @@ Tous sont formés à la Case centrale (touches 1 à 5 ou ligne « Former »). La
 
 ## 7. Questions ouvertes
 
-1. Les blessés doivent-ils revenir soignés après un temps (Case des Hommes, guérisseur) plutôt que quitter la partie ?
-2. Fusils : limiter leur nombre (rareté, munitions en Ariary) pour garder le Dahalo au centre du jeu ?
-3. Attaque en mouvement et formations (escorte protégée par des Lanceurs) ?
+1. Fusils : limiter leur nombre (rareté, munitions en Ariary) pour garder le Dahalo au centre du jeu ?
+2. Attaque en mouvement et formations (escorte protégée par des Lanceurs) ?
