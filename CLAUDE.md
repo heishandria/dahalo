@@ -18,6 +18,12 @@ Référence de design : le GDD (projet Claude « Dahalo », doc `GDD-Dahalo.md`)
    (les raccourcis clavier sont un bonus PC). Cible de test mobile : export Web dans Safari iOS.
 6. **Calques physiques** : 1 = terrain, 2 = unités et zébus, 3 = interactifs (bâtiments, ressources).
 
+## Specs
+
+Les règles de jeu effectivement codées sont décrites dans `docs/specs/` (une page par système).
+**Toute modification de gameplay ou d'équilibrage met à jour la spec concernée dans le même commit**
+(chiffres, comportements, tableau des écarts avec le GDD).
+
 ## Conventions
 
 - Noms de variables, fonctions, nœuds et commentaires en **français**, sans abréviations obscures.
