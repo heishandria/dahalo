@@ -26,7 +26,8 @@ Squelette Godot 4 du RTS : premier prototype jouable **en solo contre une IA**, 
 | Sélectionner | Clic gauche (Maj = ajouter), glisser = cadre |
 | Ordre contextuel | Clic droit : sur une ressource = récolter, sur un zébu = capturer (Dahalo), sur un **enclos rival = raid automatique** (jusqu'à 5 zébus puis retour), sur votre enclos = ramener le troupeau, sur le sol = déplacer |
 | Former | `1` Villageois · `2` Dahalo · `3` Pisteur (depuis la Case centrale) |
-| Construire un enclos | `E` sous la souris (100 bois) |
+| Construire | Boutons « Bâtir » : Enclos, Champ, Camp bois, Puits, Tsena, puis toucher le sol · `E` = enclos sous la souris |
+| Marché | Boutons « Tsena » : vendre un zébu, acheter du bois ou de la nourriture |
 | Caméra | ZQSD / WASD, flèches, bords de l'écran · molette = zoom |
 | Désélectionner | Échap |
 | **Tactile** | Toucher une unité, puis toucher sa cible · glisser = caméra · pincer = zoom · boutons en bas à droite pour choisir, créer, poser un enclos |
@@ -57,12 +58,13 @@ GitHub Pages et Safari iOS sans réglage serveur particulier.
 
 - Caméra isométrique 2,5D (orthographique), sélection au cadre, ordres contextuels.
 - Commandes tactiles (toucher, glisser, pincer) et boutons d'action : jouable sur mobile et tablette.
-- Villageois : récolte du bois (baobabs), de l'eau (points d'eau) et de la nourriture (buissons), retour au dépôt.
+- Économie (détail : `docs/specs/economie.md`) : nourriture (champs de maïs/sorgho, raketa), eau (points d'eau, puits),
+  bois (forêts d'épineux qui repoussent, camp de bûcherons), Ariary (vente de zébus au Tsena).
 - Dahalo : capture de zébus sauvages, escorte (ralentie), sécurisation dans l'enclos, vol dans les enclos adverses,
   reprise d'un troupeau escorté par l'ennemi.
 - Enclos : +10 places de cheptel chacun.
 - Cycle jour/nuit (4 min) ; sécheresse cyclique (puisage à 30 %, sol plus clair).
-- Le cheptel et les villageois consomment de l'eau ; sans eau, le village travaille au ralenti.
+- Seuls les zébus en enclos mangent et boivent ; en cas de manque, ils s'enfuient un par un.
 - IA rivale : économie équilibrée, formation, construction d'enclos, raids sur les zébus sauvages,
   pillage de vos enclos **la nuit**.
 

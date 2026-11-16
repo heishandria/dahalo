@@ -16,6 +16,8 @@ var enclos = null            # Batiment où il est sécurisé
 var centre_errance := Vector3.ZERO
 var rayon_errance := 6.0
 var id := 0
+var vole := false                 # pris dans l'enclos ou l'escorte d'un autre clan
+var date_securisation := -INF     # temps de jeu de la dernière mise en enclos
 
 var _cible_errance := Vector3.ZERO
 var _timer := 0.0
@@ -38,6 +40,7 @@ func peut_etre_capture_par(faction: int) -> bool:
 
 
 func suivre(unite) -> void:
+	vole = proprietaire != GameRules.WILD and proprietaire != unite.faction
 	if etat == Etat.ENCLOS and proprietaire != GameRules.WILD:
 		ResourceManager.zebu_perdu(proprietaire)
 		if proprietaire == GameRules.PLAYER:
@@ -64,9 +67,34 @@ func securiser(e) -> void:
 	centre_errance = e.global_position
 	rayon_errance = 2.8
 	_timer = 0.0
+	date_securisation = GameClock.temps_ecoule
 	ResourceManager.zebu_securise(proprietaire)
 	if proprietaire == GameRules.PLAYER:
 		EventBus.message.emit("Zébu sécurisé dans l'enclos.")
+	_maj_marque()
+
+
+## Au marché, un zébu volé depuis peu se vend au rabais (lutte contre le vol de bétail).
+func est_vole_recemment() -> bool:
+	return vole and GameClock.temps_ecoule - date_securisation < GameRules.DELAI_ZEBU_VOLE_S
+
+
+## Affamé ou assoiffé : le zébu quitte l'enclos et redevient sauvage, loin du village.
+## (Le décompte du cheptel est fait par ResourceManager.)
+func fuir() -> void:
+	var a := randf() * TAU
+	var destination := global_position + Vector3(cos(a), 0.0, sin(a)) * 22.0
+	destination.x = clampf(destination.x, -55.0, 55.0)
+	destination.z = clampf(destination.z, -55.0, 55.0)
+	etat = Etat.SAUVAGE
+	enclos = null
+	meneur = null
+	vole = false
+	proprietaire = GameRules.WILD
+	centre_errance = destination
+	rayon_errance = 6.0
+	_cible_errance = destination
+	_timer = 8.0
 	_maj_marque()
 
 

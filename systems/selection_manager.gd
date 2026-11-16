@@ -23,7 +23,7 @@ const MASQUE_INTERACTIFS := 4
 const COULEUR_CADRE := Color(1.0, 0.85, 0.4)
 
 var selection: Array = []
-var mode_construction := ""     # "" ou "enclos" : le prochain clic / toucher pose le bâtiment
+var mode_construction := ""     # "" ou un type de bâtiment : le prochain clic / toucher le pose
 
 # Souris
 var _debut := Vector2.ZERO
@@ -129,7 +129,13 @@ func definir_mode_construction(type_batiment: String) -> void:
 	mode_construction = type_batiment
 	mode_construction_change.emit(mode_construction)
 	if type_batiment != "":
-		EventBus.message.emit("Touchez le sol pour placer l'enclos.")
+		var nom: String = GameRules.NOMS_BATIMENTS.get(type_batiment, type_batiment)
+		var cout: Dictionary = GameRules.COUTS_BATIMENTS.get(type_batiment, {})
+		EventBus.message.emit("%s (%s) : touchez le sol pour le placer." % [nom, ResourceManager.texte_cout(cout)])
+
+
+func commercer(action: String) -> void:
+	CommandBus.emettre({"type": "commerce", "faction": GameRules.PLAYER, "action": action})
 
 
 func annuler() -> void:

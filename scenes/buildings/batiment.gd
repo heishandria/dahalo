@@ -2,7 +2,7 @@ class_name Batiment
 extends StaticBody3D
 ## Bâtiment générique. La Case centrale forme les unités et sert de dépôt (GDD §5).
 
-@export_enum("case_centrale", "enclos") var type_batiment: String = "case_centrale"
+@export_enum("case_centrale", "enclos", "camp_bois", "tsena") var type_batiment: String = "case_centrale"
 var faction := GameRules.PLAYER
 var id := 0
 var en_formation := 0   # nombre d'unités en cours de formation
@@ -18,6 +18,17 @@ func _ready() -> void:
 		var m := StandardMaterial3D.new()
 		m.albedo_color = GameRules.couleur_faction(faction)
 		banniere.material_override = m
+
+
+## Dépôt de ressources : la Case centrale prend tout, le camp de bûcherons seulement le bois.
+func accepte(type_ressource: String) -> bool:
+	match type_batiment:
+		"case_centrale":
+			return true
+		"camp_bois":
+			return type_ressource == "bois"
+		_:
+			return false
 
 
 ## Formation d'une unité (prototype : depuis la Case centrale, sans file d'attente visible).

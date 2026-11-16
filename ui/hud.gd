@@ -5,7 +5,7 @@ extends CanvasLayer
 
 @onready var selection_mgr = $Selection
 
-const TAILLE_BOUTON := Vector2(132, 58)
+const TAILLE_BOUTON := Vector2(124, 54)
 const AIDE_PC := "Clic gauche : sélectionner (glisser = cadre)  |  Clic droit : récolter, capturer, ramener à l'enclos, déplacer\n" \
 		+ "1/2/3 : former  |  E : enclos sous la souris  |  ZQSD / flèches / bords : caméra  |  Molette : zoom"
 const AIDE_TACTILE := "Touchez une unité puis une cible (ressource, zébu, enclos, sol)  |  Glisser : caméra  |  Pincer : zoom"
@@ -14,7 +14,8 @@ var _barre: Label
 var _info: Label
 var _message: Label
 var _actions: PanelContainer
-var _bouton_enclos: Button
+var _boutons_construction := {}   # type_batiment -> Button
+var _bouton_vente: Button
 var _fin: PanelContainer
 var _fin_texte: Label
 var _duree_message := 0.0
@@ -48,17 +49,23 @@ func est_sur_interface(pos: Vector2) -> bool:
 func _maj_barre() -> void:
 	var f := GameRules.PLAYER
 	var restant := int(GameClock.temps_restant())
-	_barre.text = "Bois %d   Eau %d   Nourriture %d   |   Zébus %d/%d   |   %s · %s   |   %02d:%02d   |   Rival : %d zébus" % [
-		int(ResourceManager.quantite(f, "bois")),
-		int(ResourceManager.quantite(f, "eau")),
+	var alerte := "   |   CHEPTEL EN MANQUE !" if ResourceManager.en_manque.get(f, false) else ""
+	_barre.text = ("Nourriture %d (-%d/min)   Eau %d (-%d/min)   Bois %d   Ariary %d   |   Zébus %d/%d   |   %s · %s   |   %02d:%02d   |   Rival : %d zébus%s") % [
 		int(ResourceManager.quantite(f, "nourriture")),
+		int(ResourceManager.conso_par_minute(f, "nourriture")),
+		int(ResourceManager.quantite(f, "eau")),
+		int(ResourceManager.conso_par_minute(f, "eau")),
+		int(ResourceManager.quantite(f, "bois")),
+		int(ResourceManager.quantite(f, "ariary")),
 		ResourceManager.nb_zebus(f),
 		ResourceManager.capacite_zebus(f),
 		"Sécheresse" if GameClock.secheresse else "Saison normale",
 		"Nuit" if GameClock.est_nuit else "Jour",
 		restant / 60, restant % 60,
 		ResourceManager.nb_zebus(GameRules.AI),
+		alerte,
 	]
+	_bouton_vente.text = "Vendre zébu\n%d Ar" % int(GameRules.prix_zebu_actuel(false))
 
 
 func _maj_selection() -> void:
@@ -89,7 +96,8 @@ func _afficher_message(texte: String) -> void:
 
 
 func _on_mode_construction(type_batiment: String) -> void:
-	_bouton_enclos.modulate = Color(1.0, 0.85, 0.4) if type_batiment == "enclos" else Color.WHITE
+	for t in _boutons_construction:
+		_boutons_construction[t].modulate = Color(1.0, 0.85, 0.4) if t == type_batiment else Color.WHITE
 
 
 func _on_fin(faction_gagnante: int) -> void:
@@ -118,7 +126,7 @@ func _construire_ui() -> void:
 	haut.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	_barre = Label.new()
 	_barre.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_barre.add_theme_font_size_override("font_size", 22)
+	_barre.add_theme_font_size_override("font_size", 18)
 	haut.add_child(_barre)
 
 	# Infos de sélection (bas gauche)
@@ -145,14 +153,30 @@ func _construire_ui() -> void:
 		["Pisteur", selection_mgr.selectionner_type.bind("pisteur")],
 		["Aucun", selection_mgr.annuler],
 	]))
-	var ligne_former := _ligne_boutons("Créer", [
+	lignes.add_child(_ligne_boutons("Former", [
 		["+ Villageois", selection_mgr.former.bind("villageois")],
 		["+ Dahalo", selection_mgr.former.bind("dahalo")],
 		["+ Pisteur", selection_mgr.former.bind("pisteur")],
-		["Enclos", selection_mgr.definir_mode_construction.bind("enclos")],
+	]))
+	var batiments := [["enclos", "Enclos"], ["champ", "Champ"], ["camp_bois", "Camp bois"],
+			["puits", "Puits"], ["tsena", "Tsena"]]
+	var defs: Array = []
+	for b in batiments:
+		defs.append([b[1], selection_mgr.definir_mode_construction.bind(b[0])])
+	var ligne_batir := _ligne_boutons("Bâtir", defs)
+	lignes.add_child(ligne_batir)
+	for i in batiments.size():
+		var bouton: Button = ligne_batir.get_child(i + 1)
+		var cout: Dictionary = GameRules.COUTS_BATIMENTS[batiments[i][0]]
+		bouton.tooltip_text = ResourceManager.texte_cout(cout)
+		_boutons_construction[batiments[i][0]] = bouton
+	var ligne_tsena := _ligne_boutons("Tsena", [
+		["Vendre zébu", selection_mgr.commercer.bind("vendre_zebu")],
+		["+50 bois\n30 Ar", selection_mgr.commercer.bind("acheter_bois")],
+		["+50 nourr.\n30 Ar", selection_mgr.commercer.bind("acheter_nourriture")],
 	])
-	lignes.add_child(ligne_former)
-	_bouton_enclos = ligne_former.get_child(ligne_former.get_child_count() - 1)
+	lignes.add_child(ligne_tsena)
+	_bouton_vente = ligne_tsena.get_child(1)
 
 	# Messages d'alerte
 	_message = Label.new()
@@ -205,7 +229,7 @@ func _ligne_boutons(titre: String, boutons: Array) -> HBoxContainer:
 		var b := Button.new()
 		b.text = def[0]
 		b.custom_minimum_size = TAILLE_BOUTON
-		b.add_theme_font_size_override("font_size", 19)
+		b.add_theme_font_size_override("font_size", 16)
 		b.focus_mode = Control.FOCUS_NONE
 		b.pressed.connect(def[1])
 		ligne.add_child(b)

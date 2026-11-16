@@ -45,8 +45,6 @@ func _ready() -> void:
 	mt.albedo_color = GameRules.couleur_faction(faction)
 	tete.material_override = mt
 
-	if data.role == "villageois":
-		ResourceManager.ajouter_villageois(faction)
 
 
 # --- API publique ---
@@ -87,7 +85,7 @@ func executer(cmd: Dictionary, rang: int = 0) -> void:
 			var b = CommandBus.get_entite(cmd.get("cible_id", 0))
 			if b == null:
 				return
-			if data.peut_recolter and charge > 0.0 and b.type_batiment == "case_centrale":
+			if data.peut_recolter and charge > 0.0 and b.has_method("accepte") and b.accepte(type_charge):
 				_depot = b
 				etat = Etat.RETOUR_DEPOT
 				agent.target_position = b.global_position
@@ -112,6 +110,11 @@ func vitesse_actuelle() -> float:
 
 func aller_recolter(r) -> void:
 	if not _valide(r):
+		_stop()
+		return
+	if not r.peut_etre_recolte_par(faction):
+		if faction == GameRules.PLAYER:
+			EventBus.message.emit("Ce champ appartient à un autre clan.")
 		_stop()
 		return
 	if charge > 0.0 and type_charge != r.type_ressource:
@@ -190,7 +193,12 @@ func _avancer() -> void:
 # --- Récolte ---
 
 func _recolter(delta: float) -> void:
-	if not _valide(cible_ressource) or cible_ressource.epuise():
+	var perdue: bool = not _valide(cible_ressource) or cible_ressource.epuise()
+	if not perdue and not cible_ressource.disponible():
+		if cible_ressource.attendre_recolte():
+			return  # champ qui pousse : on patiente sur place
+		perdue = true  # arbre coupé (souche) : on cherche ailleurs
+	if perdue:
 		var voisine = _ressource_voisine(type_charge)
 		if charge > 0.0:
 			cible_ressource = voisine
@@ -201,12 +209,12 @@ func _recolter(delta: float) -> void:
 			_stop()
 		return
 
-	_timer_recolte += delta * ResourceManager.multiplicateur_travail(faction)
+	_timer_recolte += delta
 	if _timer_recolte < 1.0:
 		return
 	_timer_recolte -= 1.0
 	type_charge = cible_ressource.type_ressource
-	charge += cible_ressource.extraire(data.vitesse_recolte)
+	charge += cible_ressource.extraire(data.vitesse_recolte, faction)
 	if charge >= data.capacite:
 		_aller_deposer()
 
@@ -224,19 +232,26 @@ func _deposer() -> void:
 	if charge > 0.0 and type_charge != "":
 		ResourceManager.ajouter(faction, type_charge, charge)
 	charge = 0.0
-	if _valide(cible_ressource) and not cible_ressource.epuise():
+	if _valide(cible_ressource) and not cible_ressource.epuise() \
+			and (cible_ressource.disponible() or cible_ressource.attendre_recolte()):
 		aller_recolter(cible_ressource)
+	elif type_charge != "" and _ressource_voisine(type_charge) != null:
+		aller_recolter(_ressource_voisine(type_charge))
 	else:
 		_stop()
 
 
+## Dépôt le plus proche qui accepte la charge : Case centrale (tout), camp de bûcherons (bois).
 func _trouver_depot():
-	var est_case := func(b) -> bool: return b.type_batiment == "case_centrale"
-	return _plus_proche(get_tree().get_nodes_in_group("batiments_%d" % faction), est_case)
+	var type := type_charge
+	var accepte := func(b) -> bool: return b.has_method("accepte") and b.accepte(type)
+	return _plus_proche(get_tree().get_nodes_in_group("batiments_%d" % faction), accepte)
 
 
 func _ressource_voisine(type: String):
-	var non_epuisee := func(n) -> bool: return not n.epuise()
+	var f := faction
+	var non_epuisee := func(n) -> bool:
+		return n.peut_etre_recolte_par(f) and not n.epuise() and (n.disponible() or n.attendre_recolte())
 	var r = _plus_proche(get_tree().get_nodes_in_group("ressource_" + type), non_epuisee)
 	if r != null and global_position.distance_to(r.global_position) > 30.0:
 		return null

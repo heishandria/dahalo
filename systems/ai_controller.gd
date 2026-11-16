@@ -1,8 +1,9 @@
 extends Node
 ## IA du clan rival (version prototype, pour tester la boucle de jeu en solo).
 ## Elle ne triche pas : elle lit le même état que le joueur et passe par CommandBus.
-## Comportement : économie équilibrée -> formation -> enclos -> raids sur les zébus
-## sauvages, et pillage des enclos du joueur la nuit (GDD §7).
+## Comportement : économie équilibrée (champs, eau pour le cheptel) -> formation -> enclos
+## -> raids sur les zébus sauvages, et pillage des enclos du joueur la nuit (GDD §7).
+## Pas encore de Tsena ni de puits pour l'IA (voir docs/specs/economie.md).
 
 @export var faction := GameRules.AI
 @export var intervalle := 1.5
@@ -12,6 +13,8 @@ extends Node
 
 const OBJECTIFS := {"bois": 250.0, "eau": 200.0, "nourriture": 250.0}
 const POSITIONS_ENCLOS := [Vector3(0, 0, -11), Vector3(-11, 0, -11), Vector3(11, 0, 11), Vector3(0, 0, 11)]
+const POSITIONS_CHAMPS := [Vector3(-20, 0, -10), Vector3(-20, 0, -3), Vector3(-20, 0, 4), Vector3(-27, 0, -3)]
+const CHAMPS_MAX := 4
 
 var _t := 0.0
 
@@ -41,6 +44,7 @@ func _reflechir() -> void:
 	_gerer_economie(villageois)
 	_gerer_formation(case, villageois.size(), dahalos.size())
 	_gerer_enclos(case)
+	_gerer_champs(case, villageois.size())
 	_gerer_raids(dahalos)
 
 
@@ -55,7 +59,7 @@ func _gerer_economie(villageois: Array) -> void:
 		if not v.est_inactif():
 			continue
 		var type := _type_prioritaire(affectes)
-		var r = _plus_proche(v.global_position, get_tree().get_nodes_in_group("ressource_" + type))
+		var r = _plus_proche(v.global_position, _sources_recoltables(type))
 		if r == null:
 			continue
 		affectes[type] += 1
@@ -64,8 +68,12 @@ func _gerer_economie(villageois: Array) -> void:
 
 func _type_prioritaire(affectes: Dictionary) -> String:
 	var objectifs := OBJECTIFS.duplicate()
+	# Plus le cheptel est grand, plus il faut d'eau et de nourriture en réserve.
+	var n := ResourceManager.nb_zebus(faction)
+	objectifs["eau"] = float(objectifs["eau"]) + 10.0 * n
+	objectifs["nourriture"] = float(objectifs["nourriture"]) + 8.0 * n
 	if GameClock.secheresse:
-		objectifs["eau"] = 400.0  # anticipation de la sécheresse (GDD §3)
+		objectifs["eau"] = float(objectifs["eau"]) * 2.0  # anticipation de la sécheresse (GDD §3)
 	var meilleur := "bois"
 	var score_min := INF
 	for r in objectifs:
@@ -90,11 +98,35 @@ func _gerer_formation(case, nb_villageois: int, nb_dahalos: int) -> void:
 
 func _gerer_enclos(case) -> void:
 	var places := ResourceManager.capacite_zebus(faction) - ResourceManager.nb_zebus(faction)
-	if places > 2 or not ResourceManager.peut_payer(faction, GameRules.COUT_ENCLOS):
+	if places > 2 or not ResourceManager.peut_payer(faction, GameRules.COUTS_BATIMENTS["enclos"]):
 		return
 	var n: int = ResourceManager.enclos.get(faction, 1) - 1
 	var decalage: Vector3 = POSITIONS_ENCLOS[n % POSITIONS_ENCLOS.size()]
 	_cmd({"type": "construire", "type_batiment": "enclos", "position": case.global_position + decalage})
+
+
+func _gerer_champs(case, nb_villageois: int) -> void:
+	var champs := 0
+	for c in get_tree().get_nodes_in_group("champ"):
+		if c.faction == faction:
+			champs += 1
+	# Un champ pour trois villageois environ, en gardant du bois pour un enclos.
+	if champs >= mini(CHAMPS_MAX, 1 + nb_villageois / 3):
+		return
+	var cout: Dictionary = GameRules.COUTS_BATIMENTS["champ"]
+	if ResourceManager.quantite(faction, "bois") < float(cout["bois"]) + 40.0:
+		return
+	var decalage: Vector3 = POSITIONS_CHAMPS[champs % POSITIONS_CHAMPS.size()]
+	_cmd({"type": "construire", "type_batiment": "champ", "position": case.global_position + decalage})
+
+
+func _sources_recoltables(type: String) -> Array:
+	var sources: Array = []
+	for n in get_tree().get_nodes_in_group("ressource_" + type):
+		if _valide(n) and n.peut_etre_recolte_par(faction) and not n.epuise() \
+				and (n.disponible() or n.attendre_recolte()):
+			sources.append(n)
+	return sources
 
 
 # --- Raids ---
@@ -172,7 +204,7 @@ func _plus_proche(pos: Vector3, noeuds: Array):
 	var meilleur = null
 	var d_min := INF
 	for n in noeuds:
-		if not _valide(n) or (n is NoeudRessource and n.epuise()):
+		if not _valide(n):
 			continue
 		var d := pos.distance_to(n.global_position)
 		if d < d_min:

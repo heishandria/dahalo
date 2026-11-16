@@ -1,92 +1,132 @@
-# Spec — Économie : bois, eau, nourriture, zébus
+# Spec — Économie : nourriture, eau, bois, Ariary, zébus
 
-> Statut : **prototype v0.2** (16/11/2026). Décrit ce qui est **réellement codé**.
+> Statut : **prototype v0.3** (16/11/2026). Décrit ce qui est **réellement codé**.
 > Le GDD donne la vision ; cette spec donne les règles et les chiffres en vigueur.
 > Valeurs : `data/game_rules.gd` et `data/units/*.tres`. Toute modification de ces fichiers met à jour cette page.
 
 ## 1. Vue d'ensemble
 
-| Ressource | Source | Qui récolte | Usage | Stock de départ |
+| Ressource | Sources | Qui récolte | Sert à | Départ |
 |---|---|---|---|---|
-| **Bois** | Baobabs (s'épuisent) | Villageois | Enclos, formation (Dahalo, Pisteur) | 150 |
-| **Eau** | Points d'eau (inépuisables) | Villageois | Survie du cheptel et des villageois | 100 |
-| **Nourriture** | Buissons de cueillette (s'épuisent) | Villageois | Formation de toutes les unités | 150 |
-| **Zébus** | Troupeaux sauvages, enclos rivaux | Dahalo | Victoire | 0 (1 enclos vide) |
+| **Nourriture** | Champs de maïs / sorgho, raketa | Villageois | Former les unités, **nourrir les zébus** | 150 |
+| **Eau** | Points d'eau, puits | Villageois | **Abreuver les zébus** | 100 |
+| **Bois** | Forêts d'épineux | Villageois | Construire, resemer les champs | 150 |
+| **Ariary** | Vente de zébus au Tsena | — | Acheter au Tsena, puits | 50 |
+| *Zébus* | Troupeaux sauvages, enclos rivaux | Dahalo | Victoire, vente | 0 |
 
-Un seul point de dépôt : la **Case centrale**. Les stocks sont par clan et ne sont pas plafonnés.
+Décisions de design (16/11/2026) :
+- **Les hommes ne consomment rien.** Seuls les zébus en enclos mangent et boivent.
+- **Pas de pierre** : ce qu'elle aurait construit se paie en bois + Ariary (pourra revenir à l'Âge 2).
+- **Un zébu affamé ou assoiffé ne meurt pas : il s'enfuit** et redevient sauvage (on peut le reprendre).
 
-## 2. Sources sur la carte (carte de test symétrique)
+Stocks par clan, non plafonnés.
 
-| Source | Quantité | Par base | Au centre | Particularité |
-|---|---|---|---|---|
-| Baobab (bois) | 250 près des bases, 400 au centre | 4 | 4 | Disparaît une fois vide |
-| Point d'eau | Infini | 1 | 2 | Rendement ×0,3 pendant la sécheresse, rétrécit à l'écran |
-| Buisson (nourriture) | 200 | 2 | 0 | Disparaît une fois vide |
+## 2. Entretien du cheptel
 
-## 3. Récolte (villageois)
+Prélevé en continu, uniquement pour les zébus **sécurisés en enclos** (pas ceux en escorte) :
 
-- **Cycle** : aller à la source → récolter → rentrer à la Case centrale → déposer → repartir vers la même source.
-- **Cadence** : 2 unités par seconde (par paquets d'une seconde), **capacité de transport 10**.
-- **Portées** : récolte à moins de 2,2 m de la source, dépôt à moins de 3,5 m de la case.
-- **Source épuisée** : le villageois cherche la source du même type la plus proche dans un rayon de 30 m, sinon il s'arrête.
-- **Changement de ressource** : si un villageois chargé part sur un autre type, sa charge est perdue.
-- **Soif du clan** : si l'eau tombe à 0, la récolte va **2 fois moins vite** (multiplicateur 0,5).
-- Seuls les villageois récoltent. Dahalo et Pisteurs envoyés sur une ressource s'y déplacent simplement.
-
-## 4. Consommation d'eau (anti-snowballing, GDD §7)
-
-Prélevée en continu sur le stock d'eau du clan :
-
-| Consommateur | Par seconde | Par minute |
+| Par zébu | Par seconde | Par minute |
 |---|---|---|
-| Zébu sécurisé en enclos | 0,05 | 3 |
-| Villageois | 0,02 | 1,2 |
+| Eau | 0,05 | 3 |
+| Nourriture | 0,04 | 2,4 |
 
-Exemple : 20 zébus + 8 villageois = **~70 eau/min**. Un villageois rapporte 10 eau par aller-retour ; il puise
-en 5 s normalement, mais en ~17 s pendant la sécheresse. Un gros cheptel impose donc plusieurs porteurs d'eau,
-surtout en sécheresse : c'est le frein voulu contre le leader.
+- 20 zébus = **60 eau/min + 48 nourriture/min**. Le HUD affiche la consommation (« −X/min »).
+- **Manque** : si l'eau **ou** la nourriture tombe à 0, un message d'alerte s'affiche, puis **un zébu s'enfuit
+  toutes les 20 s** tant que le manque dure. Il quitte l'enclos, part à ~22 m et redevient sauvage.
+- C'est le frein contre le leader (GDD §7) : un gros cheptel exige beaucoup de porteurs d'eau et de champs.
 
-Les zébus escortés (pas encore en enclos) et les Dahalo/Pisteurs ne boivent pas.
+## 3. Sources
 
-## 5. Coûts
+| Source | Type | Quantité | Récolte | Particularité |
+|---|---|---|---|---|
+| **Champ** (construit) | Nourriture | 150 par récolte | Normale | Pousse 60 s (120 s en sécheresse), voir §4 |
+| **Raketa** (cactus, nature) | Nourriture | Infinie | ×0,6 | En sécheresse, chaque unité récoltée donne aussi **+0,5 eau** au clan |
+| **Point d'eau** (nature) | Eau | Infinie | Normale | ×0,3 en sécheresse, rétrécit à l'écran |
+| **Puits** (construit) | Eau | Infinie | Normale | ×0,6 en sécheresse ; réservé à son clan |
+| **Épineux** (nature, en forêts) | Bois | 100 par arbre | Normale | Coupé → **souche**, repousse en 240 s |
+| Baobab | — | — | — | **Décor uniquement**, jamais coupé |
 
-| Élément | Coût | Temps | Effet |
-|---|---|---|---|
-| Villageois | 50 nourriture | 6 s | +1 récolteur |
-| Pisteur | 40 nourriture + 10 bois | 8 s | Unité rapide (vision : à venir) |
-| Dahalo armé | 60 nourriture + 20 bois | 10 s | Capture, escorte et raids |
-| Enclos | 100 bois | Immédiat | +10 places de cheptel |
+Les sources naturelles sont accessibles à tous les clans ; champs et puits seulement à leur propriétaire.
 
-Coût payé au lancement de la formation, sans remboursement. Pas de limite de population.
+## 4. Champs (façon fermes d'Age of Empires)
 
-## 6. Climat (GDD §7)
+1. Construit par le joueur (bouton « Champ », 60 bois), il est **semé automatiquement** et pousse (vert → doré).
+2. **Mûr** : 150 nourriture à récolter. Les villageois envoyés sur un champ qui pousse **attendent sur place**.
+3. **Vide** : il est **resemé automatiquement pour 15 bois**. Sans bois, il passe **en friche** et réessaie
+   toutes les 2 s dès que le bois revient.
+4. La sécheresse divise la vitesse de pousse par 2.
+
+Chaque clan démarre avec **2 champs mûrs**.
+
+## 5. Récolte (villageois)
+
+- **Cycle** : source → récolte → dépôt le plus proche qui accepte la ressource → retour à la même source.
+- **Dépôts** : Case centrale (tout) et **Camp de bûcherons** (bois seulement), à placer près des forêts.
+- **Cadence** : 2 unités/s (paquets d'une seconde) × rendement de la source ; **capacité 10**.
+- **Portées** : récolte < 2,2 m de la source, dépôt < 3,5 m du bâtiment.
+- **Source indisponible** : champ qui pousse → attendre ; souche ou source disparue → source du même type
+  la plus proche (< 30 m), sinon arrêt.
+- Changer de type de ressource fait perdre la charge en cours.
+
+## 6. Bâtiments et coûts
+
+| Élément | Coût | Effet |
+|---|---|---|
+| Enclos | 100 bois | +10 places de cheptel |
+| Champ | 60 bois (+15 bois par resemis) | Nourriture renouvelable |
+| Camp de bûcherons | 80 bois | Dépôt de bois au plus près des forêts |
+| Puits | 60 bois + 40 Ar | Eau infinie, moins sensible à la sécheresse |
+| Tsena | 150 bois (1 par clan) | Marché : vente de zébus, achats |
+| Villageois | 50 nourriture, 6 s | Récolte |
+| Pisteur | 40 nourriture + 10 bois, 8 s | Unité rapide (vision : à venir) |
+| Dahalo armé | 60 nourriture + 20 bois, 10 s | Capture, escorte, raids |
+
+Construction immédiate, sans prévisualisation ni contrôle de chevauchement (à venir).
+
+## 7. Tsena (marché) et Ariary
+
+| Action | Effet |
+|---|---|
+| **Vendre un zébu** | +40 Ar ; **×0,5 pendant la sécheresse** (tout le monde vend, les prix chutent) |
+| Zébu **volé depuis moins de 3 min** | Prix ×0,4 (les marchands se méfient). Le Tsena vend d'abord un zébu « en règle » |
+| Acheter du bois | 50 bois pour 30 Ar |
+| Acheter de la nourriture | 50 nourriture pour 30 Ar |
+
+Vendre fait **baisser le cheptel** : c'est un arbitrage entre score de victoire et développement.
+
+## 8. Climat (GDD §7)
 
 - **Jour/nuit** : cycle de 4 min, dont 35 % de nuit (~1 min 25 s).
 - **Sécheresse** : le 3ᵉ jour de chaque série de 3 jours. Sur une partie de 30 min : **8–12 min** et **20–24 min**.
-- Effet : puisage ×0,3. La consommation, elle, ne baisse pas → il faut **stocker de l'eau avant**.
+- Effets : points d'eau ×0,3, puits ×0,6, champs poussent 2× moins vite, raketa donne de l'eau, zébu vendu moitié prix.
 
-## 7. Zébus et victoire
+## 9. Victoire
 
 - Capacité de cheptel = 10 × nombre d'enclos. Un zébu escorté n'entre pas si les enclos sont pleins.
-- **Victoire** : 50 zébus sécurisés, ou le plus grand cheptel au bout de **30 min** (égalité possible).
-- Vol, escorte et raids : voir la future spec `raids.md`.
+- **50 zébus sécurisés**, ou le plus grand cheptel au bout de **30 min** (égalité possible).
 
-## 8. Écarts avec le GDD
+## 10. IA (prototype)
 
-| GDD | Prototype | Décision à prendre |
+Récolte selon ses besoins (objectifs d'eau et de nourriture qui grandissent avec son cheptel, eau ×2 en
+sécheresse), construit des champs (1 pour 3 villageois, 4 max) et des enclos. **Pas encore** de Tsena,
+de puits ni de camp de bûcherons pour l'IA.
+
+## 11. Écarts avec le GDD (à reporter dans le GDD)
+
+| GDD | Prototype | Statut |
 |---|---|---|
-| Nourriture par la **chasse** (pintades, sangliers) et la cueillette | Cueillette seulement | Ajouter le gibier mobile ? |
-| **Puits / Citerne** pour sécuriser l'eau | Absent | Puits = point d'eau constructible, moins touché par la sécheresse ? |
-| **Marché (Tsena)** : échange de surplus | Absent | Taux d'échange à définir |
-| **Déshydratation mortelle** du cheptel | Seulement un ralentissement des villageois | Combien de temps sans eau avant de perdre un zébu ? |
-| Barre **Hydratation** par unité dans le HUD | Eau gérée au niveau du clan | Garder un stock global (plus lisible) ? |
-| Technos : Vannerie et Cuirs, Chasse traditionnelle, Puits profonds | Absentes | À brancher sur les valeurs de cette spec |
-| Croissance de la population par la nourriture | La nourriture ne sert qu'à former des unités | Consommation de nourriture dans le temps ? |
+| Nourriture par la chasse et la cueillette | Champs + raketa | **Décidé** (16/11) |
+| 4 ressources dont Zébus | Nourriture, eau, bois, **Ariary** (+ zébus) | **Décidé** |
+| Eau pour villageois et cheptel | Seuls les zébus consomment | **Décidé** |
+| Déshydratation **mortelle** du cheptel | Le zébu **s'enfuit** | **Décidé** |
+| Bois coupé sur les baobabs | Forêts d'épineux ; baobabs en décor | **Décidé** |
+| Marché : surplus contre zébus | Vente de zébus contre Ariary, achats en Ariary | **Décidé** ; achat de zébus à l'Âge 3 |
+| Barre d'hydratation par unité | Stock d'eau global du clan | À confirmer |
+| Technologies (Vannerie, Puits profonds, Maîtres du Tsena…) | Absentes | À brancher sur ces valeurs |
 
-## 9. Questions ouvertes
+## 12. Questions ouvertes
 
-1. **Couper des baobabs** : dans le Sud, le baobab est souvent respecté, parfois sacré, et peu utilisé
-   comme bois d'œuvre. Proposition : bois tiré des **forêts d'épineux** (comme dans le GDD §2),
-   et le baobab comme élément de décor ou source secondaire (fruits, eau stockée dans le tronc) — à valider.
-2. Faut-il plafonner les stocks (greniers, citernes) pour forcer des choix ?
-3. Les bois doivent-ils repousser lentement pour éviter une fin de partie sans ressources ?
+1. Caravanes de marchands à intervalles (fenêtres de vente) plutôt qu'un Tsena toujours ouvert ?
+2. Plafonner les stocks (greniers, citernes) pour forcer des choix ?
+3. Achat de zébus reproducteurs au Tsena (GDD Âge 3) : prix ?
+4. Pierre à l'Âge 2 pour les constructions avancées ?

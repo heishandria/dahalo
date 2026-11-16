@@ -12,7 +12,8 @@ extends Node
 ##   piller     : "unites": [ids], "cible_id": id d'un enclos adverse (vol automatique, puis retour)
 ##   deposer    : "unites": [ids], "cible_id": id d'un Batiment
 ##   former     : "batiment": id, "unite": "villageois" | "dahalo" | "pisteur"
-##   construire : "type_batiment": "enclos", "position": Vector3
+##   construire : "type_batiment": "enclos" | "champ" | "camp_bois" | "puits" | "tsena", "position": Vector3
+##   commerce   : "action": "vendre_zebu" | "acheter_bois" | "acheter_nourriture" (nécessite un Tsena)
 
 var monde = null           # référence vers main.gd (création d'entités)
 var entites := {}          # id -> Node
@@ -55,5 +56,12 @@ func emettre(cmd: Dictionary) -> void:
 		"construire":
 			if monde != null:
 				monde.construire(faction, cmd.get("type_batiment", ""), cmd.get("position", Vector3.ZERO))
+		"commerce":
+			for t in get_tree().get_nodes_in_group("tsena"):
+				if t.faction == faction:
+					t.commercer(cmd.get("action", ""))
+					return
+			if faction == GameRules.PLAYER:
+				EventBus.message.emit("Construisez d'abord un Tsena (marché).")
 		_:
 			push_warning("Commande inconnue : %s" % cmd)

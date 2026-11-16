@@ -1,0 +1,89 @@
+extends NoeudRessource
+## Champ de maïs / sorgho (façon ferme d'Age of Empires). Spec : docs/specs/economie.md
+## Cycle : pousse -> mûr (récoltable) -> vide -> resemé automatiquement (bois) ou en friche.
+
+enum EtatChamp { POUSSE, MUR, FRICHE }
+
+const INTERVALLE_RESEMIS := 2.0
+const VERT := Color(0.35, 0.6, 0.2)
+const DORE := Color(0.9, 0.75, 0.3)
+
+var etat_champ := EtatChamp.POUSSE
+var croissance := 0.0          # 0 -> 1
+var _chrono_resemis := 0.0
+var _materiau_culture := StandardMaterial3D.new()
+
+@onready var culture: MeshInstance3D = $Culture
+
+
+func _ready() -> void:
+	type_ressource = "nourriture"
+	type_batiment = "champ"
+	quantite = 0.0
+	super()
+	_quantite_max = GameRules.CHAMP_RECOLTE
+	culture.material_override = _materiau_culture
+	if croissance >= 1.0:
+		_murir()
+	_maj_visuel()
+
+
+func _process(delta: float) -> void:
+	match etat_champ:
+		EtatChamp.POUSSE:
+			var vitesse := GameRules.POUSSE_SECHERESSE if GameClock.secheresse else 1.0
+			croissance = minf(1.0, croissance + delta * vitesse / GameRules.CHAMP_POUSSE_S)
+			if croissance >= 1.0:
+				_murir()
+			_maj_visuel()
+		EtatChamp.FRICHE:
+			_chrono_resemis += delta
+			if _chrono_resemis >= INTERVALLE_RESEMIS:
+				_chrono_resemis = 0.0
+				_essayer_resemer(false)
+
+
+func disponible() -> bool:
+	return etat_champ == EtatChamp.MUR and quantite > 0.0
+
+
+func epuise() -> bool:
+	return false
+
+
+func attendre_recolte() -> bool:
+	return etat_champ == EtatChamp.POUSSE
+
+
+func _sur_epuisement() -> void:
+	_essayer_resemer(true)
+
+
+func _murir() -> void:
+	etat_champ = EtatChamp.MUR
+	croissance = 1.0
+	quantite = GameRules.CHAMP_RECOLTE
+	_maj_visuel()
+
+
+func _essayer_resemer(premier_essai: bool) -> void:
+	if ResourceManager.payer(faction, GameRules.CHAMP_RESEMIS):
+		etat_champ = EtatChamp.POUSSE
+		croissance = 0.0
+		quantite = 0.0
+	else:
+		if premier_essai and faction == GameRules.PLAYER:
+			EventBus.message.emit("Champ en friche : il faut %s pour le resemer."
+					% ResourceManager.texte_cout(GameRules.CHAMP_RESEMIS))
+		etat_champ = EtatChamp.FRICHE
+	_maj_visuel()
+
+
+func _maj_visuel() -> void:
+	if culture == null:
+		return
+	culture.visible = etat_champ != EtatChamp.FRICHE
+	var hauteur := 0.1 + croissance * 0.9
+	culture.scale = Vector3(1.0, hauteur, 1.0)
+	culture.position.y = 0.6 * hauteur * 0.5
+	_materiau_culture.albedo_color = DORE if etat_champ == EtatChamp.MUR else VERT.lerp(DORE, croissance * 0.5)

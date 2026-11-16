@@ -8,6 +8,10 @@ const SCENE_RESSOURCE := preload("res://scenes/world/noeud_ressource.tscn")
 const SCENES_BATIMENTS := {
 	"case_centrale": preload("res://scenes/buildings/case_centrale.tscn"),
 	"enclos": preload("res://scenes/buildings/enclos.tscn"),
+	"camp_bois": preload("res://scenes/buildings/camp_bois.tscn"),
+	"tsena": preload("res://scenes/buildings/tsena.tscn"),
+	"champ": preload("res://scenes/world/champ.tscn"),
+	"puits": preload("res://scenes/world/puits.tscn"),
 }
 const DONNEES_UNITES := {
 	"villageois": preload("res://data/units/villageois.tres"),
@@ -58,8 +62,9 @@ func creer_unite(role: String, faction: int, pos: Vector3) -> Unite:
 	return u
 
 
-func creer_batiment(type_batiment: String, faction: int, pos: Vector3) -> Batiment:
-	var b: Batiment = SCENES_BATIMENTS[type_batiment].instantiate()
+## Crée un bâtiment (Batiment) ou une source construite (champ, puits : NoeudRessource).
+func creer_batiment(type_batiment: String, faction: int, pos: Vector3) -> Node3D:
+	var b: Node3D = SCENES_BATIMENTS[type_batiment].instantiate()
 	b.faction = faction
 	b.position = _borner(pos)
 	entites.add_child(b)
@@ -74,26 +79,48 @@ func creer_zebu(pos: Vector3, centre: Vector3) -> Zebu:
 	return z
 
 
-func creer_ressource(type_ressource: String, pos: Vector3, quantite: float, infini := false) -> NoeudRessource:
+func creer_ressource(variante: String, pos: Vector3) -> NoeudRessource:
 	var r: NoeudRessource = SCENE_RESSOURCE.instantiate()
-	r.type_ressource = type_ressource
-	r.quantite = quantite
-	r.infini = infini
+	r.variante = variante
+	match variante:
+		"epineux":
+			r.quantite = GameRules.ARBRE_BOIS
+			r.repousse_s = GameRules.ARBRE_REPOUSSE_S
+		"point_eau":
+			r.infini = true
+			r.rendement_secheresse = GameRules.POINT_EAU_SECHERESSE
+		"raketa":
+			r.infini = true
+			r.rendement = GameRules.RAKETA_RENDEMENT
+			r.bonus_eau = GameRules.RAKETA_BONUS_EAU
 	r.position = _borner(pos)
 	entites.add_child(r)
 	return r
 
 
 func construire(faction: int, type_batiment: String, pos: Vector3) -> void:
-	if type_batiment != "enclos":
+	if not GameRules.COUTS_BATIMENTS.has(type_batiment):
 		return
-	if not ResourceManager.payer(faction, GameRules.COUT_ENCLOS):
+	var nom: String = GameRules.NOMS_BATIMENTS.get(type_batiment, type_batiment)
+	if type_batiment == "tsena" and _possede(faction, "tsena"):
 		if faction == GameRules.PLAYER:
-			EventBus.message.emit("Pas assez de bois pour un enclos (%d)." % int(GameRules.COUT_ENCLOS["bois"]))
+			EventBus.message.emit("Votre clan a déjà un Tsena.")
 		return
-	creer_batiment("enclos", faction, pos)
+	var cout: Dictionary = GameRules.COUTS_BATIMENTS[type_batiment]
+	if not ResourceManager.payer(faction, cout):
+		if faction == GameRules.PLAYER:
+			EventBus.message.emit("%s : il faut %s." % [nom, ResourceManager.texte_cout(cout)])
+		return
+	creer_batiment(type_batiment, faction, pos)
 	if faction == GameRules.PLAYER:
-		EventBus.message.emit("Nouvel enclos construit : +%d places." % GameRules.CAPACITE_PAR_ENCLOS)
+		EventBus.message.emit("%s construit." % nom)
+
+
+func _possede(faction: int, type_batiment: String) -> bool:
+	for b in get_tree().get_nodes_in_group(type_batiment):
+		if b.faction == faction:
+			return true
+	return false
 
 
 # --- Carte de test symétrique ---
@@ -105,27 +132,78 @@ func _generer_carte() -> void:
 		var base := Vector3(-35.0, 0.0, 35.0) * s
 		creer_batiment("case_centrale", f, base)
 		creer_batiment("enclos", f, base + Vector3(10.0, 0.0, 0.0) * s)
+		for p in [Vector3(-2, 0, 9), Vector3(5, 0, 9)]:
+			creer_champ_mur(f, base + p * s)
 		for i in 3:
 			creer_unite("villageois", f, base + Vector3(-2.0 + i * 2.0, 0.0, -4.0) * s)
 		creer_unite("dahalo", f, base + Vector3(4.0, 0.0, -5.0) * s)
 		creer_unite("pisteur", f, base + Vector3(-4.0, 0.0, -5.0) * s)
 
-		for p in [Vector3(-10, 0, -6), Vector3(-13, 0, -2), Vector3(-9, 0, -11), Vector3(-14, 0, -9)]:
-			creer_ressource("bois", base + p * s, 250.0)
-		creer_ressource("eau", base + Vector3(2.0, 0.0, -13.0) * s, 0.0, true)
-		for p in [Vector3(4, 0, 10), Vector3(8, 0, 9)]:
-			creer_ressource("nourriture", base + p * s, 200.0)
+		_foret(base + Vector3(-13.0, 0.0, -8.0) * s, 9)
+		creer_ressource("point_eau", base + Vector3(3.0, 0.0, -13.0) * s)
+		for p in [Vector3(-10, 0, 6), Vector3(-12, 0, 10)]:
+			creer_ressource("raketa", base + p * s)
 
 	# Ressources disputées au centre.
-	creer_ressource("eau", Vector3(9.0, 0.0, -9.0), 0.0, true)
-	creer_ressource("eau", Vector3(-9.0, 0.0, 9.0), 0.0, true)
-	for p in [Vector3(0, 0, 16), Vector3(4, 0, 19), Vector3(0, 0, -16), Vector3(-4, 0, -19)]:
-		creer_ressource("bois", p, 400.0)
+	creer_ressource("point_eau", Vector3(9.0, 0.0, -9.0))
+	creer_ressource("point_eau", Vector3(-9.0, 0.0, 9.0))
+	_foret(Vector3(2.0, 0.0, 17.0), 10)
+	_foret(Vector3(-2.0, 0.0, -17.0), 10)
+	for p in [Vector3(14, 0, 4), Vector3(-14, 0, -4)]:
+		creer_ressource("raketa", p)
+
+	# Baobabs : décor et repères (on ne les coupe pas).
+	for p in [Vector3(-20, 0, 20), Vector3(20, 0, -20), Vector3(-45, 0, 5), Vector3(45, 0, -5),
+			Vector3(-5, 0, 45), Vector3(5, 0, -45), Vector3(25, 0, 25), Vector3(-25, 0, -25)]:
+		_baobab(p)
 
 	# Troupeaux sauvages, à égale distance des deux bases.
 	_troupeau(Vector3.ZERO, 8)
 	_troupeau(Vector3(-30.0, 0.0, -30.0), 6)
 	_troupeau(Vector3(30.0, 0.0, 30.0), 6)
+
+
+func creer_champ_mur(faction: int, pos: Vector3) -> Node3D:
+	var champ = SCENES_BATIMENTS["champ"].instantiate()
+	champ.faction = faction
+	champ.croissance = 1.0
+	champ.position = _borner(pos)
+	entites.add_child(champ)
+	return champ
+
+
+func _foret(centre: Vector3, nombre: int) -> void:
+	for i in nombre:
+		var a := TAU * i / float(nombre) + randf_range(-0.3, 0.3)
+		var d := 2.0 + (i % 3) * 2.2
+		creer_ressource("epineux", centre + Vector3(cos(a), 0.0, sin(a)) * d)
+
+
+func _baobab(pos: Vector3) -> void:
+	var arbre := Node3D.new()
+	var tronc := MeshInstance3D.new()
+	var m_tronc := CylinderMesh.new()
+	m_tronc.top_radius = 0.7
+	m_tronc.bottom_radius = 1.2
+	m_tronc.height = 6.0
+	var mat_tronc := StandardMaterial3D.new()
+	mat_tronc.albedo_color = Color(0.55, 0.45, 0.38)
+	m_tronc.material = mat_tronc
+	tronc.mesh = m_tronc
+	tronc.position.y = 3.0
+	arbre.add_child(tronc)
+	var couronne := MeshInstance3D.new()
+	var m_couronne := SphereMesh.new()
+	m_couronne.radius = 2.0
+	m_couronne.height = 1.2
+	var mat_couronne := StandardMaterial3D.new()
+	mat_couronne.albedo_color = Color(0.32, 0.38, 0.2)
+	m_couronne.material = mat_couronne
+	couronne.mesh = m_couronne
+	couronne.position.y = 6.3
+	arbre.add_child(couronne)
+	arbre.position = _borner(pos)
+	entites.add_child(arbre)
 
 
 func _troupeau(centre: Vector3, nombre: int) -> void:

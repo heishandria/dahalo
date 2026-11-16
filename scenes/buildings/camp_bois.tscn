@@ -1,0 +1,45 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scenes/buildings/batiment.gd" id="1_bat"]
+
+[sub_resource type="BoxShape3D" id="Shape_bat"]
+size = Vector3(3, 2, 3)
+
+[sub_resource type="StandardMaterial3D" id="Mat_murs"]
+albedo_color = Color(0.45, 0.32, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_murs"]
+material = SubResource("Mat_murs")
+size = Vector3(3, 2, 3)
+
+[sub_resource type="StandardMaterial3D" id="Mat_toit"]
+albedo_color = Color(0.5, 0.4, 0.25, 1)
+
+[sub_resource type="PrismMesh" id="Mesh_toit"]
+material = SubResource("Mat_toit")
+size = Vector3(3.6, 1.2, 3.6)
+
+[sub_resource type="BoxMesh" id="Mesh_banniere"]
+size = Vector3(0.8, 0.5, 0.05)
+
+[node name="CampBois" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_bat")
+type_batiment = "camp_bois"
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+shape = SubResource("Shape_bat")
+
+[node name="Murs" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+mesh = SubResource("Mesh_murs")
+
+[node name="Toit" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, 0)
+mesh = SubResource("Mesh_toit")
+
+[node name="Banniere" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, 0)
+mesh = SubResource("Mesh_banniere")
