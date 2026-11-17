@@ -3,7 +3,7 @@
 Note de reprise pour une nouvelle session Claude (VS Code, Claude Code sur PC).
 Lire aussi `CLAUDE.md` (règles d'architecture) et `docs/specs/` (règles codées).
 
-## Où en est le prototype (v0.10)
+## Où en est le prototype (v0.11)
 
 - Solo contre IA jouable : économie (bois, eau, nourriture, Ariary), champs, Tsena,
   zébus sauvages et migrations, capture / escorte / pillage d'enclos, palissades,
@@ -14,11 +14,15 @@ Lire aussi `CLAUDE.md` (règles d'architecture) et `docs/specs/` (règles codée
 - CI : `.github/workflows/export-web.yml` exporte le build Web vers GitHub Pages
   (https://heishandria.github.io/dahalo/) et lance un test accéléré sans écran
   (`-- --accelerer`), dont le rapport sort en annotations.
-  Elle prend aussi 6 **captures d'écran** (départ, bord du relief, panneau de la Case centrale, nuit, base de l'IA à 5 min,
-  vue d'ensemble) sous écran virtuel, publiées sur https://heishandria.github.io/dahalo/captures/
+  Elle prend aussi 7 **captures d'écran** (départ, bord du relief, rivière, panneau de la Case centrale, nuit, base de l'IA à 5 min,
+  vue d'ensemble ; graine 1) sous écran virtuel, publiées sur https://heishandria.github.io/dahalo/captures/
   (scénario : `systems/captures.gd` ; en local : `Godot --path . -- --captures=<dossier>`).
 - Graphismes : formes primitives (capsules, boîtes). Tout est à remplacer.
-- Carte : sol texturé par shader, relief et décor autour de la zone de jeu (`docs/specs/carte.md`).
+- **Carte aléatoire à graine** de 240 × 240 m, symétrique (équité), avec un lit de rivière à sec qui ralentit
+  les raids et des trous d'eau ; sol par shader, relief et décor autour (`docs/specs/carte.md`).
+  Graine imposée : `-- --graine=N`. Le navmesh contourne enfin bâtiments et bosquets (il ne lisait que le sol).
+- Test accéléré : l'accélération garde un pas physique normal (sinon les unités rapides oscillaient sur place,
+  ce qui faussait les anciens résultats de l'IA). Avec la nouvelle carte, l'IA seule atteint 40 zébus vers 25 min.
 - Interface contextuelle : toucher un bâtiment ouvre ses actions avec leurs coûts (`docs/specs/interface.md` §2 quater).
 - L'IA clôture son enclos garni de palissades et répare les brèches (voir `docs/specs/defense.md` §4).
 - Lancer en local (Mac) : `open -a Godot --args --path ~/dahalo` ; test accéléré :
@@ -56,5 +60,11 @@ couleurs ternes et poussiéreuses. Les personnages sont inventés, jamais copié
 
 ## Tâches proposées, pas encore lancées
 
-- Carte : disposition générée par le code (GDD §8), avec une graine et l'équité entre les clans.
+- Carte « façon maquette » (référence de style fournie le 17/11 : terrain en paliers, eau, végétation dense),
+  version **aride qui reverdit** :
+  1. plateaux en paliers **infranchissables** (falaises), rivière en contrebas ;
+  2. eau dans la rivière en saison des pluies, herbe dorée qui verdit ;
+  3. décor en modèles 3D : packs CC0 (Quaternius, Kenney) + modèles sur mesure (baobab, épineux, raketa, cases).
+- Direction artistique : choisir UN style pour les personnages (3D stylisée, cohérente avec la carte) ;
+  vérifier les cavaliers et les scarifications des fiches Dahalo (culture).
 - Mettre le GDD à jour avec les décisions prises ; vérifier les termes malgaches.

@@ -3,7 +3,7 @@ extends Node
 ## Grille de cases carrées sur toute la carte, recalculée plusieurs fois par seconde.
 ## Spec : docs/specs/vision.md
 
-const N := 60   # = 2 × GameRules.DEMI_CARTE / GameRules.TAILLE_CASE_VISION
+const N := 120   # = 2 × GameRules.DEMI_CARTE / GameRules.TAILLE_CASE_VISION (vérifié dans initialiser)
 
 var vu := {}        # faction -> PackedByteArray (1 = visible maintenant)
 var explore := {}   # faction -> PackedByteArray (1 = déjà exploré)
@@ -12,6 +12,7 @@ var _chrono := 0.0
 
 
 func initialiser(factions: Array) -> void:
+	assert(N == int(2.0 * GameRules.DEMI_CARTE / GameRules.TAILLE_CASE_VISION), "Vision.N incohérent avec GameRules")
 	vu.clear()
 	explore.clear()
 	revele_tout = false

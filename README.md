@@ -87,7 +87,7 @@ data/
   unit_data.gd       fiche d'unité (Resource)
   units/*.tres       villageois, pisteur, dahalo : modifier ici pour équilibrer
 scenes/
-  main.tscn/.gd      carte de test symétrique, création d'entités, ambiance
+  main.tscn/.gd      carte aléatoire (via systems/generateur_carte.gd), création d'entités, ambiance
   units/             unite (villageois/pisteur/dahalo), zebu
   buildings/         batiment (case centrale), enclos
   world/             noeud_ressource (bois/eau/nourriture)

@@ -26,11 +26,13 @@ tonemap_mode = 2
 
 [sub_resource type="NavigationMesh" id="NavMesh"]
 geometry_parsed_geometry_type = 1
-geometry_collision_mask = 41
-agent_radius = 0.5
+geometry_collision_mask = 57
+geometry_source_geometry_mode = 1
+geometry_source_group_name = &"source_navigation"
+agent_radius = 0.75
 
 [sub_resource type="PlaneMesh" id="Sol_mesh"]
-size = Vector2(120, 120)
+size = Vector2(240, 240)
 
 [sub_resource type="ShaderMaterial" id="Sol_mat"]
 resource_local_to_scene = true
@@ -38,7 +40,7 @@ render_priority = 0
 shader = ExtResource("7_terrain")
 
 [sub_resource type="BoxShape3D" id="Sol_forme"]
-size = Vector3(120, 1, 120)
+size = Vector3(240, 1, 240)
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
@@ -58,7 +60,7 @@ navigation_mesh = SubResource("NavMesh")
 mesh = SubResource("Sol_mesh")
 material_override = SubResource("Sol_mat")
 
-[node name="SolPhysique" type="StaticBody3D" parent="NavigationRegion3D"]
+[node name="SolPhysique" type="StaticBody3D" parent="NavigationRegion3D" groups=["source_navigation"]]
 collision_mask = 0
 
 [node name="Forme" type="CollisionShape3D" parent="NavigationRegion3D/SolPhysique"]
@@ -67,7 +69,7 @@ shape = SubResource("Sol_forme")
 
 [node name="Paysage" parent="." instance=ExtResource("6_paysage")]
 
-[node name="Entites" type="Node3D" parent="."]
+[node name="Entites" type="Node3D" parent="." groups=["source_navigation"]]
 
 [node name="CameraRig" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0, 30)

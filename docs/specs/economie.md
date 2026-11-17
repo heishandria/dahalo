@@ -41,7 +41,7 @@ Prélevé en continu, uniquement pour les zébus **sécurisés en enclos** (pas 
 |---|---|---|---|---|
 | **Champ** (construit) | Nourriture | 150 par récolte | Normale | **Ne pousse que si des villageois le cultivent**, voir §4 |
 | **Raketa** (cactus, nature) | Nourriture | Infinie | ×0,6 | En sécheresse, chaque unité récoltée donne aussi **+0,5 eau** au clan |
-| **Point d'eau** (nature) | Eau | Infinie | Normale | ×0,3 en sécheresse, rétrécit à l'écran |
+| **Point d'eau** (nature) | Eau | Infinie | Normale | ×0,3 en sécheresse, rétrécit à l'écran. Un près de chaque base, et une paire de **trous d'eau** creusés dans le sable du lit de rivière (voir `carte.md`) |
 | **Puits** (construit) | Eau | Infinie | Normale | ×0,6 en sécheresse ; réservé à son clan |
 | **Épineux** (nature, en forêts) | Bois | 50 par arbre (~5 allers-retours) | Normale | **Rapetisse à chaque coupe puis disparaît** ; un nouvel arbre repousse au même endroit 240 s plus tard |
 | Baobab | — | — | — | **Décor uniquement**, jamais coupé |
@@ -121,8 +121,9 @@ Vendre fait **baisser le cheptel** : c'est un arbitrage entre score de victoire 
 
 ## 9. Zébus disponibles et victoire
 
-- **Départ** : 20 zébus sauvages (troupeaux de 8, 6 et 6, à égale distance des deux bases).
-- **Arrivées à l'aube** (lieu tiré au sort parmi 5 points à égale distance des bases, **non révélé** :
+- **Départ** : 20 zébus sauvages (8 au centre de la carte, dans le lit de rivière, et une paire symétrique de 6).
+- **Arrivées à l'aube** (lieu tiré au sort parmi 5 points posés par le générateur : le centre et deux paires
+  symétriques, à plus de 45 m des bases ; **non révélé** :
   il faut l'explorer) :
   - jour normal : **+5** ; aube qui suit une sécheresse (retour des pluies) : **+10** ;
   - aucune arrivée le premier matin, ni à l'aube d'une sécheresse ;

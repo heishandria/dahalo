@@ -74,7 +74,7 @@ jobs:
           DOSSIER="$PWD/build/web/captures"
           mkdir -p "$DOSSIER"
           timeout 480 xvfb-run -a -s "-screen 0 1600x900x24" \
-            godot --path . --rendering-method gl_compatibility --audio-driver Dummy -- --captures="$DOSSIER" \
+            godot --path . --rendering-method gl_compatibility --audio-driver Dummy -- --graine=1 --captures="$DOSSIER" \
             > captures.log 2>&1 || true
           grep -F "[captures]" captures.log || tail -20 captures.log
           # Galerie : https://heishandria.github.io/dahalo/captures/

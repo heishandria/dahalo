@@ -2,11 +2,11 @@ extends Node3D
 ## Paysage autour de la zone de jeu : relief (collines puis plateau) et décor (rochers, fourrés,
 ## épineux, baobabs). Purement visuel : aucune collision, hors du navmesh, aucun effet sur le jeu.
 ## La zone de jeu (±DEMI_CARTE) reste plate à y = 0 ; le relief part de son bord.
+## Construit par main.gd après la génération de la carte (le relief suit la vallée de la rivière).
 ## Spec : docs/specs/carte.md
 
-const ETENDUE := 200.0          # le relief couvre ±200 m : la caméra ne voit jamais le vide
+const ETENDUE := Terrain.ETENDUE   # le relief couvre toute la vue possible de la caméra
 const PAS := 4.0                # maillage du relief (DEMI_CARTE doit en être un multiple)
-const GRAINE := 20261117        # paysage identique à chaque partie (captures comparables)
 const NOMBRE_ROCHERS := 170
 const NOMBRE_FOURRES := 260
 const NOMBRE_TOUFFES_EPINEUX := 140   # touffes de 3 à 5 tiges (épineux de type Alluaudia)
@@ -24,14 +24,17 @@ var _hasard := RandomNumberGenerator.new()
 var _materiau_relief := ShaderMaterial.new()
 
 
-func _ready() -> void:
-	_bruit.seed = GRAINE
+func construire() -> void:
+	var graine := Terrain.graine   # même graine que la carte : même partie, même paysage
+	_bruit.seed = graine
 	_bruit.frequency = 0.018
 	_bruit.fractal_octaves = 3
-	_bruit_fin.seed = GRAINE + 1
+	_bruit_fin.seed = graine + 1
 	_bruit_fin.frequency = 0.09
-	_hasard.seed = GRAINE
+	_hasard.seed = graine
 	_materiau_relief.shader = preload("res://scenes/world/terrain.gdshader")
+	_materiau_relief.set_shader_parameter("distances_riviere", Terrain.texture_distances())
+	_materiau_relief.set_shader_parameter("etendue", Terrain.ETENDUE)
 	EventBus.meteo_change.connect(_on_meteo)
 	_creer_relief()
 	_creer_decor()
@@ -51,7 +54,10 @@ func hauteur(x: float, z: float) -> float:
 	var escarpement := smoothstep(6.0, 18.0, d) * (10.0 + 12.0 * n) * lointain
 	var plateau := smoothstep(30.0, 70.0, d) * 8.0
 	var detail := _bruit_fin.get_noise_2d(x, z) * (1.5 + 2.0 * lointain) * montee
-	return maxf(0.0, collines + escarpement + plateau + detail)
+	# La rivière sort de la zone de jeu par une vallée à fond plat.
+	var vallee := smoothstep(GameRules.RIVIERE_LARGEUR * 0.5, GameRules.RIVIERE_LARGEUR * 0.5 + 26.0,
+			Terrain.distance_riviere(Vector3(x, 0.0, z)))
+	return maxf(0.0, (collines + escarpement + plateau + detail) * vallee)
 
 
 func _creer_relief() -> void:
@@ -166,7 +172,8 @@ func _point_hors_jeu(d_min: float, d_max: float) -> Vector3:
 		var x := _hasard.randf_range(-limite - d_max, limite + d_max)
 		var z := _hasard.randf_range(-limite - d_max, limite + d_max)
 		var d := maxf(absf(x), absf(z)) - limite
-		if d >= d_min and d <= d_max:
+		var hors_du_lit := Terrain.distance_riviere(Vector3(x, 0.0, z)) > GameRules.RIVIERE_LARGEUR * 0.5 + 3.0
+		if d >= d_min and d <= d_max and hors_du_lit:
 			return Vector3(x, hauteur(x, z), z)
 	return Vector3.ZERO
 

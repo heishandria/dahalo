@@ -101,8 +101,9 @@ func est_vole_recemment() -> bool:
 func fuir() -> void:
 	var a := randf() * TAU
 	var destination := global_position + Vector3(cos(a), 0.0, sin(a)) * 22.0
-	destination.x = clampf(destination.x, -55.0, 55.0)
-	destination.z = clampf(destination.z, -55.0, 55.0)
+	var limite := GameRules.DEMI_CARTE - 5.0
+	destination.x = clampf(destination.x, -limite, limite)
+	destination.z = clampf(destination.z, -limite, limite)
 	etat = Etat.SAUVAGE
 	enclos = null
 	meneur = null
@@ -162,7 +163,7 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector3.ZERO
 		return
 	dir = dir.normalized()
-	velocity = dir * vitesse
+	velocity = dir * vitesse * Terrain.facteur_vitesse(global_position)   # sable du lit de rivière
 	look_at(global_position + dir, Vector3.UP)
 	move_and_slide()
 

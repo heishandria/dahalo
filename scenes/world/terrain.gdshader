@@ -10,6 +10,12 @@ uniform vec3 couleur_laterite_sombre : source_color = vec3(0.56, 0.27, 0.16);
 uniform vec3 couleur_sable : source_color = vec3(0.8, 0.6, 0.42);
 uniform vec3 couleur_herbe : source_color = vec3(0.58, 0.52, 0.3);
 uniform vec3 couleur_roche : source_color = vec3(0.74, 0.61, 0.46);   // calcaire du plateau Mahafaly
+uniform vec3 couleur_lit : source_color = vec3(0.8, 0.63, 0.43);     // sable clair du lit de rivière
+// Lit de rivière : distance au milieu du lit (rouge = distance / distance_max), fournie par Terrain.
+uniform sampler2D distances_riviere : filter_linear, repeat_disable, hint_default_white;
+uniform float etendue = 280.0;
+uniform float distance_max = 32.0;
+uniform float largeur_riviere = 11.0;
 
 varying vec3 position_monde;
 varying vec3 normale_monde;
@@ -49,6 +55,14 @@ void fragment() {
 	// Herbe sèche, qui disparaît presque pendant la sécheresse
 	float herbe = smoothstep(0.55, 0.8, bruit_fractal(p / 12.0 + 5.3)) * (1.0 - 0.8 * secheresse);
 	c = mix(c, couleur_herbe, herbe * 0.35);
+	// Lit de rivière à sec : sable clair, plus sombre et humide au milieu hors sécheresse ; berges herbeuses.
+	float d_riviere = texture(distances_riviere, (p + etendue) / (2.0 * etendue)).r * distance_max;
+	float demi = largeur_riviere * 0.5;
+	float berge = 1.0 - smoothstep(demi, demi + 6.0, d_riviere);
+	c = mix(c, couleur_herbe * 0.9, berge * 0.45 * (1.0 - 0.6 * secheresse));
+	vec3 sable = couleur_lit * (0.92 + 0.12 * moyennes);
+	sable = mix(sable, sable * 0.78, (1.0 - smoothstep(0.0, demi * 0.6, d_riviere)) * (1.0 - secheresse));
+	c = mix(c, sable, 1.0 - smoothstep(demi - 1.0, demi + 0.8, d_riviere + (grain - 0.5) * 1.2));
 	// Roche calcaire : pentes raides et hauteurs du relief
 	float pente = 1.0 - clamp(normale_monde.y, 0.0, 1.0);
 	float roche = clamp(smoothstep(0.15, 0.4, pente) + 0.6 * smoothstep(8.0, 20.0, position_monde.y), 0.0, 1.0);

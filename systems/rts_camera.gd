@@ -18,6 +18,7 @@ const DROITE := Vector3(0.70710678, 0.0, -0.70710678)
 
 
 func _ready() -> void:
+	limite = GameRules.DEMI_CARTE - 5.0
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.position = Vector3(40.0, 40.0, 40.0)   # angle isométrique « vrai » (35,26°)
 	camera.look_at(global_position, Vector3.UP)

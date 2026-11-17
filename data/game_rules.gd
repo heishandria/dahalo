@@ -20,8 +20,8 @@ const CYCLES_ENTRE_SECHERESSES := 2    # jours normaux avant une sécheresse
 const DUREE_SECHERESSE_CYCLES := 1
 
 # --- Vision et brouillard de guerre (spec : docs/specs/vision.md) ---
-const DEMI_CARTE := 60.0               # la carte va de -60 à +60 m
-const TAILLE_CASE_VISION := 2.0        # 60 × 60 cases (garder Vision.N cohérent)
+const DEMI_CARTE := 120.0              # la carte va de -120 à +120 m (240 × 240 m, échelle AoE 2 joueurs)
+const TAILLE_CASE_VISION := 2.0        # 120 × 120 cases (Vision.N en est déduit)
 const FREQUENCE_VISION_S := 0.2
 const VISION_BATIMENT := 12.0
 const VISION_NUIT := 0.6               # multiplicateur de vision la nuit (bâtiments ; unités : voir .tres)
@@ -30,12 +30,25 @@ const PORTEE_LECTURE_TRACES := 15.0    # distance à laquelle un Pisteur repère
 const ECART_TRACES_M := 3.0
 
 # --- Troupeaux sauvages : arrivées au fil de la partie (spec : docs/specs/economie.md §9) ---
-const ZEBUS_SAUVAGES_DEPART := [8, 6, 6]   # centre + deux troupeaux à égale distance des bases
+const ZEBUS_SAUVAGES_DEPART := [8, 6, 6]   # centre + une paire de troupeaux symétriques
 const MIGRATION_NORMALE := 5               # à l'aube d'un jour normal
 const MIGRATION_PLUIES := 10               # à l'aube qui suit une sécheresse (retour des pluies)
 const ZEBUS_SAUVAGES_MAX := 30             # pas d'arrivée au-delà (évite d'encombrer la carte)
-# Points d'arrivée, tous à égale distance des deux bases (diagonale de la carte).
-const POINTS_MIGRATION := [Vector3(-48, 0, -48), Vector3(48, 0, 48), Vector3(-18, 0, -18), Vector3(18, 0, 18), Vector3(0, 0, 0)]
+# Points d'arrivée : tirés par le générateur de carte (centre + paires symétriques), voir docs/specs/carte.md.
+
+# --- Carte aléatoire (spec : docs/specs/carte.md) ---
+# Carte symétrique par rapport au centre : tout ce qui est placé d'un côté l'est aussi à l'opposé.
+const CARTE_DISTANCE_BASES := 78.0         # distance base - centre (bases à ~156 m l'une de l'autre)
+const CARTE_RAYON_BASE_LIBRE := 30.0       # rien de neutre (forêt, troupeau...) aussi près d'une base
+const CARTE_PAIRES_FORETS := 7             # bosquets d'épineux neutres (par paire)
+const CARTE_ARBRES_PAR_FORET := Vector2i(8, 14)
+const CARTE_PAIRES_RAKETA := 3
+const CARTE_PAIRES_BAOBABS := 5
+const CARTE_PAIRES_MIGRATION := 2          # + le centre
+# Lit de rivière à sec (type Menarandra) : traverse la carte entre les deux bases.
+const RIVIERE_LARGEUR := 11.0              # largeur du lit de sable (m)
+const RIVIERE_RALENTISSEMENT := 0.6        # vitesse des unités et des zébus dans le sable
+const RIVIERE_TROUS_EAU := 1               # paires de trous d'eau creusés dans le sable du lit
 
 # --- Ressources ---
 const RESSOURCES := ["nourriture", "eau", "bois", "ariary"]

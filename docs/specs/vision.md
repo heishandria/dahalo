@@ -6,8 +6,8 @@
 
 ## 1. Principe
 
-Chaque clan ne voit que ce que voient ses unités et ses bâtiments. La carte (120 × 120 m) est découpée
-en **60 × 60 cases de 2 m**. Pour chaque clan, deux états par case :
+Chaque clan ne voit que ce que voient ses unités et ses bâtiments. La carte (240 × 240 m) est découpée
+en **120 × 120 cases de 2 m**. Pour chaque clan, deux états par case :
 - **exploré** : la case a déjà été vue au moins une fois (définitif) ;
 - **visible** : la case est vue en ce moment. Recalculé **5 fois par seconde**.
 
@@ -57,7 +57,8 @@ La nuit dure ~1 min 25 s par cycle de 4 min : c'est le moment des raids.
 - **Pas de triche sur la vue** : elle ne défend que contre les intrus **visibles**.
 - Elle se **souvient des zones explorées** : elle cible les zébus et les enclos situés dans des zones déjà
   explorées (approximation d'une mémoire ; elle n'a pas à les voir à l'instant).
-- Son **Pisteur explore** en boucle 8 points de la carte (troupeaux, centre, base adverse, coins).
+- Son **Pisteur explore** en boucle 13 points répartis sur toute la carte (centre, couronne, coins), la carte
+  étant aléatoire. **S'il meurt, elle en reforme un** (sans Pisteur, elle ne découvrirait plus rien).
 
 ## 7. Écarts avec le GDD
 

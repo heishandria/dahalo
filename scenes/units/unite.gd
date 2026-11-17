@@ -42,6 +42,10 @@ var _derniere_trace := Vector3.INF
 var ralentissements := 0     # nombre de palissades ennemies traversées en ce moment
 var _derniere_alerte := -INF
 var _deplacement_demande := false   # avoidance : vrai si _avancer a demandé un pas ce tour-ci
+# Blocage : une unité qui veut avancer mais ne progresse plus abandonne son trajet.
+const DELAI_BLOCAGE_S := 3.0
+var _repere_blocage := Vector3.INF
+var _chrono_blocage := 0.0
 
 # Capture : passer la corde / détacher un zébu prend du temps
 var _zebu_en_capture = null
@@ -196,7 +200,7 @@ func vitesse_actuelle() -> float:
 		v *= GameRules.BONUS_MARCHEURS
 	if ralentissements > 0:
 		v *= GameRules.PALISSADE_RALENTISSEMENT
-	return v
+	return v * Terrain.facteur_vitesse(global_position)   # sable du lit de rivière
 
 
 func capacite_transport() -> float:
@@ -323,6 +327,11 @@ func _physics_process(delta: float) -> void:
 func _avancer() -> void:
 	if not zebus_escortes.is_empty():
 		_laisser_traces()
+	# Coincée (bosquet, foule) ou cible hors d'atteinte (zébu au milieu d'un bosquet...) : elle abandonne
+	# et redevient disponible pour un autre ordre. Pas pendant une attaque (sabotage d'une palissade).
+	if etat != Etat.ATTAQUE and _est_bloquee():
+		_stop()
+		return
 	if agent.is_navigation_finished():
 		if etat == Etat.DEPLACEMENT:
 			_stop()
@@ -336,6 +345,22 @@ func _avancer() -> void:
 	_deplacement_demande = true
 	agent.max_speed = vitesse_actuelle()
 	agent.velocity = dir * vitesse_actuelle()
+
+
+## Vrai si, sur une fenêtre de DELAI_BLOCAGE_S passée à chercher à avancer, l'unité s'est déplacée de
+## moins d'un mètre (y compris si elle oscille sur place contre un obstacle).
+func _est_bloquee() -> bool:
+	if _repere_blocage == Vector3.INF:
+		_repere_blocage = global_position
+		_chrono_blocage = 0.0
+		return false
+	_chrono_blocage += get_physics_process_delta_time()
+	if _chrono_blocage < DELAI_BLOCAGE_S:
+		return false
+	var bloquee := global_position.distance_to(_repere_blocage) < 1.0
+	_repere_blocage = global_position
+	_chrono_blocage = 0.0
+	return bloquee
 
 
 func _on_vitesse_calculee(vitesse_sure: Vector3) -> void:
@@ -655,6 +680,7 @@ func _stop() -> void:
 	_sabotage_auto = false
 	etat = Etat.INACTIF
 	_deplacement_demande = false
+	_repere_blocage = Vector3.INF
 	velocity = Vector3.ZERO
 	agent.target_position = global_position
 

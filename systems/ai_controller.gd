@@ -25,8 +25,10 @@ const CHAMPS_MAX := 4
 const PLAN_RECHERCHE := ["cultures_traditionnelles", "vannerie_cuirs", "age_2", "sagaies_acerees",
 		"puits_profonds", "marcheurs_androy", "age_3", "pacte_eleveurs", "raid_eclair"]
 const RESERVE_RECHERCHE := {"nourriture": 120.0, "bois": 100.0}
-const POINTS_EXPLORATION := [Vector3(30, 0, 30), Vector3(0, 0, 0), Vector3(-30, 0, -30), Vector3(15, 0, -15),
-		Vector3(-15, 0, 15), Vector3(-35, 0, 35), Vector3(-45, 0, -45), Vector3(45, 0, 45)]
+# Circuit d'exploration du Pisteur, en fraction de DEMI_CARTE (la carte est aléatoire : on balaie tout).
+const POINTS_EXPLORATION := [Vector2(0.4, 0.4), Vector2(0, 0), Vector2(-0.4, -0.4), Vector2(0.5, -0.5),
+		Vector2(-0.5, 0.5), Vector2(0.8, 0), Vector2(0, -0.8), Vector2(-0.8, 0), Vector2(0, 0.8),
+		Vector2(0.75, 0.75), Vector2(-0.75, -0.75), Vector2(0.75, -0.75), Vector2(-0.75, 0.75)]
 # Palissades autour des enclos (spec : docs/specs/defense.md §4)
 const PALISSADE_ZEBUS_MIN := 4          # un enclos n'est clôturé qu'à partir de ce nombre de zébus
 const PALISSADE_RESERVE_BOIS := 100.0   # bois gardé après chaque segment (enclos et champs passent avant)
@@ -68,7 +70,7 @@ func _reflechir() -> void:
 	if _defendre(case, combattants):
 		dahalos = []  # tout le monde est mobilisé pour la défense ce tour-ci
 	_gerer_economie(villageois)
-	_gerer_formation(case, villageois.size(), dahalos.size(), combattants.size())
+	_gerer_formation(case, villageois.size(), dahalos.size(), combattants.size(), pisteurs.size())
 	_gerer_enclos(case)
 	_gerer_champs(case, villageois.size())
 	_gerer_palissades()
@@ -116,11 +118,15 @@ func _type_prioritaire(affectes: Dictionary) -> String:
 
 # --- Formation et enclos ---
 
-func _gerer_formation(case, nb_villageois: int, nb_dahalos: int, nb_guerriers: int) -> void:
+func _gerer_formation(case, nb_villageois: int, nb_dahalos: int, nb_guerriers: int, nb_pisteurs: int) -> void:
 	var monde = CommandBus.monde
 	if case.en_formation == 0 and nb_villageois < villageois_max \
 			and ResourceManager.peut_payer(faction, monde.donnees_unite("villageois").cout):
 		_cmd({"type": "former", "batiment": case.id, "unite": "villageois"})
+	# Sans Pisteur, l'IA ne découvre plus rien (brouillard) : elle en reforme un s'il est mort.
+	elif case.en_formation == 0 and nb_pisteurs == 0 \
+			and ResourceManager.peut_payer(faction, monde.donnees_unite("pisteur").cout):
+		_cmd({"type": "former", "batiment": case.id, "unite": "pisteur"})
 	# Les guerriers se forment à la Case des Hommes : la construire dès que possible.
 	var hommes = _premier_batiment("case_hommes")
 	if hommes == null:
@@ -318,7 +324,8 @@ func _explorer(pisteurs: Array) -> void:
 	for p in pisteurs:
 		if not p.est_inactif():
 			continue
-		var cible: Vector3 = POINTS_EXPLORATION[_point_exploration % POINTS_EXPLORATION.size()]
+		var fraction: Vector2 = POINTS_EXPLORATION[_point_exploration % POINTS_EXPLORATION.size()]
+		var cible := Vector3(fraction.x, 0.0, fraction.y) * GameRules.DEMI_CARTE
 		_point_exploration += 1
 		_cmd({"type": "deplacer", "unites": [p.id], "cible": cible})
 

@@ -1,6 +1,6 @@
 # Spec — Interface et confort de jeu
 
-> Statut : **prototype v0.10** (17/11/2026). Décrit ce qui est **réellement codé**.
+> Statut : **prototype v0.11** (17/11/2026). Décrit ce qui est **réellement codé**.
 > Code : `ui/hud.gd`, `ui/mini_carte.gd`, `systems/selection_manager.gd`, `scenes/main.gd` (validité des emplacements).
 > Règle : tout est jouable **à la souris ET au doigt** (cible mobile : Safari iOS).
 
@@ -71,16 +71,23 @@
 | Case centrale, Case des Hommes, camp de bûcherons, Tsena, puits | Oui | Oui | Chemin recalculé à chaque construction |
 | Points d'eau, baobabs | Oui | Oui | |
 | Clôtures d'enclos | Oui | Non | On entre **par l'ouverture** (côté sud) ; les zébus ne s'y accrochent pas |
-| Arbres épineux, raketa | Non | Oui | Les unités butent dessus et glissent ; un arbre abattu n'est plus un obstacle |
+| Arbres épineux, raketa | **Oui** | Oui | Les chemins contournent les bosquets (comme les forêts d'AoE) ; on récolte depuis le bord. Un arbre abattu reste contourné jusqu'au prochain recalcul |
+| Lit de rivière | Non (on le traverse) | Non | **Ralentit à 60 %** unités et zébus (sable) |
 | Champs | Non | Non | Le champ se cultive dessus |
 | Palissades | Non | **Oui, pour les autres clans seulement** | Bloque l'ennemi jusqu'au sabotage ; son clan et les zébus passent |
 | Autres unités | Évitement | Non | Les unités s'écartent les unes des autres (évitement réciproque) |
 
 Les zébus heurtent bâtiments et arbres, mais pas les clôtures ni les autres unités.
 
+- **Chemin** : le navmesh lit le sol **et** toutes les entités (groupe `source_navigation` : sol + `Entites`),
+  calques 1, 4, 5 et 6, avec une marge de 0,75 m autour des obstacles (le corps d'une unité fait 0,4 m de rayon).
+  Avant le 17/11, il ne lisait que le sol : les chemins traversaient bâtiments et bosquets.
+- **Blocage** : une unité qui cherche à avancer mais parcourt moins de 1 m en 3 s **abandonne son trajet** et
+  redevient inactive (sauf en attaque, pour ne pas interrompre un sabotage). Évite les unités coincées à vie.
+
 ## 3. Mini-carte
 
-- 200 × 200 px, toute la carte (120 × 120 m), **respecte le brouillard** : noir = inexploré,
+- 200 × 200 px, toute la carte (240 × 240 m), **respecte le brouillard** : noir = inexploré,
   brun = exploré, ocre clair = visible.
 - Affiche : points d'eau découverts (bleu), bâtiments (carrés couleur du clan ; ennemis une fois explorés),
   zébus (blanc ; les siens toujours, les autres s'ils sont visibles), unités (ronds couleur du clan ;

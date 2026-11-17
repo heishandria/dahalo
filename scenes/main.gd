@@ -1,6 +1,6 @@
 extends Node3D
-## Scène principale : génère la carte de test, crée les entités, gère jour/nuit visuel.
-## Carte fixe et symétrique pour le prototype ; la génération procédurale (GDD §8) viendra ensuite.
+## Scène principale : génère la carte (GenerateurCarte, à graine), crée les entités, gère jour/nuit visuel.
+## Graine : tirée au hasard, ou imposée par `-- --graine=N` (rejouer exactement la même carte).
 
 const SCENE_UNITE := preload("res://scenes/units/unite.tscn")
 const SCENE_ZEBU := preload("res://scenes/units/zebu.tscn")
@@ -22,11 +22,12 @@ const DONNEES_UNITES := {
 	"lanceur": preload("res://data/units/lanceur.tres"),
 	"tireur": preload("res://data/units/tireur.tres"),
 }
-const LIMITE_CARTE := 56.0
+const LIMITE_CARTE := GameRules.DEMI_CARTE - 4.0
 # Bâtiments que les unités contournent (navmesh recalculé à leur construction)
 const BATIMENTS_OBSTACLES := ["case_centrale", "case_hommes", "camp_bois", "tsena", "puits", "enclos"]
 
 var _recuisson_demandee := false
+var carte := {}   # description de la carte générée (voir GenerateurCarte.generer)
 var _test_accelere := false
 var _prochain_rapport := 300.0
 
@@ -50,7 +51,7 @@ func _ready() -> void:
 	ResourceManager.initialiser([GameRules.PLAYER, GameRules.AI])
 	# Test de fumée (CI) : `godot --headless -- --accelerer` joue une partie en accéléré.
 	if "--accelerer" in OS.get_cmdline_user_args():
-		Engine.time_scale = 8.0
+		accelerer(8.0)
 		_test_accelere = true
 		print("[test] partie accélérée x8")
 		EventBus.partie_terminee.connect(_fin_du_test)
@@ -64,8 +65,7 @@ func _ready() -> void:
 	EventBus.meteo_change.connect(_on_meteo)
 	EventBus.cycle_change.connect(_on_cycle)
 
-	# Navmesh cuit au lancement à partir du sol (obstacles ajoutés plus tard).
-	_generer_carte()
+	_generer_carte(_graine())
 	# Navmesh cuit APRÈS la carte : il contourne bâtiments, points d'eau, baobabs et clôtures.
 	navigation.bake_navigation_mesh(false)
 	Vision.initialiser([GameRules.PLAYER, GameRules.AI])
@@ -79,6 +79,14 @@ func _process(_delta: float) -> void:
 		_prochain_rapport += 300.0
 		_rapport_test()
 	_maj_lumiere()
+
+
+## Accélère le temps de jeu (tests, captures) SANS allonger le pas physique : sinon une unité rapide
+## avance de plus d'un mètre par pas, dépasse les points de son chemin et oscille sur place.
+static func accelerer(facteur: float) -> void:
+	Engine.time_scale = facteur
+	Engine.physics_ticks_per_second = int(60.0 * maxf(facteur, 1.0))
+	Engine.max_physics_steps_per_frame = int(8.0 * maxf(facteur, 1.0))
 
 
 # --- Création d'entités (appelées aussi par CommandBus / bâtiments) ---
@@ -242,45 +250,56 @@ func possede(faction: int, type_batiment: String) -> bool:
 	return false
 
 
-# --- Carte de test symétrique ---
+# --- Carte aléatoire (spec : docs/specs/carte.md) ---
 
-func _generer_carte() -> void:
+func _graine() -> int:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--graine="):
+			return int(arg.trim_prefix("--graine="))
+	var hasard := RandomNumberGenerator.new()
+	hasard.randomize()
+	return hasard.randi_range(1, 999999)
+
+
+func _generer_carte(graine: int) -> void:
+	carte = GenerateurCarte.new().generer(graine)
+	Terrain.initialiser(graine, carte["riviere"])
+	print("[carte] graine %d" % graine)
+	# Le sol et le relief lisent la rivière dans le même shader.
+	var m := sol.material_override as ShaderMaterial
+	if m:
+		m.set_shader_parameter("distances_riviere", Terrain.texture_distances())
+		m.set_shader_parameter("etendue", Terrain.ETENDUE)
+	$Paysage.construire()
+
+	# Bases : même disposition dans le repère de chaque base (avant = vers le centre de la carte).
 	for f in [GameRules.PLAYER, GameRules.AI]:
-		# Joueur au sud-ouest, IA au nord-est : positions miroir pour l'équité.
-		var s := 1.0 if f == GameRules.PLAYER else -1.0
-		var base := Vector3(-35.0, 0.0, 35.0) * s
+		var repere: Dictionary = carte["reperes"][f]
+		var base: Vector3 = repere["base"]
+		var avant: Vector3 = repere["avant"]
+		var droite: Vector3 = repere["droite"]
 		creer_batiment("case_centrale", f, base)
-		creer_batiment("enclos", f, base + Vector3(10.0, 0.0, 0.0) * s)
-		for p in [Vector3(-2, 0, 9), Vector3(5, 0, 9)]:
-			creer_champ_mur(f, base + p * s)
+		creer_batiment("enclos", f, base + droite * 10.0)
+		for p in [-avant * 9.0 - droite * 2.0, -avant * 9.0 + droite * 5.0]:
+			creer_champ_mur(f, base + p)
 		for i in 3:
-			creer_unite("villageois", f, base + Vector3(-2.0 + i * 2.0, 0.0, -4.0) * s)
-		creer_unite("dahalo", f, base + Vector3(4.0, 0.0, -5.0) * s)
-		creer_unite("pisteur", f, base + Vector3(-4.0, 0.0, -5.0) * s)
+			creer_unite("villageois", f, base + avant * 4.0 + droite * (-2.0 + i * 2.0))
+		creer_unite("dahalo", f, base + avant * 5.0 + droite * 4.0)
+		creer_unite("pisteur", f, base + avant * 5.0 - droite * 4.0)
+	if has_node("CameraRig"):
+		$CameraRig.centrer_sur(carte["reperes"][GameRules.PLAYER]["base"])
 
-		_foret(base + Vector3(-13.0, 0.0, -8.0) * s, 9)
-		creer_ressource("point_eau", base + Vector3(3.0, 0.0, -13.0) * s)
-		for p in [Vector3(-10, 0, 6), Vector3(-12, 0, 10)]:
-			creer_ressource("raketa", base + p * s)
-
-	# Ressources disputées au centre.
-	creer_ressource("point_eau", Vector3(9.0, 0.0, -9.0))
-	creer_ressource("point_eau", Vector3(-9.0, 0.0, 9.0))
-	_foret(Vector3(2.0, 0.0, 17.0), 10)
-	_foret(Vector3(-2.0, 0.0, -17.0), 10)
-	for p in [Vector3(14, 0, 4), Vector3(-14, 0, -4)]:
+	for p in carte["arbres"]:
+		creer_ressource("epineux", p)
+	for p in carte["points_eau"]:
+		creer_ressource("point_eau", p)
+	for p in carte["raketa"]:
 		creer_ressource("raketa", p)
-
 	# Baobabs : décor et repères (on ne les coupe pas).
-	for p in [Vector3(-20, 0, 20), Vector3(20, 0, -20), Vector3(-45, 0, 5), Vector3(45, 0, -5),
-			Vector3(-5, 0, 45), Vector3(5, 0, -45), Vector3(25, 0, 25), Vector3(-25, 0, -25)]:
+	for p in carte["baobabs"]:
 		_baobab(p)
-
-	# Troupeaux sauvages, à égale distance des deux bases.
-	var depart: Array = GameRules.ZEBUS_SAUVAGES_DEPART
-	_troupeau(Vector3.ZERO, depart[0])
-	_troupeau(Vector3(-30.0, 0.0, -30.0), depart[1])
-	_troupeau(Vector3(30.0, 0.0, 30.0), depart[2])
+	for t in carte["troupeaux"]:
+		_troupeau(t[0], t[1])
 
 
 func creer_champ_mur(faction: int, pos: Vector3) -> Node3D:
@@ -290,13 +309,6 @@ func creer_champ_mur(faction: int, pos: Vector3) -> Node3D:
 	champ.position = _borner(pos)
 	entites.add_child(champ)
 	return champ
-
-
-func _foret(centre: Vector3, nombre: int) -> void:
-	for i in nombre:
-		var a := TAU * i / float(nombre) + randf_range(-0.3, 0.3)
-		var d := 2.0 + (i % 3) * 2.2
-		creer_ressource("epineux", centre + Vector3(cos(a), 0.0, sin(a)) * d)
 
 
 func _baobab(pos: Vector3) -> void:
@@ -356,7 +368,7 @@ func _on_cycle(est_nuit: bool) -> void:
 	nombre = mini(nombre, GameRules.ZEBUS_SAUVAGES_MAX - sauvages)
 	if nombre <= 0:
 		return
-	var points: Array = GameRules.POINTS_MIGRATION
+	var points: Array = carte["migrations"]
 	_troupeau(points[randi() % points.size()], nombre)
 	# Le lieu n'est pas révélé : c'est le travail des Pisteurs.
 	if apres_secheresse:
@@ -382,21 +394,31 @@ func _rapport_test() -> void:
 		sauvages, ResourceManager.age(ia), int(ResourceManager.quantite(ia, "ariary")),
 		get_tree().get_nodes_in_group("unites_%d" % ia).size(),
 		get_tree().get_nodes_in_group("batiments_%d" % ia).size() - palissades, palissades])
+	# Diagnostic des raids : Dahalo de l'IA par état, zébus sauvages qu'elle a déjà repérés.
+	var etats := {}
+	for u in get_tree().get_nodes_in_group("unites_%d" % ia):
+		if u.data.role == "pisteur":
+			etats["pisteur " + String(Unite.Etat.keys()[u.etat])] = 1
+		if u.data.role == "dahalo":
+			var nom: String = Unite.Etat.keys()[u.etat]
+			etats[nom] = int(etats.get(nom, 0)) + 1
+	var reperes := 0
+	for z in get_tree().get_nodes_in_group("zebus"):
+		if z.etat == Zebu.Etat.SAUVAGE and Vision.est_explore(ia, z.global_position):
+			reperes += 1
+	print("[test]        IA : dahalo %s, zébus sauvages repérés %d" % [etats, reperes])
 
 
-## Duels du triangle des guerriers, loin des deux bases, entre deux clans de test (2 et 3)
-## que l'IA et le joueur ignorent. Le résultat est imprimé pour la CI.
-const DUELS := [
-	["lanceur", "dahalo", Vector3(-5, 0, 52)],
-	["tireur", "lanceur", Vector3(25, 0, 52)],
-	["dahalo", "tireur", Vector3(52, 0, 20)],
-]
+## Duels du triangle des guerriers, dans les zones vides réservées par le générateur, entre deux clans
+## de test (2 et 3) que l'IA et le joueur ignorent. Le résultat est imprimé pour la CI.
+const DUELS := [["lanceur", "dahalo"], ["tireur", "lanceur"], ["dahalo", "tireur"]]
 
 
 func _lancer_duels() -> void:
 	var duels: Array = []
-	for d in DUELS:
-		var centre: Vector3 = d[2]
+	for k in DUELS.size():
+		var d: Array = DUELS[k]
+		var centre: Vector3 = carte["zones_test"][k]
 		var a := creer_unite(d[0], 2, centre + Vector3(-5, 0, 0))
 		var b := creer_unite(d[1], 3, centre + Vector3(5, 0, 0))
 		duels.append([d[0], a, d[1], b])

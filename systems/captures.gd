@@ -5,8 +5,6 @@ extends Node
 ## Outil de vérification seulement : sélection et caméra, aucune action de jeu.
 
 const ACCELERATION := 8.0
-const BASE_JOUEUR := Vector3(-35, 0, 35)
-const BASE_IA := Vector3(35, 0, -35)
 
 var dossier := "user://captures"
 var _numero := 0
@@ -29,16 +27,33 @@ func _scenario() -> void:
 	var monde := get_parent()
 	var rig = monde.get_node("CameraRig")
 	var selection = monde.find_child("Selection", true, false)
+	var base_joueur: Vector3 = monde.carte["reperes"][GameRules.PLAYER]["base"]
+	var base_ia: Vector3 = monde.carte["reperes"][GameRules.AI]["base"]
 	rig.defilement_bord = false   # la souris ne doit pas déplacer la caméra pendant le scénario
-	# Rendu logiciel lent en CI : plus de pas de physique par image pour que l'accélération tienne.
-	Engine.max_physics_steps_per_frame = 64
 
 	await _attendre_temps_de_jeu(1.0)
-	rig.centrer_sur(BASE_JOUEUR)
+	rig.centrer_sur(base_joueur)
 	await _capturer("depart")
-	rig.centrer_sur(Vector3(-62, 0, 10))   # bord ouest : raccord entre la zone de jeu et le relief
+	# Bord de carte le plus proche de la base : raccord entre la zone de jeu et le relief.
+	var bord := base_joueur
+	if absf(bord.x) > absf(bord.z):
+		bord.x = signf(bord.x) * (GameRules.DEMI_CARTE + 2.0)
+	else:
+		bord.z = signf(bord.z) * (GameRules.DEMI_CARTE + 2.0)
+	rig.centrer_sur(bord)
 	await _capturer("bordure_relief")
-	rig.centrer_sur(BASE_JOUEUR)
+	# Lit de rivière, autour du trou d'eau le plus proche du centre (carte révélée le temps de la capture).
+	var trou = null
+	for r in get_tree().get_nodes_in_group("ressource_eau"):
+		if Terrain.dans_riviere(r.global_position) and (trou == null or r.global_position.length() < trou.global_position.length()):
+			trou = r
+	if trou != null:
+		Vision.revele_tout = true
+		rig.centrer_sur(trou.global_position)
+		await _attendre_brouillard()
+		await _capturer("riviere")
+		Vision.revele_tout = false
+	rig.centrer_sur(base_joueur)
 
 	for b in get_tree().get_nodes_in_group("case_centrale"):
 		if b.faction == GameRules.PLAYER:
@@ -47,20 +62,20 @@ func _scenario() -> void:
 	selection.annuler()
 
 	# Nuit : elle commence à 65 % du premier cycle.
-	Engine.time_scale = ACCELERATION
+	get_parent().accelerer(ACCELERATION)
 	await _attendre_temps_de_jeu(GameRules.DUREE_JOUR_S * (1.0 - GameRules.PART_NUIT) + 10.0)
-	Engine.time_scale = 1.0
+	get_parent().accelerer(1.0)
 	selection.annuler()
 	await _capturer("nuit")
 
 	# Base de l'IA après 5 minutes, carte révélée (débogage).
-	Engine.time_scale = ACCELERATION
+	get_parent().accelerer(ACCELERATION)
 	await _attendre_temps_de_jeu(300.0)
-	Engine.time_scale = 1.0
+	get_parent().accelerer(1.0)
 	Vision.revele_tout = true
 	selection.annuler()
-	rig.centrer_sur(BASE_IA)
-	await _attendre_images(10)
+	rig.centrer_sur(base_ia)
+	await _attendre_brouillard()
 	await _capturer("base_ia_5min")
 
 	rig.centrer_sur(Vector3.ZERO)
@@ -75,6 +90,12 @@ func _scenario() -> void:
 func _attendre_temps_de_jeu(secondes: float) -> void:
 	while GameClock.temps_ecoule < secondes:
 		await get_tree().process_frame
+
+
+## Le brouillard n'est recalculé que toutes les FREQUENCE_VISION_S : on lui laisse le temps.
+func _attendre_brouillard() -> void:
+	await get_tree().create_timer(GameRules.FREQUENCE_VISION_S * 3.0).timeout
+	await _attendre_images(5)
 
 
 func _attendre_images(n: int) -> void:

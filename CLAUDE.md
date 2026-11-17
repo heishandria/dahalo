@@ -18,7 +18,7 @@ Référence de design : le GDD (projet Claude « Dahalo », doc `GDD-Dahalo.md`)
    (les raccourcis clavier sont un bonus PC). Cible de test mobile : export Web dans Safari iOS.
 6. **Calques physiques** : 1 = terrain, 2 = unités et zébus, 3 = interactifs (clic : bâtiments, ressources),
    4 = obstacles (navmesh + collisions : bâtiments, puits, points d'eau, baobabs), 5 = arbres et raketa
-   (collisions seulement), 6 = clôtures d'enclos (navmesh seulement), 7 = palissades du joueur, 8 = palissades de l'IA (chaque unité
+   (navmesh + collisions : les chemins contournent les bosquets), 6 = clôtures d'enclos (navmesh seulement), 7 = palissades du joueur, 8 = palissades de l'IA (chaque unité
    bute sur les palissades des autres clans). Navmesh recalculé à chaque construction.
 
 ## Specs
