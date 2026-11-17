@@ -13,4 +13,6 @@ Le shader ajoute le pelage sans texture : poils courts couchés dans le sens du 
 perturbation de la normale), nuances par zones, et poussière de latérite sur le bas des pattes et le ventre.
 
 Animations (sur place) : `Zebu_repos_loop`, `Zebu_marche_loop`, `Zebu_course_loop` (Godot retire `_loop` à
-l'import). La mort et le saut de la vache sont retirés : le zébu n'est jamais tué dans le jeu.
+l'import). Les jambes de la vache sont pilotées par des contraintes IK : l'export doit **échantillonner** les
+animations (`export_force_sampling=True`), sinon seules les cibles des sabots sont exportées et les jambes restent
+raides dans le jeu (corrigé le 17/11). Calage : sabot au sol à 0,23 m/s (marche) et 1,81 m/s (course). La mort et le saut de la vache sont retirés : le zébu n'est jamais tué dans le jeu.

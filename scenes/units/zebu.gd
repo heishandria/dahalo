@@ -7,13 +7,13 @@ extends CharacterBody3D
 
 enum Etat { SAUVAGE, SUIT, ENCLOS }
 
-const VITESSE_ERRANCE := 1.5
+const VITESSE_ERRANCE := 1.0       # pas tranquille d'un zébu qui pâture
 # Modèle 3D (assets/models/animaux/LISEZMOI.md) : vitesses auxquelles ses animations sont calées.
 const MODELE := preload("res://assets/models/animaux/zebu.glb")
-const VITESSE_MARCHE_MODELE := 0.4
-const VITESSE_COURSE_MODELE := 1.8
-const SEUIL_COURSE := 2.6
-# Espace vital : les zébus s'écartent les uns des autres et des personnes (pas de chevauchement).
+# (vitesse du sabot au sol, mesurée par zebu_depuis_vache.py : marche 0,23 m/s, course 1,81 m/s).
+const VITESSE_MARCHE_MODELE := 0.23
+const VITESSE_COURSE_MODELE := 1.81
+const SEUIL_COURSE := 1.6
 # Espace vital : le corps du zébu est vu comme un segment (épaules -> croupe) ; on mesure l'écart entre segments,
 # pour que deux zébus ne se traversent pas, même placés en croix.
 const DEMI_CORPS := 0.85           # demi-longueur du segment du corps (le zébu fait ~2,3 m avec la tête)
@@ -128,7 +128,7 @@ func _animer() -> void:
 	if v < 0.15:
 		_jouer("repos", 1.0)
 	elif v < SEUIL_COURSE:
-		_jouer("marche", clampf(v / VITESSE_MARCHE_MODELE, 0.6, 3.5))
+		_jouer("marche", clampf(v / VITESSE_MARCHE_MODELE, 0.6, 5.0))
 	else:
 		_jouer("course", clampf(v / VITESSE_COURSE_MODELE, 0.8, 3.0))
 

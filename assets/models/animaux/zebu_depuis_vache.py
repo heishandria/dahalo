@@ -212,7 +212,10 @@ corps.select_set(True)
 arm.select_set(True)
 me.calc_loop_triangles()
 print("TRIANGLES", len(me.loop_triangles))
+# Échantillonnage obligatoire : les jambes de la vache sont pilotées par des contraintes IK (os *LowLeg -> *Foot) ;
+# sans échantillonnage, seules les cibles des sabots sont exportées et les jambes restent raides dans le jeu.
 bpy.ops.export_scene.gltf(filepath=SORTIE_GLB, export_format='GLB', use_selection=True, export_animations=True,
-        export_animation_mode='ACTIONS', export_optimize_animation_size=True, export_force_sampling=False)
+        export_animation_mode='ACTIONS', export_optimize_animation_size=True, export_force_sampling=True,
+        export_bake_animation=False)
 bpy.ops.wm.save_as_mainfile(filepath=SORTIE_BLEND)
 print("EXPORT OK")
