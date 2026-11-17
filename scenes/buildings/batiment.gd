@@ -22,6 +22,37 @@ func _ready() -> void:
 		var m := StandardMaterial3D.new()
 		m.albedo_color = GameRules.couleur_faction(faction)
 		banniere.material_override = m
+	_remplacer_modele(banniere)
+
+
+## Cases, camp de bûcherons et Tsena : modèle de scenes/buildings/maisons.gd à la place des boîtes de la scène
+## (collisions inchangées). Le fanion du clan est déplacé sur le modèle.
+func _remplacer_modele(banniere: MeshInstance3D) -> void:
+	if not type_batiment in ["case_centrale", "case_hommes", "camp_bois", "tsena"]:
+		return
+	var modele := Maisons.modele(type_batiment)
+	if modele.is_empty():
+		return
+	for nom in ["Murs", "Toit", "Mat"]:
+		var n := get_node_or_null(nom) as Node3D
+		if n:
+			n.visible = false
+	var instance := MeshInstance3D.new()
+	instance.name = "Modele"
+	instance.mesh = modele["maillage"]
+	add_child(instance)
+	if banniere:
+		banniere.position = modele["banniere"]
+		# Petit mât sous le fanion.
+		var mat := MeshInstance3D.new()
+		var cylindre := CylinderMesh.new()
+		cylindre.top_radius = 0.025
+		cylindre.bottom_radius = 0.03
+		cylindre.height = 0.9
+		mat.mesh = cylindre
+		mat.position = banniere.position + Vector3(-0.45, -0.25, 0)
+		add_child(mat)
+		banniere.position.x -= 0.0
 
 
 ## Dépôt de ressources : la Case centrale prend tout, le camp de bûcherons seulement le bois.

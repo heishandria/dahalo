@@ -157,6 +157,22 @@ si un modèle manque, formes générées par le code.
 - 3 variantes de chaque, tirées de la position ; utilisées en jeu (ressources, baobabs) et sur le relief.
 - Descriptions pour faire les modèles définitifs (Canva puis Tripo) : `docs/modeles_sur_mesure.md`.
 
+## 4 octies. Bâtiments du village (visuel ; `scenes/buildings/maisons.gd`)
+
+D'après des photos de cases du Sud fournies le 17/11 : petites cases rectangulaires posées sur la terre,
+**toit de chaume à deux pentes très raide**, débordant et effiloché, **perches croisées au faîte**, porte en planches.
+
+| Bâtiment | Modèle |
+|---|---|
+| Case centrale | Murs en **rondins horizontaux** entre poteaux d'angle, pignons en planches |
+| Case des Hommes | Murs en **roseaux tressés** tenus par trois lattes, piquet au milieu de chaque mur |
+| Camp de bûcherons | Abri ouvert de chaume sur quatre poteaux, **tas de bûches**, billot, branches |
+| Tsena | Abri ouvert couvert de **tôle rouillée**, deux étals sur tréteaux avec paniers, sacs |
+
+- Textures photo Poly Haven (CC0) en projection triplanaire, éclaircies (bois délavé) ;
+  `assets/textures/batiments/LISEZMOI.md`. Collisions inchangées ; fanion du clan sur un petit mât au pignon.
+- Pas encore refaits : enclos, palissade, champs, puits.
+
 ## 5. Paysage autour de la zone de jeu (purement visuel)
 
 | Élément | Où | Détail |
