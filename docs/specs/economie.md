@@ -68,7 +68,10 @@ Chaque clan démarre avec **2 champs mûrs**.
 - **Cycle** : source → récolte → dépôt le plus proche qui accepte la ressource → retour à la même source.
 - **Dépôts** : Case centrale (tout) et **Camp de bûcherons** (bois seulement), à placer près des forêts.
 - **Cadence** : 2 unités/s (paquets d'une seconde) × rendement de la source ; **capacité 10**.
-- **Portées** : récolte < 2,2 m de la source, dépôt < 3,5 m du bâtiment.
+- **Portées** : récolte < 2,2 m du **bord** de la source, dépôt < 3,5 m du **bord** du bâtiment. Un villageois arrivé
+  au bout de son chemin, au plus près que le terrain le permet (bord d'un bosquet, d'un bâtiment), compte comme
+  arrivé s'il est à moins de 2 m de plus. Une source vraiment hors d'atteinte (arbre au cœur d'un bosquet) est
+  remplacée par la plus proche du même type.
 - **Source indisponible** : champ en culture → le cultiver ; arbre abattu ou source disparue → source du même type
   la plus proche (< 30 m), sinon arrêt.
 - Changer de type de ressource fait perdre la charge en cours.

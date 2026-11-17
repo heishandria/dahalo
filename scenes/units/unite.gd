@@ -299,9 +299,17 @@ func _physics_process(delta: float) -> void:
 			if not _valide(cible_ressource):
 				_stop()
 				return
-			if _proche(cible_ressource, DIST_RECOLTE):
+			if _proche(cible_ressource, DIST_RECOLTE) or _arrivee_au_plus_pres(cible_ressource, DIST_RECOLTE):
 				etat = Etat.RECOLTE
 				_timer_recolte = 0.0
+				return
+			if agent.is_navigation_finished():
+				# Source hors d'atteinte (arbre au cœur d'un bosquet) : la plus proche du même type, sinon arrêt.
+				var autre = _ressource_voisine(cible_ressource.type_ressource, cible_ressource)
+				if autre != null:
+					aller_recolter(autre)
+				else:
+					_stop()
 				return
 		Etat.RETOUR_DEPOT:
 			if not _valide(_depot):
@@ -310,7 +318,7 @@ func _physics_process(delta: float) -> void:
 					_stop()
 					return
 				agent.target_position = _depot.global_position
-			if _proche(_depot, DIST_DEPOT):
+			if _proche(_depot, DIST_DEPOT) or _arrivee_au_plus_pres(_depot, DIST_DEPOT):
 				_deposer()
 				return
 		Etat.PILLAGE:
@@ -341,14 +349,18 @@ func _physics_process(delta: float) -> void:
 func _avancer() -> void:
 	if not zebus_escortes.is_empty():
 		_laisser_traces()
-	# Coincée (bosquet, foule) ou cible hors d'atteinte (zébu au milieu d'un bosquet...) : elle abandonne
-	# et redevient disponible pour un autre ordre. Pas pendant une attaque (sabotage d'une palissade).
-	if etat != Etat.ATTAQUE and _est_bloquee():
-		_stop()
-		return
 	if agent.is_navigation_finished():
+		_repere_blocage = Vector3.INF   # arrivée : elle n'est pas bloquée, elle attend
 		if etat == Etat.DEPLACEMENT:
 			_stop()
+		return
+	# Coincée en chemin (foule, obstacle) : elle abandonne et redevient disponible pour un autre ordre.
+	# Pas pendant une attaque (sabotage d'une palissade) ni pendant la récolte (allers-retours qui reprennent).
+	if etat != Etat.ATTAQUE and _est_bloquee():
+		if etat in [Etat.VERS_RESSOURCE, Etat.RETOUR_DEPOT]:
+			agent.target_position = agent.target_position   # recalcule le chemin et réessaie
+			return
+		_stop()
 		return
 	var dir := agent.get_next_path_position() - global_position
 	dir.y = 0.0
@@ -505,10 +517,11 @@ func _trouver_depot():
 	return _plus_proche(get_tree().get_nodes_in_group("batiments_%d" % faction), accepte)
 
 
-func _ressource_voisine(type: String):
+## Source du même type la plus proche (à moins de 30 m), en excluant éventuellement une source donnée.
+func _ressource_voisine(type: String, sauf = null):
 	var f := faction
 	var non_epuisee := func(n) -> bool:
-		return n.peut_etre_recolte_par(f) and not n.epuise() and (n.disponible() or n.attendre_recolte())
+		return n != sauf and n.peut_etre_recolte_par(f) and not n.epuise() and (n.disponible() or n.attendre_recolte())
 	var r = _plus_proche(get_tree().get_nodes_in_group("ressource_" + type), non_epuisee)
 	if r != null and global_position.distance_to(r.global_position) > 30.0:
 		return null
@@ -707,8 +720,27 @@ func _decalage(rang: int) -> Vector3:
 	return Vector3((rang % cote) - 1.5, 0.0, floorf(rang / float(cote)) - 0.5) * 1.6
 
 
+## Distance mesurée jusqu'au BORD de la cible (bâtiment, source), pas jusqu'à son centre.
 func _proche(n, distance: float) -> bool:
-	return global_position.distance_to(n.global_position) < distance
+	return global_position.distance_to(n.global_position) - _rayon_de(n) < distance
+
+
+## Arrivée au bout du chemin, au plus près que le navmesh permet (bord d'un bosquet, d'un bâtiment) : on accepte
+## une marge de 2 m en plus de la portée normale.
+func _arrivee_au_plus_pres(n, distance: float) -> bool:
+	return agent.is_navigation_finished() and _proche(n, distance + 2.0)
+
+
+func _rayon_de(n) -> float:
+	if n is Batiment:
+		var e: Vector2 = GameRules.EMPRISES.get(n.type_batiment, Vector2(3, 3))
+		return minf(e.x, e.y) * 0.5
+	if n is NoeudRessource:
+		if n.variante != "" and NoeudRessource.VARIANTES.has(n.variante):
+			return float(NoeudRessource.VARIANTES[n.variante]["rayon"])
+		var e2: Vector2 = GameRules.EMPRISES.get(n.type_batiment, Vector2(2, 2))
+		return minf(e2.x, e2.y) * 0.5
+	return 0.0
 
 
 func _valide(n) -> bool:

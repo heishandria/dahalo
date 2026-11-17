@@ -84,8 +84,11 @@ Les zébus heurtent bâtiments et arbres, mais pas les clôtures ni les autres u
 - **Chemin** : le navmesh lit le sol **et** toutes les entités (groupe `source_navigation` : sol + `Entites`),
   calques 1, 4, 5 et 6, avec une marge de 0,75 m autour des obstacles (le corps d'une unité fait 0,4 m de rayon).
   Avant le 17/11, il ne lisait que le sol : les chemins traversaient bâtiments et bosquets.
-- **Blocage** : une unité qui cherche à avancer mais parcourt moins de 1 m en 3 s **abandonne son trajet** et
-  redevient inactive (sauf en attaque, pour ne pas interrompre un sabotage). Évite les unités coincées à vie.
+- **Blocage** : une unité **en train d'avancer** qui parcourt moins de 1 m en 3 s **abandonne son trajet** et
+  redevient inactive (sauf en attaque). Une unité arrivée au bout de son chemin n'est jamais considérée comme
+  bloquée ; un villageois en récolte recalcule son chemin et réessaie au lieu d'abandonner.
+  Corrigé le 17/11 : la détection arrêtait les villageois arrivés au bord d'un bosquet ou de la Case centrale
+  (distances mesurées au centre), qui cessaient alors de travailler.
 
 ## 3. Mini-carte
 
