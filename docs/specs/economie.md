@@ -54,7 +54,7 @@ Les sources naturelles sont accessibles à tous les clans ; champs et puits seul
 2. **Culture** : il faut **envoyer des villageois dessus**. Chaque villageois présent fait avancer la pousse :
    1 villageois = 60 s, 2 = 30 s, 3 = 20 s. Au-delà de **3**, les villageois en plus n'accélèrent plus.
    La sécheresse divise la vitesse de culture par 2. Un villageois chargé va d'abord déposer, puis revient cultiver.
-3. **Mûr** (doré) : 150 nourriture. Les mêmes villageois **récoltent automatiquement**.
+3. **Mûr** (plants secs, épis ou têtes de grains ; voir `carte.md`) : 150 nourriture. Les mêmes villageois **récoltent automatiquement**.
 4. **Vide** : il est **resemé automatiquement pour 15 bois** et repasse en culture : les villageois restés
    sur le champ enchaînent (cultiver → récolter → déposer → cultiver…). Sans bois, il passe **en friche**
    et réessaie toutes les 2 s dès que le bois revient.

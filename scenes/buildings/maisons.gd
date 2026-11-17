@@ -37,6 +37,8 @@ static func modele(type_batiment: String, variante: int = 0) -> Dictionary:
 			resultat = _marche(graine)
 		"enclos":
 			resultat = _enclos(graine)
+		"champ":
+			resultat = _parcelle(graine)
 	_cache[cle] = resultat
 	return resultat
 
@@ -53,7 +55,7 @@ static func _materiau(nom: String) -> StandardMaterial3D:
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	m.roughness = 0.95
 	var fichiers := {"chaume": "reed_roof_04", "bois": "wood_trunk_wall", "roseaux": "bamboo_wall",
-			"planches": "weathered_planks", "tole": "rusty_corrugated_iron", "boue": "brown_mud_02"}
+			"planches": "weathered_planks", "tole": "rusty_corrugated_iron", "boue": "brown_mud_02", "terre": "farm_soil"}
 	var base: String = fichiers[nom]
 	m.albedo_texture = load(DOSSIER + base + "_couleur.jpg")
 	if ResourceLoader.exists(DOSSIER + base + "_relief.jpg"):
@@ -61,13 +63,14 @@ static func _materiau(nom: String) -> StandardMaterial3D:
 		m.normal_texture = load(DOSSIER + base + "_relief.jpg")
 		m.normal_scale = 1.4
 	# Taille (m) couverte par une répétition de la texture : UV en mètres × 1 / taille.
-	var tailles := {"chaume": 1.6, "bois": 2.2, "roseaux": 1.2, "planches": 1.4, "tole": 1.6, "boue": 3.0}
+	var tailles := {"chaume": 1.6, "bois": 2.2, "roseaux": 1.2, "planches": 1.4, "tole": 1.6, "boue": 3.0, "terre": 2.5}
 	m.uv1_scale = Vector3.ONE / float(tailles[nom])
 	# Les textures photo sont sombres ; le bois des cases du Sud est gris-brun délavé par le soleil.
 	var eclairage := {"chaume": Color(1.15, 1.05, 0.92), "bois": Color(1.9, 1.75, 1.55), "roseaux": Color(1.25, 1.15, 1.0),
-			"planches": Color(1.6, 1.5, 1.35), "tole": Color(1.7, 1.55, 1.45), "boue": Color(1.05, 0.95, 0.88)}
+			"planches": Color(1.6, 1.5, 1.35), "tole": Color(1.7, 1.55, 1.45), "boue": Color(1.05, 0.95, 0.88),
+			"terre": Color(1.25, 0.98, 0.85)}
 	m.albedo_color = eclairage[nom]
-	if nom == "boue":
+	if nom == "boue" or nom == "terre":
 		# Sol de l'enclos posé sur le terrain : bord fondu (alpha des sommets), pas de double face.
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		m.cull_mode = BaseMaterial3D.CULL_BACK
@@ -513,6 +516,89 @@ static func _enclos(graine: int) -> Dictionary:
 			poteau_entree = paire[1]
 			break
 	return {"maillage": c.assembler(), "banniere": poteau_entree + Vector3(0.45, 0.05, 0)}
+
+
+# --- Champ : parcelle de terre retournée en sillons, contour irrégulier, bordure de branches et de pierres ---
+
+## Renvoie aussi "plants" : emplacements des pieds (sur les buttes, en rangées imparfaites, avec des manques).
+static func _parcelle(graine: int) -> Dictionary:
+	var h := RandomNumberGenerator.new()
+	h.seed = graine
+	var c := Chantier.new()
+	var bruit := FastNoiseLite.new()
+	bruit.seed = graine
+	bruit.frequency = 0.25
+	var ecart_rangs := h.randf_range(0.7, 0.85)
+	var torsion := h.randf_range(-0.06, 0.06)   # rangs pas tout à fait droits
+	# Bord : carré arrondi cabossé de ~5,8 m.
+	var bord := func(p: Vector3) -> float:
+		var r := pow(pow(absf(p.x), 4.0) + pow(absf(p.z), 4.0), 0.25)
+		return r - (2.85 + bruit.get_noise_2d(p.x * 3.0, p.z * 3.0) * 0.3)
+	var butte := func(p: Vector3) -> float:
+		var z := p.z + p.x * torsion + bruit.get_noise_2d(p.x * 5.0, 40.0) * 0.08
+		return 0.09 * (0.5 + 0.5 * cos(z / ecart_rangs * TAU)) + bruit.get_noise_2d(p.x * 9.0, p.z * 9.0) * 0.02
+	# Terre en sillons (grille de 0,2 m), bord fondu dans le sol autour.
+	var st := c.st("terre")
+	var pas := 0.2
+	var n := 34
+	var origine := -pas * n * 0.5
+	var points: Array = []
+	for i in n + 1:
+		var ligne: Array = []
+		for j in n + 1:
+			var p := Vector3(origine + i * pas, 0, origine + j * pas)
+			var d: float = bord.call(p)
+			p.y = 0.03 + (butte.call(p) if d < 0.0 else 0.0) * (1.0 - smoothstep(-0.4, 0.0, d))
+			ligne.append([p, 1.0 - smoothstep(-0.15, 0.35, d)])
+		points.append(ligne)
+	for i in n:
+		for j in n:
+			var coins := [points[i][j], points[i + 1][j], points[i + 1][j + 1], points[i][j + 1]]
+			if (coins[0][1] as float) + (coins[1][1] as float) + (coins[2][1] as float) + (coins[3][1] as float) <= 0.0:
+				continue
+			var a: Vector3 = coins[0][0]
+			var b: Vector3 = coins[1][0]
+			var dd: Vector3 = coins[3][0]
+			var normale := (dd - a).cross(b - a).normalized()
+			if normale.y < 0.0:
+				normale = -normale
+			for k in [0, 1, 2, 0, 2, 3]:
+				var q: Array = coins[k]
+				var p: Vector3 = q[0]
+				# Les creux des sillons sont plus sombres que le haut des buttes.
+				var v := 0.78 + 2.4 * (p.y - 0.03)
+				st.set_color(Color(v, v * 0.97, v * 0.95, q[1]))
+				st.set_normal(normale)
+				st.set_uv(Vector2(p.x, p.z))
+				st.add_vertex(p)
+	# Bordure : branches sèches posées par terre et quelques pierres, irrégulièrement.
+	var gris := Color(0.75, 0.68, 0.6)
+	for k in h.randi_range(5, 9):
+		var a := h.randf() * TAU
+		var dir := Vector3(cos(a), 0, sin(a))
+		var p := dir * 3.0 / pow(pow(absf(dir.x), 4.0) + pow(absf(dir.z), 4.0), 0.25)
+		var le_long := Vector3(-dir.z, 0, dir.x) * h.randf_range(0.6, 1.4)
+		_tordu(c.st("bois"), p - le_long + Vector3(0, 0.04, 0), p + le_long + Vector3(0, h.randf_range(0.04, 0.2), 0),
+				h.randf_range(0.025, 0.045), 5, gris * h.randf_range(0.65, 0.95), h, 0.08)
+	for k in h.randi_range(4, 8):
+		var a := h.randf() * TAU
+		var dir := Vector3(cos(a), 0, sin(a))
+		var p := dir * h.randf_range(3.0, 3.3) / pow(pow(absf(dir.x), 4.0) + pow(absf(dir.z), 4.0), 0.25)
+		_boite(c.st("bois"), p + Vector3(0, 0.05, 0), Vector3(h.randf_range(0.15, 0.3), h.randf_range(0.1, 0.18), h.randf_range(0.12, 0.25)),
+				Color(0.55, 0.52, 0.48) * h.randf_range(0.8, 1.1), Basis(Vector3.UP, h.randf() * TAU))
+	# Pieds : sur les buttes, à ~0,42 m d'écart dans le rang, avec des manques.
+	var plants: Array[Vector3] = []
+	var z := -2.9
+	while z < 2.9:
+		var x := -2.9 + h.randf_range(0.0, 0.3)
+		while x < 2.9:
+			var p := Vector3(x + h.randf_range(-0.07, 0.07), 0, z - x * torsion + h.randf_range(-0.07, 0.07))
+			if (bord.call(p) as float) < -0.3 and h.randf() > 0.1:
+				p.y = 0.03 + (butte.call(p) as float)
+				plants.append(p)
+			x += h.randf_range(0.36, 0.5)
+		z += ecart_rangs
+	return {"maillage": c.assembler(), "banniere": Vector3.ZERO, "plants": plants}
 
 
 # --- Briques de construction (normales données explicitement) ---

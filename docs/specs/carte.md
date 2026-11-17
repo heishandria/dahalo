@@ -169,6 +169,7 @@ D'après des photos de cases du Sud fournies le 17/11 : petites cases rectangula
 | Camp de bûcherons | Abri ouvert de chaume sur quatre poteaux, **tas de bûches**, billot, branches |
 | Tsena | Abri ouvert couvert de **tôle rouillée**, deux étals sur tréteaux avec paniers, sacs |
 | Enclos à zébus | D'après une photo fournie le 17/11 : **perches dressées tordues**, espacées au hasard, plus ou moins hautes et penchées, **trois rangs de traverses** tordues (certaines manquent, d'autres se chevauchent), perches en écharpe ; **contour en carré arrondi et cabossé** (±0,35 m) ; **sol piétiné et boueux** au bord fondu, litière de paille. Ouverture de 2 m au sud, poteaux d'entrée plus hauts |
+| Champ | **Parcelle de terre retournée en sillons** (texture Poly Haven CC0, creux plus sombres), contour en carré arrondi cabossé, bordure de branches sèches et de pierres ; **plants en rangées imparfaites** (rangs un peu tordus, ~10 % de manques, hauteurs inégales, pieds penchés, quelques-uns couchés). **Maïs** (feuilles arquées ; mûr : sec, épis dans leurs spathes, panicule) ou **sorgho** (feuilles étroites ; mûr : tête de grains brun-rouge), selon l'emplacement. Les plants **grandissent avec la culture** ; **en friche**, il ne reste que des chaumes coupés. Coût mesuré : ~3 ips |
 
 - **Fait main, rien n'est d'équerre** : angles décalés, murs de hauteurs inégales, rondins et poteaux tordus et
   penchés (longueurs, diamètres et jours variables), panneaux tressés bombés, toit affaissé au milieu et bosselé,
@@ -182,7 +183,7 @@ D'après des photos de cases du Sud fournies le 17/11 : petites cases rectangula
   2K pour le chaume et les rondins, filtrage anisotrope.
 - Textures photo Poly Haven (CC0), éclaircies (bois délavé) ;
   `assets/textures/batiments/LISEZMOI.md`. Collisions inchangées ; fanion du clan sur un petit mât au pignon.
-- Pas encore refaits : palissade, champs, puits. Les collisions de l'enclos restent un carré de 8 × 8 m (le visuel
+- Pas encore refaits : palissade, puits. Les collisions de l'enclos restent un carré de 8 × 8 m (le visuel
   s'en écarte de quelques dizaines de centimètres).
 
 ## 5. Paysage autour de la zone de jeu (purement visuel)

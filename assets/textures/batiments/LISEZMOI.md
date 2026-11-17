@@ -10,5 +10,6 @@ Textures photo de **Poly Haven** (https://polyhaven.com), licence **CC0**, réso
 | weathered_planks_couleur | Weathered Planks | Portes, étals |
 | rusty_corrugated_iron_couleur | Rusty Corrugated Iron | Toit en tôle du Tsena, rapiéçages |
 | brown_mud_02_couleur | Brown Mud 02 | Sol piétiné de l'enclos à zébus |
+| farm_soil_* | Farm Soil | Terre retournée des champs |
 
 Forme des cases : d'après des photos de cases du Sud fournies par l'utilisateur le 17/11/2026.

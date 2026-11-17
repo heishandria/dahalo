@@ -15,6 +15,9 @@ var _chrono_resemis := 0.0
 var _cultivateurs_ce_tour := 0
 var nb_cultivateurs := 0       # villageois qui ont travaillé au dernier tour physique
 var _materiau_culture := StandardMaterial3D.new()
+# Visuel détaillé (scenes/world/cultures.gd, parcelle dans scenes/buildings/maisons.gd) : maïs ou sorgho.
+var _espece := "mais"
+var _plants: MultiMeshInstance3D
 
 @onready var culture: MeshInstance3D = $Culture
 @onready var etiquette: Label3D = $Etiquette
@@ -27,9 +30,39 @@ func _ready() -> void:
 	super()
 	_quantite_max = GameRules.CHAMP_RECOLTE
 	culture.material_override = _materiau_culture
+	_creer_visuel()
 	if croissance >= 1.0:
 		_murir()
 	_maj_visuel()
+
+
+## Parcelle en sillons et plants en rangées imparfaites, à la place des plaques de la scène.
+func _creer_visuel() -> void:
+	var variante := Plantes.variante_en(global_position)
+	_espece = "mais" if variante != 1 else "sorgho"
+	var parcelle := Maisons.modele("champ", variante)
+	($Terre as Node3D).visible = false
+	culture.visible = false
+	var sol := MeshInstance3D.new()
+	sol.mesh = parcelle["maillage"]
+	sol.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(sol)
+	var pieds: Array[Vector3] = parcelle["plants"]
+	var hasard := RandomNumberGenerator.new()
+	hasard.seed = variante * 7 + 3
+	var multi := MultiMesh.new()
+	multi.transform_format = MultiMesh.TRANSFORM_3D
+	multi.mesh = Cultures.plante(_espece, "vert")
+	multi.instance_count = pieds.size()
+	for k in pieds.size():
+		var e := hasard.randf_range(0.8, 1.15)
+		var penche := Basis(Vector3(hasard.randf_range(-1, 1), 0, hasard.randf_range(-1, 1)).normalized(), hasard.randf_range(0.0, 0.18))
+		if hasard.randf() < 0.04:
+			penche = Basis(Vector3(1, 0, 0), hasard.randf_range(0.6, 1.0))   # quelques pieds couchés
+		multi.set_instance_transform(k, Transform3D(penche * Basis(Vector3.UP, hasard.randf() * TAU).scaled(Vector3(e, e * hasard.randf_range(0.85, 1.1), e)), pieds[k]))
+	_plants = MultiMeshInstance3D.new()
+	_plants.multimesh = multi
+	add_child(_plants)
 
 
 func _physics_process(_delta: float) -> void:
@@ -102,11 +135,21 @@ func _essayer_resemer(premier_essai: bool) -> void:
 func _maj_visuel() -> void:
 	if culture == null:
 		return
-	culture.visible = etat_champ != EtatChamp.FRICHE
-	var hauteur := 0.1 + croissance * 0.9
-	culture.scale = Vector3(1.0, hauteur, 1.0)
-	culture.position.y = 0.6 * hauteur * 0.5
-	_materiau_culture.albedo_color = DORE if etat_champ == EtatChamp.MUR else VERT.lerp(DORE, croissance * 0.5)
+	if _plants != null:
+		var stade := "vert"
+		var echelle := Vector3.ONE
+		match etat_champ:
+			EtatChamp.MUR:
+				stade = "mur"
+			EtatChamp.FRICHE:
+				stade = "chaume"
+			_:
+				# En culture : les plants grandissent avec la croissance.
+				echelle = Vector3(0.45 + 0.55 * croissance, 0.08 + 0.92 * croissance, 0.45 + 0.55 * croissance)
+		var maillage := Cultures.plante(_espece, stade)
+		if _plants.multimesh.mesh != maillage:
+			_plants.multimesh.mesh = maillage
+		_plants.scale = echelle
 	if etiquette == null:
 		return
 	match etat_champ:
