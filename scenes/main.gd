@@ -364,7 +364,8 @@ func creer_champ_mur(faction: int, pos: Vector3) -> Node3D:
 func _baobab(pos: Vector3) -> void:
 	var arbre := Node3D.new()
 	var modele := MeshInstance3D.new()
-	modele.mesh = Plantes.baobab(Plantes.variante_en(pos))
+	var variante := Plantes.variante_en(pos, Plantes.VARIANTES_BAOBAB)
+	modele.mesh = Plantes.baobab(variante)
 	modele.rotation.y = float(Plantes.variante_en(pos * 3.0)) * 2.1
 	arbre.add_child(modele)
 	var obstacle := StaticBody3D.new()
@@ -372,7 +373,7 @@ func _baobab(pos: Vector3) -> void:
 	obstacle.collision_mask = 0
 	var forme := CollisionShape3D.new()
 	var cylindre := CylinderShape3D.new()
-	cylindre.radius = 1.2
+	cylindre.radius = Plantes.rayon_baobab(variante)
 	cylindre.height = 6.0
 	forme.shape = cylindre
 	forme.position.y = 3.0

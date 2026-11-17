@@ -150,7 +150,7 @@ si un modèle manque, formes générées par le code.
 
 | Plante | Forme | Saisons |
 |---|---|---|
-| Baobab (type *Adansonia za*) | **Tronc haut et cannelé** (9 à 11,5 m, plis verticaux), écorce photo gris rosé (Poly Haven, CC0), **couronne plate en ombrelle** ramifiée sur 5 niveaux jusqu'à de fines brindilles, quelques grappes de feuilles texturées ; ~5 600 triangles | **Perd ses feuilles en sécheresse** (branches nues) |
+| Baobab (types *za* / *grandidieri*) | **6 variantes en deux familles** : **élancé** (tronc haut et cylindrique de 9 à 11,5 m, couronne plate en ombrelle) et **trapu** (tronc court et massif, pied très évasé en contreforts, grosses branches basses qui montent). Tronc cannelé, écorce photo gris rosé (Poly Haven, CC0), grosses branches coudées et tortueuses, **petites branches le long des grosses**, ramification sur 5 niveaux jusqu'aux brindilles, grappes de feuilles texturées ; 6 000 à 9 000 triangles. Collision : 1,3 m (élancé), 2,1 m (trapu) |
 | Épineux (type *Alluaudia*) | 3 à 6 tiges gris-vert dressées, couvertes de petites feuilles | Perd ses feuilles en sécheresse |
 | Raketa (figuier de Barbarie) | Raquettes en éventail, fruits rouges | Inchangé |
 

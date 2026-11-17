@@ -8,6 +8,7 @@ extends RefCounted
 ## Maillages mis en cache par variante (3 de chaque) ; couleurs par sommet, matériaux partagés.
 
 const VARIANTES := 3
+const VARIANTES_BAOBAB := 6   # paires : élancé (allée des Baobabs), impaires : trapu (tronc massif, branches basses)
 
 static var _cache := {}
 static var _materiau_bois: StandardMaterial3D
@@ -18,20 +19,25 @@ static var _fondu: Tween
 
 
 static func baobab(variante: int) -> Mesh:
-	return _obtenir("baobab", variante)
+	return _obtenir("baobab", variante % VARIANTES_BAOBAB)
+
+
+## Rayon du pied du baobab (collision) : bien plus large pour les baobabs trapus.
+static func rayon_baobab(variante: int) -> float:
+	return 2.1 if variante % 2 == 1 else 1.3
 
 
 static func epineux(variante: int) -> Mesh:
-	return _obtenir("epineux", variante)
+	return _obtenir("epineux", variante % VARIANTES)
 
 
 static func raketa(variante: int) -> Mesh:
-	return _obtenir("raketa", variante)
+	return _obtenir("raketa", variante % VARIANTES)
 
 
 ## Variante tirée de la position (stable d'une partie à l'autre pour une même carte).
-static func variante_en(pos: Vector3) -> int:
-	return absi(hash(Vector2i(roundi(pos.x * 10.0), roundi(pos.z * 10.0)))) % VARIANTES
+static func variante_en(pos: Vector3, nombre: int = VARIANTES) -> int:
+	return absi(hash(Vector2i(roundi(pos.x * 10.0), roundi(pos.z * 10.0)))) % nombre
 
 
 ## Sécheresse : les feuilles jaunissent et tombent (fondu), elles reviennent avec les pluies.
@@ -46,14 +52,14 @@ static func saison(hote: Node, secheresse: bool) -> void:
 
 
 static func _obtenir(espece: String, variante: int) -> Mesh:
-	var cle := "%s_%d" % [espece, variante % VARIANTES]
+	var cle := "%s_%d" % [espece, variante]
 	if not _cache.has(cle):
 		_materiaux()
 		var hasard := RandomNumberGenerator.new()
 		hasard.seed = hash(cle)
 		match espece:
 			"baobab":
-				_cache[cle] = _construire_baobab(hasard)
+				_cache[cle] = _construire_baobab(hasard, variante % 2 == 1)
 			"epineux":
 				_cache[cle] = _construire_epineux(hasard)
 			_:
@@ -97,64 +103,104 @@ static func _materiau(rugosite: float) -> StandardMaterial3D:
 
 # --- Baobab ---
 
-static func _construire_baobab(h: RandomNumberGenerator) -> ArrayMesh:
+static func _construire_baobab(h: RandomNumberGenerator, trapu: bool) -> ArrayMesh:
 	var bois := SurfaceTool.new()
 	bois.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var feuilles := SurfaceTool.new()
 	feuilles.begin(Mesh.PRIMITIVE_TRIANGLES)
-	# Tronc haut, presque cylindrique (légèrement renflé au pied), cannelé de plis verticaux.
-	var hauteur := h.randf_range(9.0, 11.5)
-	var rayon := h.randf_range(1.0, 1.3)
+	# Élancé : tronc haut presque cylindrique. Trapu : tronc court et massif, très évasé au pied (contreforts).
+	var hauteur := h.randf_range(5.0, 6.5) if trapu else h.randf_range(9.0, 11.5)
+	var rayon := h.randf_range(1.5, 1.9) if trapu else h.randf_range(1.0, 1.3)
 	var profil: Array[Vector2] = []
 	for k in 15:
 		var t := k / 14.0
-		var r := rayon * (1.18 - 0.18 * smoothstep(0.0, 0.25, t)) * (1.0 - 0.32 * smoothstep(0.55, 1.0, t))
+		var r: float
+		if trapu:
+			r = rayon * (1.35 - 0.35 * smoothstep(0.0, 0.3, t)) * (1.0 - 0.45 * smoothstep(0.4, 1.0, t))
+		else:
+			r = rayon * (1.18 - 0.18 * smoothstep(0.0, 0.25, t)) * (1.0 - 0.32 * smoothstep(0.55, 1.0, t))
 		profil.append(Vector2(t * (hauteur + 0.4) - 0.4, r))   # le pied s'enfonce un peu dans le sol
 	var ecorce := func(t: float, a: float) -> Color:
 		# Gris rosé à ocre, plus sombre dans le creux des plis et vers le pied.
 		var pli := 0.88 + 0.12 * cos(a * 9.0 + t * 2.0)
 		return Color(1.25, 1.1, 1.0).lerp(Color(1.02, 0.88, 0.8), 1.0 - t) * pli
-	_tour_cannele(bois, profil, 22, ecorce, h.randf() * TAU)
-	# Couronne plate en ombrelle : grosses branches presque horizontales, ramifiées jusqu'aux brindilles.
+	_tour_cannele(bois, profil, 24, ecorce, h.randf() * TAU, 1.6 if trapu else 1.0)
+	# Couronne : élancé, plate en ombrelle tout en haut ; trapu, grosses branches basses qui montent en s'étalant.
 	var sommet := Vector3(0, hauteur - 0.3, 0)
 	var nb := h.randi_range(5, 7)
 	for b in nb:
 		var angle := TAU * b / nb + h.randf_range(-0.3, 0.3)
-		var dir := Vector3(cos(angle), h.randf_range(0.35, 0.75), sin(angle)).normalized()
-		_rameau(bois, feuilles, sommet, dir, h.randf_range(2.0, 2.8), rayon * 0.42, 0, h, ecorce)
+		var depart := sommet
+		var montee := h.randf_range(0.35, 0.75)
+		var longueur := h.randf_range(2.0, 2.8)
+		if trapu:
+			# Les grosses branches partent à différentes hauteurs du haut du tronc et montent plus.
+			depart = Vector3(0, hauteur * h.randf_range(0.72, 1.0) - 0.3, 0)
+			montee = h.randf_range(0.6, 1.3)
+			longueur = h.randf_range(2.6, 3.6)
+		var dir := Vector3(cos(angle), montee, sin(angle)).normalized()
+		var r_branche := rayon * (0.36 if trapu else 0.42)
+		depart += Vector3(cos(angle), 0, sin(angle)) * rayon * 0.35
+		_rameau(bois, feuilles, depart, dir, longueur, r_branche, 0, h, ecorce)
 	return _assembler(bois, _materiau_bois, feuilles, _materiau_feuilles)
 
 
-## Ramification récursive : chaque rameau se divise en 2 ou 3, plus fins et plus courts, en s'étalant
-## (couronne plate). Au dernier niveau, des brindilles portent quelques feuilles.
+## Ramification récursive : chaque rameau, un peu coudé, se divise en 2 ou 3 rameaux plus fins et plus courts
+## qui s'étalent ; de petites branches poussent aussi le long des grosses. Au bout, brindilles et feuilles.
 static func _rameau(bois: SurfaceTool, feuilles: SurfaceTool, pied: Vector3, dir: Vector3, longueur: float,
 		r_pied: float, niveau: int, h: RandomNumberGenerator, ecorce: Callable) -> void:
 	var r_bout := r_pied * 0.55
-	var bout := _branche(bois, pied, dir, longueur, r_pied, r_bout, ecorce, [6, 5, 4, 3, 3][niveau])
+	var segments: int = [6, 5, 4, 3, 3][niveau]
+	# Grosses branches coudées : deux tronçons, le second dévié (branches tortueuses). Brindilles : un seul.
+	var coude := pied + dir * longueur * 0.5
+	var dir2 := dir
+	var bout: Vector3
+	if niveau <= 1:
+		var r_milieu := lerpf(r_pied, r_bout, 0.5)
+		_branche(bois, pied, dir, longueur * 0.5, r_pied, r_milieu, ecorce, segments)
+		dir2 = (dir + Vector3(h.randf_range(-0.35, 0.35), h.randf_range(-0.15, 0.25), h.randf_range(-0.35, 0.35))).normalized()
+		bout = _branche(bois, coude, dir2, longueur * 0.5, r_milieu, r_bout, ecorce, segments)
+	else:
+		bout = _branche(bois, pied, dir, longueur, r_pied, r_bout, ecorce, segments)
 	if niveau >= 4:
 		if h.randf() < 0.5:
 			_grappe(feuilles, bout + Vector3(0, 0.05, 0), h.randf_range(0.25, 0.38), Color(0.6, 0.66, 0.46) * h.randf_range(0.85, 1.05), h)
 		return
+	# Petites branches le long du rameau (pas seulement au bout).
+	if niveau >= 1 and niveau <= 2:
+		for k in h.randi_range(1, 2):
+			var t := h.randf_range(0.25, 0.9)
+			var base := pied.lerp(coude, t * 2.0) if t < 0.5 else coude.lerp(bout, (t - 0.5) * 2.0)
+			var lateral := (dir2.cross(Vector3.UP).normalized() * (1.0 if h.randf() < 0.5 else -1.0) \
+					+ Vector3(0, h.randf_range(0.3, 0.9), 0)).normalized()
+			var l := longueur * h.randf_range(0.25, 0.45)
+			var b2 := _branche(bois, base, lateral, l, r_pied * 0.25, r_pied * 0.08, ecorce, 3)
+			if h.randf() < 0.4:
+				_grappe(feuilles, b2, h.randf_range(0.2, 0.32), Color(0.6, 0.66, 0.46) * h.randf_range(0.85, 1.05), h)
 	var enfants := h.randi_range(2, 3) if niveau < 3 else 2
 	for k in enfants:
-		var horizontal := Vector3(dir.x, 0.0, dir.z).normalized()
+		var horizontal := Vector3(dir2.x, 0.0, dir2.z).normalized()
 		var cote := horizontal.cross(Vector3.UP)
 		var ecart := (float(k) - (enfants - 1) * 0.5) * h.randf_range(0.5, 0.9)
 		# Plus on monte dans la ramification, plus les rameaux s'étalent à l'horizontale (couronne plate).
-		var montee := h.randf_range(0.15, 0.55) * (1.0 - 0.25 * niveau)
+		var montee := h.randf_range(0.15, 0.6) * (1.0 - 0.2 * niveau)
 		var nouvelle := (horizontal + cote * ecart + Vector3(0, montee, 0)).normalized()
 		_rameau(bois, feuilles, bout, nouvelle, longueur * h.randf_range(0.55, 0.72), r_bout, niveau + 1, h, ecorce)
 
 
 ## Tronc cannelé : surface de révolution dont le rayon ondule en plis verticaux qui serpentent un peu.
-static func _tour_cannele(st: SurfaceTool, profil: Array[Vector2], segments: int, couleur: Callable, phase: float) -> void:
+static func _tour_cannele(st: SurfaceTool, profil: Array[Vector2], segments: int, couleur: Callable, phase: float,
+		relief: float = 1.0) -> void:
 	var anneaux: Array = []
 	for k in profil.size():
 		var t := float(k) / (profil.size() - 1)
 		var anneau: Array = []
 		for s in segments + 1:
 			var a := TAU * s / segments
-			var pli := 0.07 * cos(a * 9.0 + phase + t * 2.0) + 0.04 * sin(a * 4.0 + phase * 2.0 - t * 3.0)
+			# Plis verticaux, plus marqués au pied (contreforts) chez les baobabs trapus.
+			var pied := 1.0 + (relief - 1.0) * (1.0 - smoothstep(0.0, 0.5, t)) * 2.0
+			var pli := (0.07 * cos(a * 9.0 + phase + t * 2.0) + 0.04 * sin(a * 4.0 + phase * 2.0 - t * 3.0)) * relief * pied
+			pli += 0.06 * (relief - 1.0) * sin(a * 5.0 + phase) * (1.0 - t)   # gros lobes irréguliers
 			var r := profil[k].y * (1.0 + pli)
 			anneau.append([Vector3(cos(a) * r, profil[k].x, sin(a) * r), couleur.call(t, a)])
 		anneaux.append(anneau)

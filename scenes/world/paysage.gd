@@ -289,6 +289,7 @@ func _creer_decor() -> void:
 	var baobabs: Array[Mesh] = []
 	for v in Plantes.VARIANTES:
 		epineux.append(Plantes.epineux(v))
+	for v in Plantes.VARIANTES_BAOBAB:
 		baobabs.append(Plantes.baobab(v))
 	var places_epineux: Array[Transform3D] = []
 	for k in int(NOMBRE_TOUFFES_EPINEUX * maxf(f, 0.5)):
