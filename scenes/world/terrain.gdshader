@@ -114,10 +114,10 @@ void fragment() {
 	}
 	// Zone de jeu : l'herbe du sol suit les massifs de végétation (mêmes plaques que les touffes).
 	bool dans_le_jeu = abs(p.x) < demi_carte && abs(p.y) < demi_carte;
-	vec2 vege = dans_le_jeu ? texture(carte_vegetation, (p + demi_carte) / (2.0 * demi_carte)).rg : vec2(0.0);
-	if (dans_le_jeu) {
-		herbe = max(herbe * 0.45, vege.r * (1.0 - 0.45 * secheresse));
-	}
+	// Transition douce sur les 12 derniers mètres avant le bord (sinon une ligne droite trahit la limite).
+	float vers_bord = smoothstep(demi_carte - 12.0, demi_carte, max(abs(p.x), abs(p.y)));
+	vec2 vege = dans_le_jeu ? texture(carte_vegetation, (p + demi_carte) / (2.0 * demi_carte)).rg * (1.0 - vers_bord) : vec2(0.0);
+	herbe = mix(max(herbe * 0.45, vege.r * (1.0 - 0.45 * secheresse)), herbe * 0.7, vers_bord);
 
 	// Lit de rivière et berges (plus herbeuses).
 	float d_riviere = texture(distances_riviere, (p + etendue) / (2.0 * etendue)).r * distance_max;

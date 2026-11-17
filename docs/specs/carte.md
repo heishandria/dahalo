@@ -133,6 +133,19 @@ si un modèle manque, formes générées par le code.
   l'emprise disparaît (`EventBus.batiment_cree`).
 - Un MultiMesh par variante de modèle : une quinzaine d'appels de dessin. Densité réduite sur le Web et le mobile.
 
+## 4 sexies. Ciel : nuages et oiseaux (purement visuel ; `scenes/world/ciel.gd`)
+
+- **Nuages** : 8 nuages légers et translucides à ~35 m, contour effiloché, qui dérivent avec le vent (~1,7 m/s)
+  et font le tour de la carte. Chacun projette **son ombre au sol** (décalque dans la direction du soleil,
+  opacité 26 %), effacée la nuit. **En sécheresse, moins de nuages** (fondu de 8 s). Le rendu Web ne gère pas
+  les décalques : nuages sans ombre.
+- **Oiseaux** : un vol traverse la carte toutes les 12 à 35 s (3 à la fois au plus), avec battement d'ailes et
+  ombre portée :
+  - **corbeaux pies** (noirs, collier blanc), 3 à 6, entre 14 et 22 m ;
+  - **hérons garde-bœufs** (blancs), 6 à 11, entre 10 et 16 m, battement plus lent.
+- Les oiseaux sont **masqués au-dessus des zones inexplorées** (ils ne doivent rien révéler).
+- Aucun nom affiché en jeu (termes malgaches à vérifier avant de les introduire).
+
 ## 5. Paysage autour de la zone de jeu (purement visuel)
 
 | Élément | Où | Détail |
