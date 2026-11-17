@@ -2,7 +2,7 @@
 // Utilisé par le sol de la zone de jeu ET par le relief qui l'entoure (raccord sans couture).
 // Bruit calculé dans le shader (aucune texture) : même rendu sur PC, Web et mobile.
 shader_type spatial;
-render_mode diffuse_lambert, specular_disabled;
+render_mode diffuse_lambert, specular_disabled, cull_disabled;   // parois des plateaux : sens des triangles indifférent
 
 uniform float secheresse : hint_range(0.0, 1.0) = 0.0;
 uniform vec3 couleur_laterite : source_color = vec3(0.72, 0.36, 0.2);
@@ -17,8 +17,12 @@ uniform float etendue = 280.0;
 uniform float distance_max = 32.0;
 uniform float largeur_riviere = 11.0;
 
+uniform vec3 couleur_dessus : source_color = vec3(0.78, 0.62, 0.42);   // dessus des plateaux : calcaire et herbe rase
+uniform vec3 couleur_paroi : source_color = vec3(0.5, 0.3, 0.2);      // parois des plateaux : terre brune
+
 varying vec3 position_monde;
 varying vec3 normale_monde;
+varying vec2 role;   // x = dessus de plateau, y = paroi (couleur de sommet ; 0 pour le sol et le relief)
 
 float hachage(vec2 p) {
 	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -41,6 +45,7 @@ float bruit_fractal(vec2 p) {
 void vertex() {
 	position_monde = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	normale_monde = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	role = COLOR.rg;
 }
 
 void fragment() {
@@ -75,6 +80,12 @@ void fragment() {
 	c = mix(c, c_roche, roche);
 	// Lecture du relief en vue isométrique : creux plus sombres, hauteurs plus claires
 	c *= 0.88 + 0.3 * smoothstep(0.0, 28.0, position_monde.y);
+	// Plateaux en paliers : dessus plus clair (calcaire, herbe rase), parois de terre brune à strates.
+	vec3 dessus = mix(couleur_dessus * (0.9 + 0.2 * moyennes), couleur_herbe, herbe * 0.6);
+	c = mix(c, dessus, role.x);
+	vec3 terre = couleur_paroi * (0.85 + 0.3 * strates);
+	terre *= 0.88 + 0.12 * sin(position_monde.y * 3.0 + strates * 3.0);
+	c = mix(c, terre, role.y);
 	// Sécheresse : tout pâlit et tire vers l'ocre
 	c = mix(c, c * vec3(1.1, 1.02, 0.92) + 0.06, secheresse);
 

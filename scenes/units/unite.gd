@@ -248,7 +248,21 @@ func aller_recolter(r) -> void:
 
 # --- Boucle ---
 
+## Dans le lit de rivière (en contrebas), le visuel descend ; le corps physique reste à y = 0.
+var _hauteur_visuelle := 0.0
+
+
+func _suivre_sol() -> void:
+	var h := Terrain.hauteur_sol(global_position)
+	if absf(h - _hauteur_visuelle) < 0.01:
+		return
+	for n in [corps, tete, anneau, barre_vie]:
+		n.position.y += h - _hauteur_visuelle
+	_hauteur_visuelle = h
+
+
 func _physics_process(delta: float) -> void:
+	_suivre_sol()
 	_recharge = maxf(0.0, _recharge - delta)
 	match etat:
 		Etat.INACTIF:

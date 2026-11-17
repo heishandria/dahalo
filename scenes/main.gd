@@ -36,10 +36,12 @@ const SOLEIL_NUIT := 0.45
 const AMBIANCE_NUIT := 0.5
 const CIEL_NUIT := 0.4
 const COULEUR_LUNE := Color(0.8, 0.83, 0.95)   # clair de lune presque neutre (moins bleu)
+# Lumière ambiante : couleur fixe (le bleu du ciel désaturait le sol) ; chaude le jour, bleutée la nuit.
+const AMBIANCE_JOUR_COULEUR := Color(0.86, 0.78, 0.68)
+const AMBIANCE_NUIT_COULEUR := Color(0.62, 0.66, 0.82)
 
 @onready var entites: Node3D = $Entites
 @onready var navigation: NavigationRegion3D = $NavigationRegion3D
-@onready var sol: MeshInstance3D = $NavigationRegion3D/Sol
 @onready var soleil: DirectionalLight3D = $Soleil
 @onready var environnement: WorldEnvironment = $WorldEnvironment
 
@@ -62,7 +64,6 @@ func _ready() -> void:
 			var captures := preload("res://systems/captures.gd").new()
 			captures.name = "Captures"
 			add_child(captures)
-	EventBus.meteo_change.connect(_on_meteo)
 	EventBus.cycle_change.connect(_on_cycle)
 
 	_generer_carte(_graine())
@@ -141,6 +142,7 @@ func creer_ressource(variante: String, pos: Vector3) -> NoeudRessource:
 			r.rendement = GameRules.RAKETA_RENDEMENT
 			r.bonus_eau = GameRules.RAKETA_BONUS_EAU
 	r.position = _borner(pos)
+	r.position.y = Terrain.hauteur_sol(r.position)   # trous d'eau : au fond du lit
 	entites.add_child(r)
 	return r
 
@@ -193,6 +195,10 @@ func raison_emplacement_invalide(faction: int, type_batiment: String, pos: Vecto
 		return "trop près du bord de la carte"
 	if not Vision.est_explore(faction, pos):
 		return "zone inexplorée"
+	if Terrain.sur_plateau(pos, r):
+		return "on ne construit pas sur un plateau"
+	if Terrain.distance_riviere(pos) < GameRules.RIVIERE_LARGEUR * 0.5 + r:
+		return "on ne construit pas dans le lit de la rivière"
 	for groupe in ["batiments", "ressources", "decor"]:
 		for n in get_tree().get_nodes_in_group(groupe):
 			if not is_instance_valid(n) or n.is_queued_for_deletion():
@@ -264,13 +270,10 @@ func _graine() -> int:
 func _generer_carte(graine: int) -> void:
 	carte = GenerateurCarte.new().generer(graine)
 	Terrain.initialiser(graine, carte["riviere"])
+	Terrain.initialiser_plateaux(carte["plateaux"])
 	print("[carte] graine %d" % graine)
-	# Le sol et le relief lisent la rivière dans le même shader.
-	var m := sol.material_override as ShaderMaterial
-	if m:
-		m.set_shader_parameter("distances_riviere", Terrain.texture_distances())
-		m.set_shader_parameter("etendue", Terrain.ETENDUE)
-	$Paysage.construire()
+	$Paysage.construire()   # sol de la zone de jeu, plateaux, relief et décor (visuel)
+	_creer_plateaux_physiques()
 
 	# Bases : même disposition dans le repère de chaque base (avant = vers le centre de la carte).
 	for f in [GameRules.PLAYER, GameRules.AI]:
@@ -300,6 +303,34 @@ func _generer_carte(graine: int) -> void:
 		_baobab(p)
 	for t in carte["troupeaux"]:
 		_troupeau(t[0], t[1])
+
+
+## Plateaux : obstacles infranchissables (calque 4 : navmesh + collisions). Une boîte par suite de cases
+## bloquées sur une même ligne de la grille, sous le visuel construit par Paysage.
+func _creer_plateaux_physiques() -> void:
+	var corps := StaticBody3D.new()
+	corps.name = "Plateaux"
+	corps.collision_layer = 8
+	corps.collision_mask = 0
+	var n := Terrain.PLATEAUX_N
+	var case := Terrain.PLATEAUX_CASE
+	var d := GameRules.DEMI_CARTE
+	for j in n:
+		var debut := -1
+		for i in n + 1:
+			var bloquee := i < n and Terrain.sur_plateau(Vector3(-d + (i + 0.5) * case, 0.0, -d + (j + 0.5) * case))
+			if bloquee and debut < 0:
+				debut = i
+			elif not bloquee and debut >= 0:
+				var forme := CollisionShape3D.new()
+				var boite := BoxShape3D.new()
+				boite.size = Vector3((i - debut) * case, GameRules.PLATEAUX_HAUTEUR, case)
+				forme.shape = boite
+				forme.position = Vector3(-d + (debut + i) * 0.5 * case, GameRules.PLATEAUX_HAUTEUR * 0.5,
+						-d + (j + 0.5) * case)
+				corps.add_child(forme)
+				debut = -1
+	entites.add_child(corps)
 
 
 func creer_champ_mur(faction: int, pos: Vector3) -> Node3D:
@@ -476,11 +507,5 @@ func _maj_lumiere() -> void:
 	soleil.light_energy = lerpf(SOLEIL_NUIT, 1.3, lum)
 	soleil.light_color = COULEUR_LUNE.lerp(Color(1.0, 0.92, 0.78), lum)
 	environnement.environment.ambient_light_energy = lerpf(AMBIANCE_NUIT, 0.7, lum)
+	environnement.environment.ambient_light_color = AMBIANCE_NUIT_COULEUR.lerp(AMBIANCE_JOUR_COULEUR, lum)
 	environnement.environment.background_energy_multiplier = lerpf(CIEL_NUIT, 1.0, lum)
-
-
-func _on_meteo(secheresse: bool) -> void:
-	# Le relief (scenes/world/paysage.gd) écoute le même signal.
-	var m := sol.material_override as ShaderMaterial
-	if m:
-		m.set_shader_parameter("secheresse", 1.0 if secheresse else 0.0)

@@ -1,5 +1,5 @@
 extends Node
-## Terrain de la partie : graine de la carte et lit de rivière à sec.
+## Terrain de la partie : graine de la carte, lit de rivière à sec et plateaux en paliers.
 ## Garde la distance au lit en tout point (grille), pour le jeu (ralentissement dans le sable),
 ## le rendu (shader du sol) et le relief (vallée de la rivière). Rempli par le générateur de carte.
 ## Spec : docs/specs/carte.md
@@ -13,12 +13,68 @@ var graine := 0
 var riviere := PackedVector2Array()             # tracé du lit (points dans le plan XZ)
 var _distances := PackedFloat32Array()
 var _texture: ImageTexture
+# Plateaux : champ aux sommets d'une grille de PLATEAUX_CASE m sur la zone de jeu (voir GenerateurCarte).
+const PLATEAUX_CASE := 2.0
+const PLATEAUX_N := 120
+var plateaux_champ := PackedFloat32Array()
+var plateaux_seuil := INF
+var plateaux_seuil_haut := INF
+
+
+func initialiser_plateaux(plateaux: Dictionary) -> void:
+	plateaux_champ = plateaux["champ"]
+	plateaux_seuil = plateaux["seuil"]
+	plateaux_seuil_haut = plateaux["seuil_haut"]
+
+
+## Valeur du champ des plateaux (interpolée) ; 0 hors de la zone de jeu.
+func valeur_plateau(pos: Vector3) -> float:
+	if plateaux_champ.is_empty():
+		return 0.0
+	var d := GameRules.DEMI_CARTE
+	if absf(pos.x) >= d or absf(pos.z) >= d:
+		return 0.0
+	var fx := (pos.x + d) / PLATEAUX_CASE
+	var fz := (pos.z + d) / PLATEAUX_CASE
+	var i := mini(int(fx), PLATEAUX_N - 1)
+	var j := mini(int(fz), PLATEAUX_N - 1)
+	var c := PLATEAUX_N + 1
+	var haut := lerpf(plateaux_champ[j * c + i], plateaux_champ[j * c + i + 1], fx - i)
+	var bas := lerpf(plateaux_champ[(j + 1) * c + i], plateaux_champ[(j + 1) * c + i + 1], fx - i)
+	return lerpf(haut, bas, fz - j)
+
+
+## Vrai si un objet de ce rayon, posé là, toucherait un plateau.
+func sur_plateau(pos: Vector3, rayon: float = 0.0) -> bool:
+	if valeur_plateau(pos) > plateaux_seuil:
+		return true
+	if rayon <= 0.0:
+		return false
+	for k in 8:
+		var a := TAU * k / 8.0
+		if valeur_plateau(pos + Vector3(cos(a), 0.0, sin(a)) * rayon) > plateaux_seuil:
+			return true
+	return false
+
+
+## Profondeur du lit de rivière (berges en pente douce) à cette distance du milieu du lit.
+static func profondeur_riviere(distance: float) -> float:
+	var demi := GameRules.RIVIERE_LARGEUR * 0.5
+	return GameRules.RIVIERE_PROFONDEUR * (1.0 - smoothstep(demi - 1.5, demi + 2.0, distance))
+
+
+## Hauteur du sol où l'on marche (0, ou en contrebas dans le lit). Les plateaux ne sont pas praticables.
+func hauteur_sol(pos: Vector3) -> float:
+	return -profondeur_riviere(distance_riviere(pos))
 
 
 func initialiser(nouvelle_graine: int, trace: PackedVector2Array) -> void:
 	assert(N == int(2.0 * ETENDUE / CASE), "Terrain.N doit valoir 2 × ETENDUE / CASE")
 	graine = nouvelle_graine
 	riviere = trace
+	plateaux_champ = PackedFloat32Array()
+	plateaux_seuil = INF
+	plateaux_seuil_haut = INF
 	_distances.resize(N * N)
 	_distances.fill(DISTANCE_MAX)
 	# Pour chaque segment, on ne met à jour que les cases proches : rapide même avec un long tracé.

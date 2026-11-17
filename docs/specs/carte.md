@@ -1,14 +1,15 @@
 # Spec — Carte : génération, rivière, sol et paysage
 
 > Statut : **prototype v0.11** (17/11/2026). Décrit ce qui est **réellement codé**.
-> Code : `systems/generateur_carte.gd` (placement), `autoload/terrain.gd` (rivière), `scenes/main.gd` (création),
-> `scenes/world/terrain.gdshader` (sol), `scenes/world/paysage.gd` (relief et décor hors zone de jeu).
-> Valeurs : `data/game_rules.gd` (`DEMI_CARTE`, `CARTE_*`, `RIVIERE_*`).
+> Code : `systems/generateur_carte.gd` (placement, plateaux), `autoload/terrain.gd` (rivière, plateaux),
+> `scenes/main.gd` (création, collisions des plateaux), `scenes/world/terrain.gdshader` (couleurs),
+> `scenes/world/paysage.gd` (tout le visuel du terrain). Valeurs : `data/game_rules.gd` (`DEMI_CARTE`, `CARTE_*`,
+> `RIVIERE_*`, `PLATEAUX_*`).
 
 ## 1. Zone de jeu
 
-- Carré de **240 × 240 m** (±120 m), échelle d'une carte 2 joueurs d'Age of Empires, **plat à y = 0**.
-  Unités et bâtiments restent dans ±116 m.
+- Carré de **240 × 240 m** (±120 m), échelle d'une carte 2 joueurs d'Age of Empires. On joue à y = 0 ;
+  le lit de rivière est en contrebas, les plateaux au-dessus (infranchissables). Unités et bâtiments restent dans ±116 m.
 - **Carte aléatoire à graine** (GDD §8) : chaque partie tire une graine ; `-- --graine=N` impose la graine
   (même graine = exactement la même carte). La graine est écrite dans le journal (`[carte] graine N`).
 
@@ -24,25 +25,42 @@ l'IA est l'image de celle du joueur. Les deux clans ont donc exactement les mêm
 | Lit de rivière à sec | 1 | Traverse toute la carte **entre les deux bases** (perpendiculaire à leur axe), en méandres tirés au hasard ; passe par le centre |
 | Trous d'eau | 1 paire | Creusés dans le sable du lit, entre 20 et 60 m du centre |
 | Troupeaux sauvages | 3 | 8 zébus au centre (dans le lit) + une paire de 6, à plus de 45 m des bases |
+| Plateaux en paliers | ~10 % de la carte | Voir §3 bis |
 | Bosquets d'épineux neutres | 7 paires | 8 à 14 arbres, à plus de 30 m des bases, hors du lit |
 | Raketa | 3 paires | À plus de 22 m des bases, hors du lit |
 | Baobabs (décor, obstacles) | 5 paires | À plus de 25 m des bases, hors du lit |
 | Points de migration | 5 | Le centre + 2 paires, à plus de 45 m des bases (voir `economie.md` §9) |
 | Zones de test | 3 paires | Laissées vides pour les duels du test de fumée (CI) |
 
-Les emplacements ne se chevauchent pas (3 m de marge) et restent à 8 m du bord.
+Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et évitent les plateaux.
 
 ## 3. Lit de rivière à sec (type Menarandra)
 
 - **Largeur 11 m**. Dans le sable, **unités et zébus avancent à 60 %** de leur vitesse : tout raid entre les deux
   bases doit le traverser, à l'aller comme au retour avec les zébus.
-- Il ne bloque rien (ni chemin, ni construction pour l'instant).
+- Il ne bloque pas les chemins. **On n'y construit pas** (message « on ne construit pas dans le lit de la rivière »).
+- **En contrebas** de 0,8 m, berges en pente douce sur ~3,5 m : visuel seulement (unités, zébus et trous d'eau
+  descendent à l'écran ; le corps physique et le navmesh restent à y = 0).
 - **Trous d'eau** dans le lit : points d'eau ordinaires (×0,3 en sécheresse), comme ceux qu'on creuse vraiment dans
   le sable des rivières de l'Androy.
 - Rendu : sable clair, plus sombre et humide au milieu hors sécheresse ; berges plus herbeuses. Il se prolonge hors
   de la zone de jeu par une **vallée à fond plat** dans le relief.
 - Technique : `Terrain` garde la distance au lit sur une grille de 2 m couvrant ±280 m (zone de jeu + relief) ;
   le shader la lit en texture.
+
+## 3 bis. Plateaux en paliers (falaises infranchissables)
+
+- **Forme** : champ de bruit symétrique (même valeur en *p* et *−p*), nul à moins de **42 m des bases**, à moins
+  de ~6 m du lit de rivière et autour des emplacements réservés (zones de test, troupeau du centre). Plateau là où
+  le champ dépasse un seuil choisi pour couvrir **10 %** de la carte ; **second palier** au cœur des plus grands
+  (2,5 % de la carte). Les îlots de moins de 12 cases (48 m²) sont supprimés.
+- **Relief** : palier de **2,5 m** (second palier : 5 m), parois verticales, contours lisses (« marching squares »
+  sur une grille de 2 m). Dessus clair (calcaire, herbe rase), parois de terre brune à strates.
+- **Jeu** : **infranchissables** (collision et navmesh : boîtes sur le calque 4) ; **on n'y construit pas**.
+  Ils ne bloquent pas la vue pour l'instant.
+- **Équité et accès** : symétriques ; le générateur vérifie (parcours de la grille) que la base du joueur rejoint
+  celle de l'IA et le centre. Sinon il réduit les plateaux (jusqu'à 5 essais), puis les supprime.
+- **Mini-carte** : plateaux en ocre clair, lit de rivière en sable, une fois explorés.
 
 ## 4. Sol
 
@@ -68,10 +86,10 @@ Les emplacements ne se chevauchent pas (3 m de marge) et restent à 8 m du bord.
 |---|---|---|
 | Carte générée (GDD §8) | Aléatoire à graine, symétrique | **Fait** (17/11) |
 | — | Lit de rivière à sec qui ralentit, trous d'eau | **Fait** (17/11) |
-| — | Plateaux en paliers infranchissables (falaises), rivière en contrebas | **Décidé** (17/11), à faire |
+| — | Plateaux en paliers infranchissables (falaises), rivière en contrebas | **Fait** (17/11) |
 | — | Eau dans la rivière en saison des pluies, herbe qui reverdit | **Décidé** (17/11), à faire |
 | — | Décor en modèles 3D (packs CC0 + modèles sur mesure) | **Décidé** (17/11), à faire |
 
 Questions ouvertes :
-1. Interdire la construction dans le lit de rivière ?
+1. Les plateaux devraient-ils bloquer la vue (ou donner une vision accrue à qui les longe) ?
 2. Les zébus sauvages devraient-ils préférer paître près du lit (herbe des berges) ?

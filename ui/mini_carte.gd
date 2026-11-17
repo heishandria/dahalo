@@ -8,6 +8,9 @@ const DUREE_ALERTE_S := 6.0
 const COULEUR_INEXPLORE := Color(0.03, 0.03, 0.05)
 const COULEUR_EXPLORE := Color(0.42, 0.26, 0.16)
 const COULEUR_VISIBLE := Color(0.72, 0.45, 0.26)
+# Terrain particulier (une fois exploré) : plateaux et lit de rivière.
+const COULEUR_PLATEAU := Color(0.86, 0.7, 0.48)
+const COULEUR_RIVIERE := Color(0.9, 0.78, 0.55)
 
 var _image: Image
 var _texture: ImageTexture
@@ -15,6 +18,7 @@ var _octets := PackedByteArray()
 var _alertes: Array = []   # [position, temps de fin]
 var _chrono := 0.0
 var _camera_rig = null
+var _terrain := PackedByteArray()   # par case : 0 = sol, 1 = plateau, 2 = lit de rivière (calculé une fois)
 
 
 func _ready() -> void:
@@ -61,17 +65,37 @@ func _maj_terrain() -> void:
 	var tout := Vision.revele_tout
 	var vu: PackedByteArray = Vision.vu[f]
 	var explore: PackedByteArray = Vision.explore[f]
+	if _terrain.is_empty():
+		_calculer_terrain(n)
 	for i in n * n:
 		var c := COULEUR_INEXPLORE
-		if tout or vu[i] == 1:
-			c = COULEUR_VISIBLE
-		elif explore[i] == 1:
-			c = COULEUR_EXPLORE
+		if tout or vu[i] == 1 or explore[i] == 1:
+			match _terrain[i]:
+				1:
+					c = COULEUR_PLATEAU
+				2:
+					c = COULEUR_RIVIERE
+				_:
+					c = COULEUR_VISIBLE
+			if not (tout or vu[i] == 1):
+				c = c.darkened(0.4)   # exploré mais pas vu en ce moment
 		_octets[i * 3] = c.r8
 		_octets[i * 3 + 1] = c.g8
 		_octets[i * 3 + 2] = c.b8
 	_image.set_data(n, n, false, Image.FORMAT_RGB8, _octets)
 	_texture.update(_image)
+
+
+func _calculer_terrain(n: int) -> void:
+	_terrain.resize(n * n)
+	var case := 2.0 * GameRules.DEMI_CARTE / n
+	for j in n:
+		for i in n:
+			var p := Vector3(-GameRules.DEMI_CARTE + (i + 0.5) * case, 0.0, -GameRules.DEMI_CARTE + (j + 0.5) * case)
+			if Terrain.sur_plateau(p):
+				_terrain[j * n + i] = 1
+			elif Terrain.dans_riviere(p):
+				_terrain[j * n + i] = 2
 
 
 func _draw() -> void:

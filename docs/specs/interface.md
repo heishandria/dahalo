@@ -23,6 +23,7 @@
   - **Palissade** : tracée de point en point (un piquet marque le dernier point) ; voir `defense.md`.
 - **Emplacement refusé** (message au joueur) si :
   - trop près du bord de la carte ;
+  - **sur un plateau** ou **dans le lit de rivière** (voir `carte.md`) ;
   - **zone inexplorée** ;
   - **chevauchement** avec un bâtiment, un champ, un puits, une ressource ou un baobab
     (test par cercles d'emprise ; les segments de palissade peuvent se toucher entre eux).
@@ -75,6 +76,7 @@
 | Lit de rivière | Non (on le traverse) | Non | **Ralentit à 60 %** unités et zébus (sable) |
 | Champs | Non | Non | Le champ se cultive dessus |
 | Palissades | Non | **Oui, pour les autres clans seulement** | Bloque l'ennemi jusqu'au sabotage ; son clan et les zébus passent |
+| Plateaux (falaises) | Oui | Oui | Infranchissables, pour tous |
 | Autres unités | Évitement | Non | Les unités s'écartent les unes des autres (évitement réciproque) |
 
 Les zébus heurtent bâtiments et arbres, mais pas les clôtures ni les autres unités.
@@ -89,6 +91,7 @@ Les zébus heurtent bâtiments et arbres, mais pas les clôtures ni les autres u
 
 - 200 × 200 px, toute la carte (240 × 240 m), **respecte le brouillard** : noir = inexploré,
   brun = exploré, ocre clair = visible.
+- Terrain exploré : plateaux en ocre clair, lit de rivière en sable.
 - Affiche : points d'eau découverts (bleu), bâtiments (carrés couleur du clan ; ennemis une fois explorés),
   zébus (blanc ; les siens toujours, les autres s'ils sont visibles), unités (ronds couleur du clan ;
   ennemies seulement si visibles), cadre blanc de la zone vue par la caméra.

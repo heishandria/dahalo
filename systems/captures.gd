@@ -47,6 +47,22 @@ func _scenario() -> void:
 	for r in get_tree().get_nodes_in_group("ressource_eau"):
 		if Terrain.dans_riviere(r.global_position) and (trou == null or r.global_position.length() < trou.global_position.length()):
 			trou = r
+	# Plateau le plus proche de la base du joueur, vu de près.
+	var plateau := Vector3.INF
+	for i in 60:
+		for j in 60:
+			var p := Vector3(-GameRules.DEMI_CARTE + i * 4.0, 0.0, -GameRules.DEMI_CARTE + j * 4.0)
+			if Terrain.valeur_plateau(p) > Terrain.plateaux_seuil_haut and (plateau == Vector3.INF \
+					or p.distance_to(base_joueur) < plateau.distance_to(base_joueur)):
+				plateau = p
+	if plateau != Vector3.INF:
+		Vision.revele_tout = true
+		rig.centrer_sur(plateau)
+		rig.zoomer(0.6)
+		await _attendre_brouillard()
+		await _capturer("plateau")
+		rig.zoomer(1.0 / 0.6)
+		Vision.revele_tout = false
 	if trou != null:
 		Vision.revele_tout = true
 		rig.centrer_sur(trou.global_position)

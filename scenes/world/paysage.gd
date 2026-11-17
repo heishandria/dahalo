@@ -1,7 +1,8 @@
 extends Node3D
-## Paysage autour de la zone de jeu : relief (collines puis plateau) et décor (rochers, fourrés,
-## épineux, baobabs). Purement visuel : aucune collision, hors du navmesh, aucun effet sur le jeu.
-## La zone de jeu (±DEMI_CARTE) reste plate à y = 0 ; le relief part de son bord.
+## Tout le visuel du terrain : sol de la zone de jeu (lit de rivière en contrebas), plateaux en paliers
+## (contours en « marching squares », parois verticales), relief autour de la zone de jeu et décor.
+## Purement visuel : les collisions des plateaux sont créées par main.gd ; le reste n'en a aucune.
+## La zone de jeu (±DEMI_CARTE) est à y = 0 ; le relief part de son bord.
 ## Construit par main.gd après la génération de la carte (le relief suit la vallée de la rivière).
 ## Spec : docs/specs/carte.md
 
@@ -36,6 +37,8 @@ func construire() -> void:
 	_materiau_relief.set_shader_parameter("distances_riviere", Terrain.texture_distances())
 	_materiau_relief.set_shader_parameter("etendue", Terrain.ETENDUE)
 	EventBus.meteo_change.connect(_on_meteo)
+	_creer_sol_jeu()
+	_creer_plateaux()
 	_creer_relief()
 	_creer_decor()
 
@@ -55,9 +58,138 @@ func hauteur(x: float, z: float) -> float:
 	var plateau := smoothstep(30.0, 70.0, d) * 8.0
 	var detail := _bruit_fin.get_noise_2d(x, z) * (1.5 + 2.0 * lointain) * montee
 	# La rivière sort de la zone de jeu par une vallée à fond plat.
-	var vallee := smoothstep(GameRules.RIVIERE_LARGEUR * 0.5, GameRules.RIVIERE_LARGEUR * 0.5 + 26.0,
-			Terrain.distance_riviere(Vector3(x, 0.0, z)))
-	return maxf(0.0, (collines + escarpement + plateau + detail) * vallee)
+	var d_riviere := Terrain.distance_riviere(Vector3(x, 0.0, z))
+	var vallee := smoothstep(GameRules.RIVIERE_LARGEUR * 0.5, GameRules.RIVIERE_LARGEUR * 0.5 + 26.0, d_riviere)
+	return maxf(0.0, (collines + escarpement + plateau + detail) * vallee) - Terrain.profondeur_riviere(d_riviere)
+
+
+# --- Sol de la zone de jeu : grille de 2 m, lit de rivière en contrebas ---
+
+func _creer_sol_jeu() -> void:
+	var pas := Terrain.PLATEAUX_CASE
+	var cotes := Terrain.PLATEAUX_N + 1
+	var d := GameRules.DEMI_CARTE
+	var sommets := PackedVector3Array()
+	var normales := PackedVector3Array()
+	for j in cotes:
+		for i in cotes:
+			var p := Vector3(-d + i * pas, 0.0, -d + j * pas)
+			p.y = Terrain.hauteur_sol(p)
+			sommets.append(p)
+			var dx := Terrain.hauteur_sol(p + Vector3(1, 0, 0)) - Terrain.hauteur_sol(p - Vector3(1, 0, 0))
+			var dz := Terrain.hauteur_sol(p + Vector3(0, 0, 1)) - Terrain.hauteur_sol(p - Vector3(0, 0, 1))
+			normales.append(Vector3(-dx, 2.0, -dz).normalized())
+	var indices := PackedInt32Array()
+	for j in cotes - 1:
+		for i in cotes - 1:
+			var a := j * cotes + i
+			var b := a + cotes
+			indices.append_array([a, a + 1, b, a + 1, b + 1, b])
+	_ajouter_maillage("SolJeu", sommets, normales, indices)
+
+
+# --- Plateaux : contours en marching squares sur le champ de Terrain ---
+
+## Couleur de sommet lue par le shader : rouge = dessus de plateau, vert = paroi (sinon : sol).
+const ROLE_DESSUS := Color(1, 0, 0)
+const ROLE_PAROI := Color(0, 1, 0)
+
+
+func _creer_plateaux() -> void:
+	if Terrain.plateaux_champ.is_empty() or Terrain.plateaux_seuil == INF:
+		return
+	var h := GameRules.PLATEAUX_HAUTEUR
+	var sommets := PackedVector3Array()
+	var normales := PackedVector3Array()
+	var roles := PackedColorArray()
+	_palier(Terrain.plateaux_seuil, 0.0, h, sommets, normales, roles)
+	_palier(Terrain.plateaux_seuil_haut, h, 2.0 * h, sommets, normales, roles)
+	if sommets.is_empty():
+		return
+	var indices := PackedInt32Array()
+	for k in sommets.size():
+		indices.append(k)
+	_ajouter_maillage("Plateaux", sommets, normales, indices, roles)
+
+
+## Un palier : dessus plat à y_haut là où le champ dépasse le seuil, parois de y_bas à y_haut sur le contour.
+## Chaque case est découpée par le seuil (interpolation sur les arêtes) : contours lisses, pas d'escalier.
+func _palier(seuil: float, y_bas: float, y_haut: float, sommets: PackedVector3Array,
+		normales: PackedVector3Array, roles: PackedColorArray) -> void:
+	var n := Terrain.PLATEAUX_N
+	var c := n + 1
+	var pas := Terrain.PLATEAUX_CASE
+	var d := GameRules.DEMI_CARTE
+	var champ := Terrain.plateaux_champ
+	for j in n:
+		for i in n:
+			var coins := [Vector2i(i, j), Vector2i(i + 1, j), Vector2i(i + 1, j + 1), Vector2i(i, j + 1)]
+			var valeurs: Array[float] = []
+			var dedans := 0
+			for k in 4:
+				var v: float = champ[coins[k].y * c + coins[k].x]
+				valeurs.append(v)
+				if v > seuil:
+					dedans += 1
+			if dedans == 0:
+				continue
+			# Polygone de la partie au-dessus du seuil, et repérage des points de contour.
+			var poly: Array[Vector2] = []
+			var contour: Array[bool] = []
+			for k in 4:
+				var k2 := (k + 1) % 4
+				var p1 := Vector2(-d + coins[k].x * pas, -d + coins[k].y * pas)
+				var p2 := Vector2(-d + coins[k2].x * pas, -d + coins[k2].y * pas)
+				if valeurs[k] > seuil:
+					poly.append(p1)
+					contour.append(false)
+				if (valeurs[k] > seuil) != (valeurs[k2] > seuil):
+					var t := (seuil - valeurs[k]) / (valeurs[k2] - valeurs[k])
+					poly.append(p1.lerp(p2, t))
+					contour.append(true)
+			# Dessus : éventail de triangles.
+			for k in range(1, poly.size() - 1):
+				for p in [poly[0], poly[k], poly[k + 1]]:
+					sommets.append(Vector3(p.x, y_haut, p.y))
+					normales.append(Vector3.UP)
+					roles.append(ROLE_DESSUS)
+			# Parois : entre deux points de contour consécutifs du polygone.
+			for k in poly.size():
+				var k2 := (k + 1) % poly.size()
+				if not (contour[k] and contour[k2]):
+					continue
+				var a := poly[k]
+				var b := poly[k2]
+				var normale := Vector3(b.y - a.y, 0.0, a.x - b.x).normalized()
+				var milieu := Vector3((a.x + b.x) * 0.5, 0.0, (a.y + b.y) * 0.5)
+				if Terrain.valeur_plateau(milieu + normale * 0.3) > Terrain.valeur_plateau(milieu - normale * 0.3):
+					normale = -normale   # la paroi regarde vers l'extérieur du plateau
+				var quad := [Vector3(a.x, y_bas, a.y), Vector3(b.x, y_bas, b.y), Vector3(b.x, y_haut, b.y),
+						Vector3(a.x, y_haut, a.y)]
+				for q in [0, 1, 2, 0, 2, 3]:
+					sommets.append(quad[q])
+					normales.append(normale)
+					roles.append(ROLE_PAROI)
+
+
+func _ajouter_maillage(nom: String, sommets: PackedVector3Array, normales: PackedVector3Array,
+		indices: PackedInt32Array, roles := PackedColorArray()) -> void:
+	var tableaux := []
+	tableaux.resize(Mesh.ARRAY_MAX)
+	tableaux[Mesh.ARRAY_VERTEX] = sommets
+	tableaux[Mesh.ARRAY_NORMAL] = normales
+	if roles.is_empty():
+		roles.resize(sommets.size())
+		roles.fill(Color.BLACK)   # sans couleur, Godot donnerait du blanc : le shader y verrait un plateau
+	tableaux[Mesh.ARRAY_COLOR] = roles
+	tableaux[Mesh.ARRAY_INDEX] = indices
+	var maillage := ArrayMesh.new()
+	maillage.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, tableaux)
+	var instance := MeshInstance3D.new()
+	instance.name = nom
+	instance.mesh = maillage
+	instance.material_override = _materiau_relief
+	add_child(instance)
 
 
 func _creer_relief() -> void:
@@ -90,6 +222,10 @@ func _creer_relief() -> void:
 	tableaux[Mesh.ARRAY_VERTEX] = sommets
 	tableaux[Mesh.ARRAY_NORMAL] = normales
 	tableaux[Mesh.ARRAY_INDEX] = indices
+	var noir := PackedColorArray()
+	noir.resize(sommets.size())
+	noir.fill(Color.BLACK)   # rôle « sol » pour le shader (voir ROLE_DESSUS)
+	tableaux[Mesh.ARRAY_COLOR] = noir
 	var maillage := ArrayMesh.new()
 	maillage.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, tableaux)
 	var relief := MeshInstance3D.new()

@@ -49,6 +49,12 @@ const CARTE_PAIRES_MIGRATION := 2          # + le centre
 const RIVIERE_LARGEUR := 11.0              # largeur du lit de sable (m)
 const RIVIERE_RALENTISSEMENT := 0.6        # vitesse des unités et des zébus dans le sable
 const RIVIERE_TROUS_EAU := 1               # paires de trous d'eau creusés dans le sable du lit
+const RIVIERE_PROFONDEUR := 0.8            # le lit est en contrebas (visuel ; on y marche normalement)
+# Plateaux en paliers : obstacles infranchissables (falaises), on ne construit pas dessus.
+const PLATEAUX_PART := 0.1                 # part de la carte couverte par les plateaux
+const PLATEAUX_PART_HAUT := 0.025          # part couverte par le second palier (au cœur des grands plateaux)
+const PLATEAUX_HAUTEUR := 2.5              # hauteur d'un palier (m)
+const PLATEAUX_DISTANCE_BASES := 42.0      # pas de plateau plus près d'une base
 
 # --- Ressources ---
 const RESSOURCES := ["nourriture", "eau", "bois", "ariary"]
