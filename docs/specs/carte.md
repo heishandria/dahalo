@@ -1,15 +1,15 @@
 # Spec — Carte : génération, rivière, sol et paysage
 
 > Statut : **prototype v0.11** (17/11/2026). Décrit ce qui est **réellement codé**.
-> Code : `systems/generateur_carte.gd` (placement, plateaux), `autoload/terrain.gd` (rivière, plateaux),
-> `scenes/main.gd` (création, collisions des plateaux), `scenes/world/terrain.gdshader` (couleurs),
+> Code : `systems/generateur_carte.gd` (placement, collines, érosion), `autoload/terrain.gd` (rivière, collines),
+> `scenes/main.gd` (création, collisions des collines), `scenes/world/terrain.gdshader` (couleurs),
 > `scenes/world/paysage.gd` (tout le visuel du terrain). Valeurs : `data/game_rules.gd` (`DEMI_CARTE`, `CARTE_*`,
 > `RIVIERE_*`, `PLATEAUX_*`).
 
 ## 1. Zone de jeu
 
 - Carré de **240 × 240 m** (±120 m), échelle d'une carte 2 joueurs d'Age of Empires. On joue à y = 0 ;
-  le lit de rivière est en contrebas, les plateaux au-dessus (infranchissables). Unités et bâtiments restent dans ±116 m.
+  le lit de rivière est en contrebas, les collines au-dessus (sommets infranchissables). Unités et bâtiments restent dans ±116 m.
 - **Carte aléatoire à graine** (GDD §8) : chaque partie tire une graine ; `-- --graine=N` impose la graine
   (même graine = exactement la même carte). La graine est écrite dans le journal (`[carte] graine N`).
 
@@ -32,7 +32,7 @@ l'IA est l'image de celle du joueur. Les deux clans ont donc exactement les mêm
 | Points de migration | 5 | Le centre + 2 paires, à plus de 45 m des bases (voir `economie.md` §9) |
 | Zones de test | 3 paires | Laissées vides pour les duels du test de fumée (CI) |
 
-Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et évitent les plateaux.
+Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et évitent les collines.
 
 ## 3. Lit de rivière à sec (type Menarandra)
 
