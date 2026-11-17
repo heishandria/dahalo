@@ -26,6 +26,7 @@ var id := 0
 var en_repousse := false
 var _quantite_max := 0.0
 var _chrono_repousse := 0.0
+var _mare = null   # visuel du point d'eau (scenes/world/mare.gd)
 
 
 func _ready() -> void:
@@ -50,8 +51,14 @@ func _ready() -> void:
 		m.albedo_color = GameRules.couleur_faction(faction)
 		banniere.material_override = m
 	if variante == "point_eau":
+		# Visuel réaliste (mare ou trou d'eau creusé dans le lit) à la place du disque de la scène.
+		($PointEau as Node3D).visible = false
+		_mare = preload("res://scenes/world/mare.gd").new()
+		_mare.name = "Mare"
+		_mare.dans_le_lit = Terrain.dans_riviere(global_position)
+		add_child(_mare)
+		_mare.saison(GameClock.secheresse, true)
 		EventBus.meteo_change.connect(_on_meteo)
-		_on_meteo(GameClock.secheresse)
 
 
 func _process(delta: float) -> void:
@@ -151,8 +158,6 @@ func _maj_visuel_arbre() -> void:
 
 
 func _on_meteo(secheresse: bool) -> void:
-	# Le point d'eau rétrécit visuellement pendant la sécheresse.
-	var eau := get_node_or_null("PointEau") as Node3D
-	if eau:
-		var s := 0.45 if secheresse else 1.0
-		eau.scale = Vector3(s, 1.0, s)
+	# Le point d'eau se retire visuellement pendant la sécheresse.
+	if _mare != null:
+		_mare.saison(secheresse)

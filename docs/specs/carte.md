@@ -89,6 +89,15 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
   +5 %, saturation −10 %. **Mobile** : rendu Mobile ; **Web** : Compatibility (sans SSAO ; brume simple).
 - Lumière ambiante chaude le jour, bleutée la nuit.
 
+## 4 quinquies. Points d'eau (visuel ; `scenes/world/mare.gd`)
+
+- **Mare du village** : contour irrégulier (propre à chaque mare), eau trouble et limoneuse avec reflets et rides,
+  berges de boue humide (plus sombre près de l'eau), herbe plus dense autour.
+- **Trou d'eau du lit** : plus petit, entouré d'un bourrelet de sable creusé, un peu d'eau au fond. En saison
+  normale il est sous le filet d'eau de la rivière ; il se voit surtout en sécheresse.
+- **Sécheresse** : l'eau se retire (fondu de 6 s, 55 % du rayon) et découvre une auréole de boue craquelée.
+- Purement visuel : la collision (rayon 1 m) et la récolte restent celles de la ressource (voir `economie.md`).
+
 ## 4 bis. Végétation basse de la zone de jeu (purement visuel)
 
 Modèles du pack **Quaternius Stylized Nature MegaKit** (CC0, voir `assets/models/decor/LISEZMOI.md`) ;

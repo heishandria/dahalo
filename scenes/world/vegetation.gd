@@ -20,6 +20,7 @@ var _positions: Array[PackedVector3Array] = []   # par MultiMesh : position de c
 var _hasard := RandomNumberGenerator.new()
 var _bruit := FastNoiseLite.new()
 var _vision: Texture2D
+var _mares: Array[Vector2] = []   # points d'eau du village (hors du lit) : herbe plus dense autour
 var _secheresse := 0.0
 var _fondu: Tween
 
@@ -31,6 +32,9 @@ func construire(texture_vision: Texture2D) -> void:
 	_bruit.frequency = 0.04
 	var f := BibliothequeDecor.facteur_densite()
 	var exclusions := _exclusions()
+	for n in get_tree().get_nodes_in_group("ressource_eau"):
+		if n is NoeudRessource and n.variante == "point_eau" and not Terrain.dans_riviere(n.global_position):
+			_mares.append(Vector2(n.global_position.x, n.global_position.z))
 	# Herbes : surtout les courtes (plus légères), échelle ramenée à ~0,6 m.
 	_creer("Herbe", ["Grass_Common_Short", "Grass_Wispy_Short", "Grass_Common_Short", "Grass_Wispy_Short",
 			"Grass_Common_Tall", "Grass_Wispy_Tall"], [_maillage_touffe()], int(NOMBRE_HERBE * f),
@@ -208,6 +212,9 @@ func _placer_herbe(echelle_min: float, echelle_max: float) -> Transform3D:
 	var densite := 0.25 + 0.75 * smoothstep(-0.1, 0.4, _bruit.get_noise_2d(p.x, p.z))
 	if d < demi + 6.0:
 		densite = 1.0
+	for m in _mares:
+		if Vector2(p.x, p.z).distance_to(m) < 7.0:
+			densite = 1.0   # herbe plus verte et dense autour des mares
 	if _hasard.randf() > densite:
 		return _rien()
 	var e := _hasard.randf_range(echelle_min, echelle_max)
