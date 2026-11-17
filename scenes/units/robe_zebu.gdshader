@@ -48,6 +48,26 @@ void fragment() {
 		float tache = smoothstep(seuil - 0.025, seuil + 0.025, n);
 		c = mix(couleur_base, couleur_taches, tache);
 	}
+	// Pelage : poils courts couchés dans le sens du corps (bruit étiré le long de l'animal), nuances par zones.
+	float poils = bruit(vec3(repos.x * 55.0, repos.y * 55.0, repos.z * 9.0) + vec3(graine));
+	poils = mix(poils, bruit(vec3(repos.x * 120.0, repos.y * 120.0, repos.z * 20.0) + vec3(3.1)), 0.4);
+	float nuances = fractal(repos * 2.6 + vec3(graine * 0.37));
+	c *= 0.72 + 0.45 * poils;
+	c *= 0.9 + 0.2 * nuances;
+	// Poussière de latérite sur le bas des pattes et le ventre (on vit dans la terre rouge).
+	float poussiere = (1.0 - smoothstep(0.08, 0.5, repos.y)) * (0.55 + 0.45 * fractal(repos * 7.0));
+	c = mix(c, vec3(0.6, 0.36, 0.22) * (0.8 + 0.3 * poils), poussiere * 0.7);
 	ALBEDO = c * COLOR.r;
-	ROUGHNESS = 0.85;
+	// Relief des poils : perturbation de la normale par le gradient du bruit (bump mapping sans texture).
+	vec3 dpdx = dFdx(VERTEX);
+	vec3 dpdy = dFdy(VERTEX);
+	float hx = dFdx(poils);
+	float hy = dFdy(poils);
+	vec3 r1 = cross(dpdy, NORMAL);
+	vec3 r2 = cross(NORMAL, dpdx);
+	float det = dot(dpdx, r1);
+	vec3 gradient = sign(det) * (hx * r1 + hy * r2);
+	NORMAL = normalize(abs(det) * NORMAL - 0.006 * gradient);
+	ROUGHNESS = mix(0.95, 0.75, poils);
+	SPECULAR = 0.25;
 }

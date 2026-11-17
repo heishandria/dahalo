@@ -13,6 +13,14 @@ const MODELE := preload("res://assets/models/animaux/zebu.glb")
 const VITESSE_MARCHE_MODELE := 0.4
 const VITESSE_COURSE_MODELE := 1.8
 const SEUIL_COURSE := 2.6
+# Espace vital : les zébus s'écartent les uns des autres et des personnes (pas de chevauchement).
+# Espace vital : le corps du zébu est vu comme un segment (épaules -> croupe) ; on mesure l'écart entre segments,
+# pour que deux zébus ne se traversent pas, même placés en croix.
+const DEMI_CORPS := 0.85           # demi-longueur du segment du corps (le zébu fait ~2,3 m avec la tête)
+const ECART_ZEBUS := 0.85          # distance minimale entre les axes de deux zébus (largeur du corps + marge)
+const ECART_PERSONNES := 0.75      # distance minimale entre l'axe d'un zébu et une personne
+const FORCE_ECART := 2.6
+const DEMI_ENCLOS := 3.35          # les deux bouts du corps restent dans ce carré (clôture à ~3,95 m du centre)
 # Robes courantes des zébus malgaches : rouge-brun, gris, noir, blanc crème, fauve, brun sombre.
 const ROBES := [Color(0.55, 0.3, 0.18), Color(0.62, 0.6, 0.56), Color(0.13, 0.12, 0.11), Color(0.86, 0.82, 0.74),
 		Color(0.72, 0.55, 0.36), Color(0.36, 0.24, 0.17)]
@@ -48,6 +56,11 @@ func _ready() -> void:
 	_cible_errance = global_position
 	_creer_modele()
 	_maj_marque()
+	# Les villageois et guerriers contournent les zébus (évitement de leurs agents de navigation).
+	var obstacle := NavigationObstacle3D.new()
+	obstacle.radius = 1.0
+	obstacle.avoidance_enabled = true
+	add_child(obstacle)
 
 
 ## Modèle animé à la place des formes de la scène ; robe tirée de l'identifiant (stable pendant la partie).
@@ -248,8 +261,9 @@ func _physics_process(delta: float) -> void:
 		var rang: int = meneur.zebus_escortes.find(self)
 		var arriere: Vector3 = meneur.global_transform.basis.z
 		var cote: Vector3 = meneur.global_transform.basis.x
-		cible = meneur.global_position + arriere * (2.0 + floorf(rang / 2.0) * 1.2) \
-				+ cote * (0.8 if rang % 2 == 0 else -0.8)
+		# File par deux derrière le meneur, espacée à la taille réelle d'un zébu (~2,3 m de long).
+		cible = meneur.global_position + arriere * (2.4 + floorf(rang / 2.0) * 2.5) \
+				+ cote * (0.75 if rang % 2 == 0 else -0.75)
 		vitesse = meneur.vitesse_actuelle() + 0.6
 		tolerance = 0.4
 	else:
@@ -257,17 +271,104 @@ func _physics_process(delta: float) -> void:
 		if _timer <= 0.0:
 			_timer = randf_range(2.0, 5.0)
 			var a := randf() * TAU
-			_cible_errance = centre_errance + Vector3(cos(a), 0.0, sin(a)) * randf() * rayon_errance
+			# Racine carrée : cibles réparties sur toute la surface (sinon le troupeau s'entasse au centre).
+			_cible_errance = centre_errance + Vector3(cos(a), 0.0, sin(a)) * sqrt(randf()) * rayon_errance
 
 	var dir := cible - global_position
 	dir.y = 0.0
+	var ecart := _ecartement()
 	if dir.length() < tolerance:
-		velocity = Vector3.ZERO
+		# Arrivé : il ne bouge que pour laisser de la place à ses voisins (sans se retourner).
+		velocity = ecart
+		if ecart.length() > 0.05:
+			move_and_slide()
+			_rester_dans_enclos()
 		return
 	dir = dir.normalized()
-	velocity = dir * vitesse * Terrain.facteur_vitesse(global_position)   # sable du lit de rivière
+	velocity = (dir * vitesse + ecart) * Terrain.facteur_vitesse(global_position)   # sable du lit de rivière
 	look_at(global_position + dir, Vector3.UP)
 	move_and_slide()
+	_rester_dans_enclos()
+
+
+## Poussée qui l'éloigne des zébus et des personnes trop proches (espace vital, sans blocage physique :
+## un Dahalo doit pouvoir mener son troupeau au milieu des autres). Distances mesurées depuis l'axe du corps.
+func _ecartement() -> Vector3:
+	var poussee := Vector3.ZERO
+	var axe := _axe_corps()
+	for z in get_tree().get_nodes_in_group("zebus"):
+		if z == self or not (z is Node3D):
+			continue
+		if (z.global_position - global_position).length_squared() > 9.0:
+			continue
+		var autre: Array = z._axe_corps()
+		var proches := _points_proches(axe[0], axe[1], autre[0], autre[1])
+		poussee += _poussee(proches[0], proches[1], ECART_ZEBUS)
+	for u in get_tree().get_nodes_in_group("unites"):
+		if u == meneur:
+			continue
+		var p: Vector3 = u.global_position
+		if (p - global_position).length_squared() > 6.0:
+			continue
+		poussee += _poussee(_point_proche(axe[0], axe[1], p), p, ECART_PERSONNES)
+	return poussee * FORCE_ECART
+
+
+## Les deux bouts du corps (épaules et croupe), au sol.
+func _axe_corps() -> Array:
+	var avant := -global_transform.basis.z
+	avant.y = 0.0
+	avant = avant.normalized() * DEMI_CORPS
+	var c := Vector3(global_position.x, 0.0, global_position.z)
+	return [c + avant, c - avant]
+
+
+func _poussee(moi: Vector3, autre: Vector3, distance_mini: float) -> Vector3:
+	var d := moi - autre
+	d.y = 0.0
+	var l := d.length()
+	if l >= distance_mini:
+		return Vector3.ZERO
+	if l < 0.001:
+		return Vector3(randf_range(-1, 1), 0, randf_range(-1, 1))
+	return d / l * (distance_mini - l) / distance_mini
+
+
+static func _point_proche(a: Vector3, b: Vector3, p: Vector3) -> Vector3:
+	var ab := b - a
+	var t := clampf((p - a).dot(ab) / maxf(ab.length_squared(), 1e-6), 0.0, 1.0)
+	return a + ab * t
+
+
+## Points les plus proches entre les segments [a, b] et [c, d] (au sol).
+static func _points_proches(a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> Array:
+	var u := b - a
+	var v := d - c
+	var w := a - c
+	var aa := u.dot(u)
+	var bb := u.dot(v)
+	var cc := v.dot(v)
+	var dd := u.dot(w)
+	var ee := v.dot(w)
+	var den := aa * cc - bb * bb
+	var s := 0.0 if den < 1e-6 else clampf((bb * ee - cc * dd) / den, 0.0, 1.0)
+	var t := clampf((bb * s + ee) / cc, 0.0, 1.0)
+	s = clampf((bb * t - dd) / aa, 0.0, 1.0)
+	return [a + u * s, c + v * t]
+
+
+## Dans l'enclos, les deux bouts du corps restent à l'intérieur de la clôture (carré arrondi, non tourné).
+func _rester_dans_enclos() -> void:
+	if etat != Etat.ENCLOS:
+		return
+	var axe := _axe_corps()
+	var centre := Vector3(centre_errance.x, 0.0, centre_errance.z)
+	var a: Vector3 = axe[0] - centre
+	var b: Vector3 = axe[1] - centre
+	var correction := Vector3.ZERO
+	correction.x = minf(0.0, DEMI_ENCLOS - maxf(a.x, b.x)) + maxf(0.0, -DEMI_ENCLOS - minf(a.x, b.x))
+	correction.z = minf(0.0, DEMI_ENCLOS - maxf(a.z, b.z)) + maxf(0.0, -DEMI_ENCLOS - minf(a.z, b.z))
+	global_position += correction
 
 
 func _maj_marque() -> void:

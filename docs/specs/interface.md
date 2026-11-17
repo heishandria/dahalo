@@ -78,8 +78,17 @@
 | Palissades | Non | **Oui, pour les autres clans seulement** | Bloque l'ennemi jusqu'au sabotage ; son clan et les zébus passent |
 | Collines (au-dessus de 0,9 m) | Oui | Oui | Infranchissables, pour tous ; le pied est praticable |
 | Autres unités | Évitement | Non | Les unités s'écartent les unes des autres (évitement réciproque) |
+| Zébus | Évitement | Non | Chaque zébu porte un obstacle d'évitement (rayon 1 m) : villageois et guerriers le contournent |
 
-Les zébus heurtent bâtiments et arbres, mais pas les clôtures ni les autres unités.
+Les zébus heurtent bâtiments et arbres (boîte 0,75 × 1,3 × 2,1 m, à la taille du modèle), mais pas les clôtures.
+Depuis le 17/11 ils gardent un **espace vital** sans blocage physique (un Dahalo doit pouvoir mener son troupeau
+au milieu des autres) :
+- le corps est vu comme un segment épaules → croupe (1,7 m) ; deux zébus sont repoussés si leurs axes passent à
+  moins de **0,85 m** (même placés en croix, ils ne se traversent plus), un zébu et une personne à moins de **0,75 m** ;
+- au repos, un zébu ne bouge que pour laisser de la place (sans se retourner) ; son meneur n'est pas repoussé ;
+- dans l'enclos, les **deux bouts du corps** restent dans un carré de 3,35 m autour du centre (clôture à ~3,95 m),
+  et les points d'errance sont répartis sur toute la surface (rayon 2,8 m) au lieu de s'entasser au centre ;
+- en escorte, file par deux espacée à la taille réelle : 2,4 m derrière le meneur puis 2,5 m par rang, ±0,75 m sur le côté.
 
 - **Chemin** : le navmesh lit le sol **et** toutes les entités (groupe `source_navigation` : sol + `Entites`),
   calques 1, 4, 5 et 6, avec une marge de 0,75 m autour des obstacles (le corps d'une unité fait 0,4 m de rayon).
