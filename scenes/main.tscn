@@ -51,7 +51,7 @@ size = Vector3(240, 1, 240)
 script = ExtResource("1_main")
 
 [node name="Soleil" type="DirectionalLight3D" parent="." unique_id=350863684]
-transform = Transform3D(-0.2873, 0.0000, 0.9578, 0.5438, 0.8232, 0.1631, -0.7885, 0.5677, -0.2366, 0, 30, 0)
+transform = Transform3D(-0.2873, 0.0000, 0.9578, 0.7468, 0.6262, 0.2240, -0.5998, 0.7797, -0.1799, 0, 30, 0)
 light_color = Color(1, 0.92, 0.78, 1)
 light_energy = 1.75
 light_angular_distance = 0.6

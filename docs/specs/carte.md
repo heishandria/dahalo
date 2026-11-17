@@ -101,8 +101,8 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
 
 ## 4 ter. Rendu (direction artistique décidée le 17/11 : « sérieux, un peu réaliste »)
 
-- **PC : Forward+** — soleil chaud et franc, **rasant** (~35°, venant de la gauche de l'écran : ombres longues vers le
-  bas à droite), ambiance basse pour le contraste, occlusion ambiante (SSAO), brume très légère, contraste +12 %. **Mobile** : rendu Mobile ; **Web** : Compatibility (sans SSAO ; brume simple).
+- **PC : Forward+** — soleil chaud et franc, à ~50° de hauteur, venant de la gauche de l'écran (ombres d'environ 0,8 fois la
+  hauteur des objets, vers le bas à droite), ambiance basse pour le contraste, occlusion ambiante (SSAO), brume très légère, contraste +12 %. **Mobile** : rendu Mobile ; **Web** : Compatibility (sans SSAO ; brume simple).
 - Lumière ambiante chaude le jour, bleutée la nuit.
 
 ## 4 quinquies. Points d'eau (visuel ; `scenes/world/mare.gd`)
