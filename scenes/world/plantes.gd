@@ -11,7 +11,8 @@ const VARIANTES := 3
 
 static var _cache := {}
 static var _materiau_bois: StandardMaterial3D
-static var _materiau_feuilles: StandardMaterial3D
+static var _materiau_feuilles: StandardMaterial3D        # grappes de feuilles texturées (baobab)
+static var _materiau_ecailles: StandardMaterial3D        # petites feuilles des épineux (couleur seule)
 static var _materiau_raketa: StandardMaterial3D
 static var _fondu: Tween
 
@@ -38,9 +39,10 @@ static func saison(hote: Node, secheresse: bool) -> void:
 	_materiaux()
 	if _fondu != null and _fondu.is_valid():
 		_fondu.kill()
-	_fondu = hote.create_tween()
+	_fondu = hote.create_tween().set_parallel()
 	var cible := Color(1.25, 0.95, 0.5, 0.0) if secheresse else Color(1, 1, 1, 1)
 	_fondu.tween_property(_materiau_feuilles, "albedo_color", cible, 6.0)
+	_fondu.tween_property(_materiau_ecailles, "albedo_color", cible, 6.0)
 
 
 static func _obtenir(espece: String, variante: int) -> Mesh:
@@ -63,10 +65,24 @@ static func _materiaux() -> void:
 	if _materiau_bois != null:
 		return
 	_materiau_bois = _materiau(0.85)
-	_materiau_feuilles = _materiau(0.9)
+	# Écorce photo (Poly Haven, CC0), projetée en triplanaire local : les maillages n'ont pas de coordonnées
+	# de texture. La couleur par sommet la teinte (gris rosé du baobab, gris-vert des épineux).
+	_materiau_bois.albedo_texture = load("res://assets/textures/plantes/ecorce_couleur.jpg")
+	_materiau_bois.normal_enabled = true
+	_materiau_bois.normal_texture = load("res://assets/textures/plantes/ecorce_relief.jpg")
+	_materiau_bois.uv1_triplanar = true
+	_materiau_bois.uv1_triplanar_sharpness = 4.0
+	_materiau_bois.uv1_scale = Vector3(0.45, 0.45, 0.45)
+	# Feuillage : plans croisés couverts d'une texture de feuilles découpée (pack CC0 Quaternius).
 	# Découpe opaque (bien moins chère que la transparence) : les feuilles tombent à mi-chemin du fondu.
+	_materiau_feuilles = _materiau(0.9)
+	_materiau_feuilles.albedo_texture = load("res://assets/models/decor/quaternius_megakit/Leaves_NormalTree_C.png")
 	_materiau_feuilles.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 	_materiau_feuilles.alpha_scissor_threshold = 0.5
+	_materiau_feuilles.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_materiau_ecailles = _materiau(0.9)
+	_materiau_ecailles.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	_materiau_ecailles.alpha_scissor_threshold = 0.5
 	_materiau_feuilles.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_materiau_raketa = _materiau(0.6)
 
@@ -96,7 +112,7 @@ static func _construire_baobab(h: RandomNumberGenerator) -> ArrayMesh:
 		profil.append(Vector2(t * (hauteur + 0.4) - 0.4, r))   # le pied s'enfonce un peu dans le sol
 	var ecorce := func(t: float, a: float) -> Color:
 		var v := 0.92 + 0.08 * sin(a * 7.0 + t * 3.0)
-		return Color(0.52, 0.47, 0.43).lerp(Color(0.4, 0.35, 0.31), 1.0 - t) * v
+		return Color(1.08, 1.0, 0.96).lerp(Color(0.86, 0.78, 0.74), 1.0 - t) * v
 	_tour(bois, Transform3D.IDENTITY, profil, 14, ecorce, h.randf() * TAU, 0.06)
 	# Couronne : branches courtes et épaisses, presque horizontales, divisées en rameaux.
 	var sommet := Vector3(0, hauteur - 0.2, 0)
@@ -109,11 +125,28 @@ static func _construire_baobab(h: RandomNumberGenerator) -> ArrayMesh:
 		for r in 2:
 			var dir2 := (dir + Vector3(h.randf_range(-0.6, 0.6), h.randf_range(0.2, 0.7), h.randf_range(-0.6, 0.6))).normalized()
 			var bout2 := _branche(bois, bout, dir2, h.randf_range(0.7, 1.2), 0.14, 0.05, ecorce)
-			# Feuillage clairsemé : plusieurs petites touffes sombres autour du bout du rameau.
-			for f in 4:
-				var decalage := Vector3(h.randf_range(-0.45, 0.45), h.randf_range(-0.15, 0.3), h.randf_range(-0.45, 0.45))
-				_touffe(feuilles, bout2 + decalage, h.randf_range(0.22, 0.36), Color(0.24, 0.32, 0.14), h)
+			# Feuillage clairsemé : quelques grappes de feuilles autour du bout du rameau.
+			for f in 2:
+				var decalage := Vector3(h.randf_range(-0.35, 0.35), h.randf_range(-0.05, 0.3), h.randf_range(-0.35, 0.35))
+				_grappe(feuilles, bout2 + decalage, h.randf_range(0.55, 0.8), Color(0.62, 0.68, 0.48) * h.randf_range(0.85, 1.05), h)
 	return _assembler(bois, _materiau_bois, feuilles, _materiau_feuilles)
+
+
+## Grappe de feuilles : trois plans croisés (étoile) texturés, inclinés au hasard. Vue sous tous les angles.
+static func _grappe(st: SurfaceTool, centre: Vector3, taille: float, couleur: Color, h: RandomNumberGenerator) -> void:
+	var rotation := Basis(Vector3.UP, h.randf() * TAU) * Basis(Vector3.RIGHT, h.randf_range(-0.4, 0.4))
+	for k in 3:
+		var plan := rotation * Basis(Vector3.UP, PI * k / 3.0)
+		if k == 2:
+			plan = rotation * Basis(Vector3.RIGHT, PI * 0.5)   # un plan à plat, vu d'en haut
+		var x := plan.x * taille
+		var y := plan.y * taille
+		var coins := [centre - x - y, centre + x - y, centre + x + y, centre - x + y]
+		var uvs := [Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)]
+		for i in [0, 1, 2, 0, 2, 3]:
+			st.set_color(couleur)
+			st.set_uv(uvs[i])
+			st.add_vertex(coins[i])
 
 
 # --- Épineux (Alluaudia) ---
@@ -124,7 +157,7 @@ static func _construire_epineux(h: RandomNumberGenerator) -> ArrayMesh:
 	var feuilles := SurfaceTool.new()
 	feuilles.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var tige_couleur := func(t: float, _a: float) -> Color:
-		return Color(0.36, 0.37, 0.3).lerp(Color(0.44, 0.46, 0.36), t)
+		return Color(0.72, 0.8, 0.62).lerp(Color(0.86, 0.92, 0.74), t)
 	var nb := h.randi_range(3, 6)
 	for k in nb:
 		var pied := Vector3(h.randf_range(-0.35, 0.35), 0.0, h.randf_range(-0.35, 0.35))
@@ -139,7 +172,7 @@ static func _construire_epineux(h: RandomNumberGenerator) -> ArrayMesh:
 			var a := h.randf() * TAU
 			var vers := Vector3(cos(a), 0.25, sin(a)) * 0.22
 			_ecaille(feuilles, p + vers * 0.5, vers, Color(0.26, 0.36, 0.15) * h.randf_range(0.8, 1.15))
-	return _assembler(bois, _materiau_bois, feuilles, _materiau_feuilles)
+	return _assembler(bois, _materiau_bois, feuilles, _materiau_ecailles)
 
 
 # --- Raketa (figuier de Barbarie) ---
@@ -196,7 +229,7 @@ static func _tour(st: SurfaceTool, t: Transform3D, profil: Array[Vector2], segme
 	for k in anneaux.size() - 1:
 		for s in segments:
 			var quad := [anneaux[k][s], anneaux[k][s + 1], anneaux[k + 1][s + 1], anneaux[k + 1][s]]
-			for i in [0, 2, 1, 0, 3, 2]:
+			for i in [0, 1, 2, 0, 2, 3]:   # sens des aiguilles d'une montre vu de l'extérieur (face avant pour Godot)
 				st.set_color(quad[i][1])
 				st.add_vertex(quad[i][0])
 
@@ -210,12 +243,6 @@ static func _branche(st: SurfaceTool, pied: Vector3, dir: Vector3, longueur: flo
 	var profil: Array[Vector2] = [Vector2(0, r_pied), Vector2(longueur * 0.5, lerpf(r_pied, r_bout, 0.5)), Vector2(longueur, r_bout)]
 	_tour(st, Transform3D(Basis(x, y, z), pied), profil, 7, couleur, 0.0, 0.0)
 	return pied + y * longueur
-
-
-## Touffe de feuillage : petite boule irrégulière (icosphère grossière).
-static func _touffe(st: SurfaceTool, centre: Vector3, rayon: float, couleur: Color, h: RandomNumberGenerator) -> void:
-	var forme := Basis().scaled(Vector3(rayon, rayon * 0.6, rayon)).rotated(Vector3.UP, h.randf() * TAU)
-	_ellipsoide(st, Transform3D(forme, centre), couleur * h.randf_range(0.85, 1.1), 7, 4)
 
 
 ## Petite écaille de feuille (losange) orientée vers l'extérieur de la tige.
@@ -236,7 +263,7 @@ static func _ellipsoide(st: SurfaceTool, t: Transform3D, couleur: Color, segment
 			var u1 := TAU * (s + 1) / segments
 			var p := [Vector3(cos(v0) * cos(u0), sin(v0), cos(v0) * sin(u0)), Vector3(cos(v0) * cos(u1), sin(v0), cos(v0) * sin(u1)),
 					Vector3(cos(v1) * cos(u1), sin(v1), cos(v1) * sin(u1)), Vector3(cos(v1) * cos(u0), sin(v1), cos(v1) * sin(u0))]
-			for i in [0, 2, 1, 0, 3, 2]:
+			for i in [0, 1, 2, 0, 2, 3]:   # sens des aiguilles d'une montre vu de l'extérieur (face avant pour Godot)
 				st.set_color(couleur)
 				st.add_vertex(t * p[i])
 

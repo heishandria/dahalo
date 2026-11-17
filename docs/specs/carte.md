@@ -150,7 +150,7 @@ si un modèle manque, formes générées par le code.
 
 | Plante | Forme | Saisons |
 |---|---|---|
-| Baobab (type *Adansonia za*) | Tronc en bouteille gris, couronne de branches courtes, petites touffes de feuilles | **Perd ses feuilles en sécheresse** (branches nues) |
+| Baobab (type *Adansonia za*) | Tronc en bouteille, **écorce photo** (Poly Haven, CC0), couronne de branches courtes, **grappes de feuilles texturées** (plans croisés) | **Perd ses feuilles en sécheresse** (branches nues) |
 | Épineux (type *Alluaudia*) | 3 à 6 tiges gris-vert dressées, couvertes de petites feuilles | Perd ses feuilles en sécheresse |
 | Raketa (figuier de Barbarie) | Raquettes en éventail, fruits rouges | Inchangé |
 
