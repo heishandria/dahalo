@@ -53,7 +53,7 @@ jobs:
 
       - name: Test de fumée (partie accélérée, erreurs remontées en annotations)
         run: |
-          timeout 280 godot --headless --path . -- --accelerer > test.log 2>&1 || true
+          timeout 600 godot --headless --path . -- --accelerer > test.log 2>&1 || true
           echo "Lignes de log : $(wc -l < test.log)"
           grep -E "SCRIPT ERROR|Parse Error|ERROR:|WARNING:|at: |Invalid|Cannot|Nonexistent|Attempt to" test.log | sort | uniq -c | sort -rn | head -60 > erreurs.txt || true
           if [ -s erreurs.txt ]; then
@@ -73,7 +73,7 @@ jobs:
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
           DOSSIER="$PWD/build/web/captures"
           mkdir -p "$DOSSIER"
-          timeout 480 xvfb-run -a -s "-screen 0 1600x900x24" \
+          timeout 900 xvfb-run -a -s "-screen 0 1600x900x24" \
             godot --path . --rendering-method gl_compatibility --audio-driver Dummy -- --graine=1 --captures="$DOSSIER" \
             > captures.log 2>&1 || true
           grep -F "[captures]" captures.log || tail -20 captures.log

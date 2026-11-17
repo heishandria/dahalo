@@ -99,11 +99,12 @@ func _scenario() -> void:
 	await _attendre_images(10)
 	await _capturer("vue_ensemble_5min")
 
-	# Sécheresse : l'eau s'est retirée du lit, l'herbe a jauni (après le fondu de la saison).
+	# Sécheresse : l'eau s'est retirée du lit, l'herbe a jauni. On avance directement l'horloge jusqu'à la
+	# sécheresse (jouer 9 minutes serait trop long en rendu logiciel), puis on attend la fin du fondu.
 	if trou != null:
-		get_parent().accelerer(ACCELERATION)
-		await _attendre_temps_de_jeu(GameRules.DUREE_JOUR_S * GameRules.CYCLES_ENTRE_SECHERESSES + 20.0)
-		get_parent().accelerer(1.0)
+		GameClock.temps_ecoule = maxf(GameClock.temps_ecoule,
+				GameRules.DUREE_JOUR_S * GameRules.CYCLES_ENTRE_SECHERESSES + 5.0)
+		await get_tree().create_timer(7.5).timeout
 		selection.annuler()
 		Vision.revele_tout = true
 		rig.zoomer(40.0 / rig.camera.size)

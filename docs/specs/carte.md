@@ -73,6 +73,20 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
   clairsemée, tout pâlit et tire vers l'ocre (sol, plateaux et relief ; fondu de 6 s via `EventBus.meteo_change`).
 - Bruit calculé dans le shader, sans texture : même rendu sur PC, Web (Compatibility) et mobile.
 
+## 4 bis. Végétation basse de la zone de jeu (purement visuel)
+
+| Élément | Nombre | Détail |
+|---|---|---|
+| Touffes d'herbe | ~11 000 | Par plaques ; **bien plus denses sur les berges** ; aucune dans le sable du lit ; aussi sur le dessus des plateaux. Vertes en saison normale, **dorées en sécheresse** (fondu de 6 s) ; elles **ondulent au vent** |
+| Buissons | ~700 | Vert olive, hors du lit |
+| Cailloux | ~450 | Calcaire |
+
+- **Brouillard** : invisible dans les zones jamais explorées (le shader lit la texture du brouillard).
+- **Rien ne pousse** sous les bâtiments, champs, ressources et baobabs ; quand on construit, la végétation sous
+  l'emprise disparaît (`EventBus.batiment_cree`).
+- Un MultiMesh par type : **3 appels de dessin** pour toute la végétation (tenable sur mobile).
+- Formes générées par le code, en attendant les modèles des packs CC0 (voir `assets/models/decor/LISEZMOI.md`).
+
 ## 5. Paysage autour de la zone de jeu (purement visuel)
 
 | Élément | Où | Détail |
@@ -91,7 +105,8 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
 | — | Lit de rivière à sec qui ralentit, trous d'eau | **Fait** (17/11) |
 | — | Plateaux en paliers infranchissables (falaises), rivière en contrebas | **Fait** (17/11) |
 | — | Eau dans la rivière en saison normale, herbe qui reverdit | **Fait** (17/11, visuel) |
-| — | Décor en modèles 3D (packs CC0 + modèles sur mesure) | **Décidé** (17/11), à faire |
+| — | Végétation dense (herbe, buissons, cailloux) | **Fait** (17/11), formes générées par le code |
+| — | Décor en modèles 3D (packs CC0 + modèles sur mesure) | **Décidé** (17/11) : packs à télécharger (navigateur) |
 
 Questions ouvertes :
 1. Les plateaux devraient-ils bloquer la vue (ou donner une vision accrue à qui les longe) ?

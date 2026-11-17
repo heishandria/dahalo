@@ -33,6 +33,11 @@ func _ready() -> void:
 	EventBus.vision_maj.connect(_maj)
 
 
+## Texture de vision du joueur (R = visible, G = exploré), aussi lue par la végétation.
+func texture_vision() -> Texture2D:
+	return _texture
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if OS.is_debug_build() and event.is_action_pressed("reveler_carte"):
 		Vision.revele_tout = not Vision.revele_tout

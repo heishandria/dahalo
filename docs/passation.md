@@ -60,11 +60,19 @@ couleurs ternes et poussiéreuses. Les personnages sont inventés, jamais copié
 
 ## Tâches proposées, pas encore lancées
 
+- **Branche `carte-aleatoire`** (non fusionnée) : carte aléatoire, plateaux, rivière, saisons, végétation.
+  À relire et tester, puis fusionner dans `main` (la CI ne publie que `main`).
+- Équilibrage à surveiller sur la grande carte : selon la graine, les troupeaux sont loin de l'enclos de l'IA
+  (raids longs) ; l'IA seule finit entre 15 et 40 zébus.
 - Carte « façon maquette » (référence de style fournie le 17/11 : terrain en paliers, eau, végétation dense),
   version **aride qui reverdit** :
-  1. plateaux en paliers **infranchissables** (falaises), rivière en contrebas ;
-  2. eau dans la rivière en saison des pluies, herbe dorée qui verdit ;
-  3. décor en modèles 3D : packs CC0 (Quaternius, Kenney) + modèles sur mesure (baobab, épineux, raketa, cases).
+  1. ~~plateaux en paliers infranchissables, rivière en contrebas~~ (fait, branche `carte-aleatoire`) ;
+  2. ~~eau dans la rivière en saison normale, herbe qui reverdit~~ (fait) ;
+  3. ~~végétation dense~~ (fait, formes générées par le code) ;
+  4. **à faire par l'utilisateur** : télécharger les packs CC0 (Kenney Nature Kit, Quaternius) dans un
+     navigateur (les sites bloquent les robots) et les poser dans `assets/models/decor/` (voir LISEZMOI) ;
+     Claude remplacera alors les formes générées par ces modèles ;
+  5. modèles sur mesure (baobab, épineux, raketa, cases, enclos) via Canva → Tripo.
 - Direction artistique : choisir UN style pour les personnages (3D stylisée, cohérente avec la carte) ;
   vérifier les cavaliers et les scarifications des fiches Dahalo (culture).
 - Mettre le GDD à jour avec les décisions prises ; vérifier les termes malgaches.

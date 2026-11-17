@@ -73,6 +73,7 @@ func _ready() -> void:
 	var brouillard := preload("res://systems/brouillard.gd").new()
 	brouillard.name = "Brouillard"
 	add_child(brouillard)
+	$Vegetation.construire(brouillard.texture_vision())   # après les entités : rien ne pousse dessous
 
 
 func _process(_delta: float) -> void:
@@ -116,6 +117,7 @@ func creer_batiment(type_batiment: String, faction: int, pos: Vector3, rotation_
 	if type_batiment in BATIMENTS_OBSTACLES:
 		demander_recuisson()
 	entites.add_child(b)
+	EventBus.batiment_cree.emit(b)
 	return b
 
 
@@ -339,6 +341,7 @@ func creer_champ_mur(faction: int, pos: Vector3) -> Node3D:
 	champ.croissance = 1.0
 	champ.position = _borner(pos)
 	entites.add_child(champ)
+	EventBus.batiment_cree.emit(champ)
 	return champ
 
 

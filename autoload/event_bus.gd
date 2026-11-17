@@ -24,3 +24,5 @@ signal vision_maj()
 signal alerte(position: Vector3)   # raid, attaque : clignote sur la mini-carte
 @warning_ignore("unused_signal")
 signal technologies_changees(faction: int)
+@warning_ignore("unused_signal")
+signal batiment_cree(batiment: Node3D)   # bâtiment, champ ou puits posé (la végétation se retire dessous)
