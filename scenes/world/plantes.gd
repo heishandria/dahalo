@@ -102,34 +102,68 @@ static func _construire_baobab(h: RandomNumberGenerator) -> ArrayMesh:
 	bois.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var feuilles := SurfaceTool.new()
 	feuilles.begin(Mesh.PRIMITIVE_TRIANGLES)
-	# Tronc en bouteille : large en bas, renflé, puis étranglé sous la couronne.
-	var hauteur := h.randf_range(6.5, 8.0)
-	var ventre := h.randf_range(1.25, 1.6)
+	# Tronc haut, presque cylindrique (légèrement renflé au pied), cannelé de plis verticaux.
+	var hauteur := h.randf_range(9.0, 11.5)
+	var rayon := h.randf_range(1.0, 1.3)
 	var profil: Array[Vector2] = []
-	for k in 13:
-		var t := k / 12.0
-		var r := lerpf(1.15, ventre, smoothstep(0.0, 0.35, t)) * (1.0 - 0.55 * smoothstep(0.35, 1.0, t))
+	for k in 15:
+		var t := k / 14.0
+		var r := rayon * (1.18 - 0.18 * smoothstep(0.0, 0.25, t)) * (1.0 - 0.32 * smoothstep(0.55, 1.0, t))
 		profil.append(Vector2(t * (hauteur + 0.4) - 0.4, r))   # le pied s'enfonce un peu dans le sol
 	var ecorce := func(t: float, a: float) -> Color:
-		var v := 0.92 + 0.08 * sin(a * 7.0 + t * 3.0)
-		return Color(1.08, 1.0, 0.96).lerp(Color(0.86, 0.78, 0.74), 1.0 - t) * v
-	_tour(bois, Transform3D.IDENTITY, profil, 14, ecorce, h.randf() * TAU, 0.06)
-	# Couronne : branches courtes et épaisses, presque horizontales, divisées en rameaux.
-	var sommet := Vector3(0, hauteur - 0.2, 0)
-	var nb := h.randi_range(6, 8)
+		# Gris rosé à ocre, plus sombre dans le creux des plis et vers le pied.
+		var pli := 0.88 + 0.12 * cos(a * 9.0 + t * 2.0)
+		return Color(1.25, 1.1, 1.0).lerp(Color(1.02, 0.88, 0.8), 1.0 - t) * pli
+	_tour_cannele(bois, profil, 22, ecorce, h.randf() * TAU)
+	# Couronne plate en ombrelle : grosses branches presque horizontales, ramifiées jusqu'aux brindilles.
+	var sommet := Vector3(0, hauteur - 0.3, 0)
+	var nb := h.randi_range(5, 7)
 	for b in nb:
-		var angle := TAU * b / nb + h.randf_range(-0.25, 0.25)
-		var dir := Vector3(cos(angle), h.randf_range(0.25, 0.6), sin(angle)).normalized()
-		var longueur := h.randf_range(1.6, 2.6)
-		var bout := _branche(bois, sommet, dir, longueur, 0.38, 0.14, ecorce)
-		for r in 2:
-			var dir2 := (dir + Vector3(h.randf_range(-0.6, 0.6), h.randf_range(0.2, 0.7), h.randf_range(-0.6, 0.6))).normalized()
-			var bout2 := _branche(bois, bout, dir2, h.randf_range(0.7, 1.2), 0.14, 0.05, ecorce)
-			# Feuillage clairsemé : quelques grappes de feuilles autour du bout du rameau.
-			for f in 2:
-				var decalage := Vector3(h.randf_range(-0.35, 0.35), h.randf_range(-0.05, 0.3), h.randf_range(-0.35, 0.35))
-				_grappe(feuilles, bout2 + decalage, h.randf_range(0.55, 0.8), Color(0.62, 0.68, 0.48) * h.randf_range(0.85, 1.05), h)
+		var angle := TAU * b / nb + h.randf_range(-0.3, 0.3)
+		var dir := Vector3(cos(angle), h.randf_range(0.35, 0.75), sin(angle)).normalized()
+		_rameau(bois, feuilles, sommet, dir, h.randf_range(2.0, 2.8), rayon * 0.42, 0, h, ecorce)
 	return _assembler(bois, _materiau_bois, feuilles, _materiau_feuilles)
+
+
+## Ramification récursive : chaque rameau se divise en 2 ou 3, plus fins et plus courts, en s'étalant
+## (couronne plate). Au dernier niveau, des brindilles portent quelques feuilles.
+static func _rameau(bois: SurfaceTool, feuilles: SurfaceTool, pied: Vector3, dir: Vector3, longueur: float,
+		r_pied: float, niveau: int, h: RandomNumberGenerator, ecorce: Callable) -> void:
+	var r_bout := r_pied * 0.55
+	var bout := _branche(bois, pied, dir, longueur, r_pied, r_bout, ecorce, [6, 5, 4, 3, 3][niveau])
+	if niveau >= 4:
+		if h.randf() < 0.5:
+			_grappe(feuilles, bout + Vector3(0, 0.05, 0), h.randf_range(0.25, 0.38), Color(0.6, 0.66, 0.46) * h.randf_range(0.85, 1.05), h)
+		return
+	var enfants := h.randi_range(2, 3) if niveau < 3 else 2
+	for k in enfants:
+		var horizontal := Vector3(dir.x, 0.0, dir.z).normalized()
+		var cote := horizontal.cross(Vector3.UP)
+		var ecart := (float(k) - (enfants - 1) * 0.5) * h.randf_range(0.5, 0.9)
+		# Plus on monte dans la ramification, plus les rameaux s'étalent à l'horizontale (couronne plate).
+		var montee := h.randf_range(0.15, 0.55) * (1.0 - 0.25 * niveau)
+		var nouvelle := (horizontal + cote * ecart + Vector3(0, montee, 0)).normalized()
+		_rameau(bois, feuilles, bout, nouvelle, longueur * h.randf_range(0.55, 0.72), r_bout, niveau + 1, h, ecorce)
+
+
+## Tronc cannelé : surface de révolution dont le rayon ondule en plis verticaux qui serpentent un peu.
+static func _tour_cannele(st: SurfaceTool, profil: Array[Vector2], segments: int, couleur: Callable, phase: float) -> void:
+	var anneaux: Array = []
+	for k in profil.size():
+		var t := float(k) / (profil.size() - 1)
+		var anneau: Array = []
+		for s in segments + 1:
+			var a := TAU * s / segments
+			var pli := 0.07 * cos(a * 9.0 + phase + t * 2.0) + 0.04 * sin(a * 4.0 + phase * 2.0 - t * 3.0)
+			var r := profil[k].y * (1.0 + pli)
+			anneau.append([Vector3(cos(a) * r, profil[k].x, sin(a) * r), couleur.call(t, a)])
+		anneaux.append(anneau)
+	for k in anneaux.size() - 1:
+		for s in segments:
+			var quad := [anneaux[k][s], anneaux[k][s + 1], anneaux[k + 1][s + 1], anneaux[k + 1][s]]
+			for i in [0, 1, 2, 0, 2, 3]:
+				st.set_color(quad[i][1])
+				st.add_vertex(quad[i][0])
 
 
 ## Grappe de feuilles : trois plans croisés (étoile) texturés, inclinés au hasard. Vue sous tous les angles.
@@ -236,12 +270,12 @@ static func _tour(st: SurfaceTool, t: Transform3D, profil: Array[Vector2], segme
 
 ## Branche conique de pied vers pied + dir * longueur ; renvoie le bout.
 static func _branche(st: SurfaceTool, pied: Vector3, dir: Vector3, longueur: float, r_pied: float, r_bout: float,
-		couleur: Callable) -> Vector3:
+		couleur: Callable, segments: int = 7) -> Vector3:
 	var y := dir.normalized()
 	var x := y.cross(Vector3.FORWARD if absf(y.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT).normalized()
 	var z := x.cross(y)
 	var profil: Array[Vector2] = [Vector2(0, r_pied), Vector2(longueur * 0.5, lerpf(r_pied, r_bout, 0.5)), Vector2(longueur, r_bout)]
-	_tour(st, Transform3D(Basis(x, y, z), pied), profil, 7, couleur, 0.0, 0.0)
+	_tour(st, Transform3D(Basis(x, y, z), pied), profil, segments, couleur, 0.0, 0.0)
 	return pied + y * longueur
 
 

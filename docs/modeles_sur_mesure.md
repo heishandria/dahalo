@@ -12,10 +12,14 @@ Pour les plantes, pas d'auto-rig.
 
 ## 1. Baobab (`assets/models/decor/baobab_1.glb`, 2 variantes)
 
-> Photorealistic stylized 3D render of a single Madagascar baobab tree (Adansonia za) from the dry south of
-> Madagascar, thick bottle-shaped grey-pink trunk with smooth bark, short thick branches forming a small crown at
-> the very top, sparse small green leaves, standing alone, full tree visible from roots to crown, plain white
-> background, soft diffuse lighting, three-quarter view slightly from above, no people, no text.
+> Photorealistic stylized 3D render of a single Madagascar baobab tree (Adansonia za / grandidieri), very tall
+> almost cylindrical trunk slightly wider at the base, smooth grey-pink to ochre bark with vertical folds and
+> ridges, flat umbrella-shaped crown only at the very top, thick branches spreading outward and dividing into a
+> dense network of thin twigs, sparse small green leaves, standing alone, full tree visible from roots to crown,
+> plain white background, soft diffuse lighting, three-quarter view slightly from above, no people, no text.
+
+Références de forme fournies le 17/11 : allée des Baobabs (Morondava) pour la silhouette, gros baobab africain
+pour les plis du tronc et la ramification des branches.
 
 Variante 2 : remplacer « sparse small green leaves » par « leafless bare branches (dry season) ».
 
