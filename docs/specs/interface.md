@@ -86,6 +86,7 @@ au milieu des autres) :
 - le corps est vu comme un segment épaules → croupe (1,7 m) ; deux zébus sont repoussés si leurs axes passent à
   moins de **0,85 m** (même placés en croix, ils ne se traversent plus), un zébu et une personne à moins de **0,75 m** ;
 - au repos, un zébu ne bouge que pour laisser de la place (sans se retourner) ; son meneur n'est pas repoussé ;
+- dans l'enclos, le tas de fourrage (1 m) et l'auge (0,6 m autour du tronc) les repoussent aussi ;
 - dans l'enclos, les **deux bouts du corps** restent dans un carré de 3,35 m autour du centre (clôture à ~3,95 m),
   et les points d'errance sont répartis sur toute la surface (rayon 2,8 m) au lieu de s'entasser au centre ;
 - en escorte, file par deux espacée à la taille réelle : 2,4 m derrière le meneur puis 2,5 m par rang, ±0,75 m sur le côté.

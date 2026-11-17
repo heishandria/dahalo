@@ -127,6 +127,8 @@ Vendre fait **baisser le cheptel** : c'est un arbitrage entre score de victoire 
 
 ## 9. Zébus disponibles et victoire
 
+Comportement des zébus (brouter, fourrage, se coucher, dormir) : voir `zebus.md`.
+
 - **Départ** : 20 zébus sauvages (8 au centre de la carte, dans le lit de rivière, et une paire symétrique de 6).
 - **Arrivées à l'aube** (lieu tiré au sort parmi 5 points posés par le générateur : le centre et deux paires
   symétriques, à plus de 45 m des bases ; **non révélé** :

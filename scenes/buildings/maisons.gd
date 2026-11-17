@@ -19,6 +19,11 @@ static var _materiaux := {}
 
 const VARIANTES := 3
 
+# Enclos : tas de fourrage (paille et raquettes de raketa coupées, données au bétail en saison sèche) et auge
+# (tronc creusé), par rapport au centre de l'enclos. Les zébus y viennent manger et boire (scenes/units/zebu.gd).
+const FOURRAGE_ENCLOS := Vector3(-1.55, 0, -1.5)
+const AUGE_ENCLOS := Vector3(1.6, 0, -2.45)
+
 
 static func modele(type_batiment: String, variante: int = 0) -> Dictionary:
 	var cle := "%s_%d" % [type_batiment, variante % VARIANTES]
@@ -54,6 +59,11 @@ static func _materiau(nom: String) -> StandardMaterial3D:
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED   # robuste quel que soit le sens des triangles
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	m.roughness = 0.95
+	if nom == "uni":
+		# Sans photo : raquettes de raketa, eau de l'auge (couleur des sommets seule).
+		m.roughness = 0.6
+		_materiaux[nom] = m
+		return m
 	var fichiers := {"chaume": "reed_roof_04", "bois": "wood_trunk_wall", "roseaux": "bamboo_wall",
 			"planches": "weathered_planks", "tole": "rusty_corrugated_iron", "boue": "brown_mud_02", "terre": "farm_soil"}
 	var base: String = fichiers[nom]
@@ -510,12 +520,104 @@ static func _enclos(graine: int) -> Dictionary:
 		var cote := Vector3(-dir.z, 0, dir.x).normalized() * 0.03
 		_quad(c.st("chaume"), p - dir - cote, p + dir - cote, p + dir + cote, p - dir + cote, Vector3.UP,
 				Color(0.8, 0.7, 0.52) * h.randf_range(0.7, 1.0))
+	_fourrage(c, FOURRAGE_ENCLOS, h)
+	_auge(c, AUGE_ENCLOS, h)
 	var poteau_entree: Vector3 = Vector3(1.3, 0, 3.9)
 	for paire: Array in perches:
 		if not paire.is_empty() and (paire[0] as Vector3).z > 2.0 and (paire[0] as Vector3).x > 1.0:
 			poteau_entree = paire[1]
 			break
 	return {"maillage": c.assembler(), "banniere": poteau_entree + Vector3(0.45, 0.05, 0)}
+
+
+## Tas de fourrage : dôme de paille sèche hérissé de brins, raquettes de raketa coupées posées dessus et autour.
+static func _fourrage(c: Chantier, centre: Vector3, h: RandomNumberGenerator) -> void:
+	var paille := c.st("chaume")
+	var rayon := 0.62
+	var haut := 0.42
+	var couleur := Color(0.95, 0.85, 0.62)
+	# Dôme cabossé (texture de chaume en mètres, vue du dessus).
+	var anneaux := 4
+	var secteurs := 10
+	var bosses: Array[float] = []
+	for k in secteurs:
+		bosses.append(h.randf_range(0.85, 1.15))
+	var point := func(i: int, k: int) -> Vector3:
+		var t := float(i) / anneaux
+		var a := TAU * k / secteurs
+		var r := rayon * sin(t * PI * 0.5 + PI * 0.5) * bosses[k % secteurs]
+		return centre + Vector3(cos(a) * r, haut * sin(t * PI * 0.5) * (0.9 + 0.2 * bosses[(k + 3) % secteurs]), sin(a) * r)
+	for i in anneaux:
+		for k in secteurs:
+			var a: Vector3 = point.call(i, k)
+			var b: Vector3 = point.call(i, k + 1)
+			var d: Vector3 = point.call(i + 1, k)
+			var e: Vector3 = point.call(i + 1, k + 1)
+			var n := (b - a).cross(d - a).normalized()
+			if n.y < 0.0:
+				n = -n
+			_quad_uv(paille, [a, b, e, d], [Vector2(a.x, a.z), Vector2(b.x, b.z), Vector2(e.x, e.z), Vector2(d.x, d.z)],
+					n, couleur * h.randf_range(0.8, 1.05))
+	# Brins qui dépassent, et paille éparpillée autour.
+	for k in 60:
+		var a := h.randf() * TAU
+		var r := h.randf_range(0.0, rayon * 1.6)
+		var y := 0.05 if r > rayon else haut * cos(r / rayon * PI * 0.5) * 0.95
+		var p := centre + Vector3(cos(a) * r, y, sin(a) * r)
+		var dir := Vector3(cos(h.randf() * TAU), h.randf_range(-0.1, 0.35), sin(h.randf() * TAU)).normalized() * h.randf_range(0.15, 0.3)
+		var cote := dir.cross(Vector3.UP).normalized() * 0.025
+		_quad(paille, p - dir - cote, p + dir - cote, p + dir + cote, p - dir + cote, Vector3.UP, couleur * h.randf_range(0.75, 1.0))
+	# Raquettes de raketa coupées : ovales épais, vert glauque, posées de travers.
+	var uni := c.st("uni")
+	for k in 7:
+		var a := h.randf() * TAU
+		var r := h.randf_range(0.2, rayon * 1.3)
+		var y := 0.06 if r > rayon else haut * cos(r / rayon * PI * 0.5) + 0.02
+		var p := centre + Vector3(cos(a) * r, y, sin(a) * r)
+		var base := Basis(Vector3.UP, h.randf() * TAU) * Basis(Vector3.RIGHT, h.randf_range(-0.5, 0.5))
+		_raquette(uni, p, base, h.randf_range(0.14, 0.2), Color(0.36, 0.5, 0.3) * h.randf_range(0.85, 1.1))
+
+
+## Raquette de raketa (Opuntia) : ovale plat un peu épais, à plat dans le plan local XZ de `base`.
+static func _raquette(st: SurfaceTool, centre: Vector3, base: Basis, taille: float, couleur: Color) -> void:
+	var n := 10
+	for face: float in [1.0, -1.0]:
+		var normale := base * Vector3(0, face, 0)
+		for k in n:
+			var a0 := TAU * k / n
+			var a1 := TAU * (k + 1) / n
+			var p0 := centre + base * Vector3(cos(a0) * taille, face * 0.015, sin(a0) * taille * 0.7)
+			var p1 := centre + base * Vector3(cos(a1) * taille, face * 0.015, sin(a1) * taille * 0.7)
+			var milieu := centre + base * Vector3(0, face * 0.03, 0)
+			for p in [milieu, p0, p1]:
+				st.set_color(couleur * (1.05 if face > 0 else 0.8))
+				st.set_normal(normale)
+				st.set_uv(Vector2.ZERO)
+				st.add_vertex(p)
+
+
+## Auge : tronc creusé posé sur deux cales, un fond d'eau brune.
+static func _auge(c: Chantier, centre: Vector3, h: RandomNumberGenerator) -> void:
+	var bois := c.st("bois")
+	var gris := Color(0.75, 0.68, 0.6)
+	var longueur := 1.5
+	var base := Basis(Vector3.UP, h.randf_range(-0.12, 0.12))
+	var x := base * Vector3(longueur * 0.5, 0, 0)
+	var z := base * Vector3(0, 0, 0.22)
+	# Flancs et bouts du tronc (rondins épais), fond.
+	_tordu(bois, centre - x + z + Vector3(0, 0.18, 0), centre + x + z + Vector3(0, 0.18, 0), 0.1, 6, gris, h, 0.02)
+	_tordu(bois, centre - x - z + Vector3(0, 0.18, 0), centre + x - z + Vector3(0, 0.18, 0), 0.1, 6, gris * 0.9, h, 0.02)
+	_boite(bois, centre + Vector3(0, 0.1, 0), Vector3(longueur, 0.12, 0.44), gris * 0.8, base)
+	for bout in [-1.0, 1.0]:
+		_boite(bois, centre + x * bout * 0.97 + Vector3(0, 0.2, 0), Vector3(0.1, 0.3, 0.46), gris * 0.85, base)
+	# Cales.
+	for bout in [-0.6, 0.6]:
+		_boite(bois, centre + x * bout + Vector3(0, 0.03, 0), Vector3(0.14, 0.08, 0.6), gris * 0.7, base)
+	# Eau.
+	var eau := c.st("uni")
+	var e := centre + Vector3(0, 0.22, 0)
+	_quad(eau, e - x * 0.93 - z * 0.7, e + x * 0.93 - z * 0.7, e + x * 0.93 + z * 0.7, e - x * 0.93 + z * 0.7,
+			Vector3.UP, Color(0.28, 0.24, 0.17))
 
 
 # --- Champ : parcelle de terre retournée en sillons, contour irrégulier, bordure de branches et de pierres ---

@@ -2,7 +2,7 @@
 # bosse graisseuse sur le garrot, fanon sous le cou, pis retiré, oreilles tombantes, cornes en lyre, corps affiné,
 # maillage lissé ; robe en couleurs de sommets (teintée par zébu dans le jeu). Squelette et animations conservés :
 # Idle -> Zebu_repos_loop, Walk -> Zebu_marche_loop, Run -> Zebu_course_loop (Death et Jump retirés : le zébu
-# n'est jamais tué dans le jeu). Échelle réelle ~2,3 m de long. Usage :
+# n'est jamais tué dans le jeu) ; postures ajoutées par zebu_postures.py. Échelle réelle ~2,3 m de long. Usage :
 #   Blender -b Cow.blend --python zebu.py -- sortie.glb sortie.blend
 import bpy, bmesh, math, sys
 from mathutils import Vector, Matrix
@@ -204,6 +204,10 @@ for nom in ("Zebu_marche_loop", "Zebu_course_loop"):
     print("CALAGE %s : %d images, pied au sol %.2f m/s (échelle réelle), foulée %.2f m" % (
         nom, fin - debut, (sum(vitesses) / max(len(vitesses), 1)) * ECHELLE, (max(ys) - min(ys)) * ECHELLE))
 arm.animation_data.action = bpy.data.actions["Zebu_repos_loop"]
+
+# Postures ajoutées : brouter, se coucher (et se lever, à l'envers), couché, dormir (voir zebu_postures.py).
+import os
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "zebu_postures.py")).read())
 
 # --- 5. Échelle réelle et export ---
 arm.scale = (ECHELLE, ECHELLE, ECHELLE)

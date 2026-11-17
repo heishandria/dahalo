@@ -487,7 +487,7 @@ func _fin_du_test(gagnant: int) -> void:
 
 func _troupeau(centre: Vector3, nombre: int) -> void:
 	for i in nombre:
-		creer_zebu(centre + Vector3(randf_range(-4.0, 4.0), 0.0, randf_range(-4.0, 4.0)), centre)
+		creer_zebu(centre + Vector3(randf_range(-7.0, 7.0), 0.0, randf_range(-7.0, 7.0)), centre)
 
 
 func _borner(pos: Vector3) -> Vector3:

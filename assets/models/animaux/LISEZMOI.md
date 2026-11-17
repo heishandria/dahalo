@@ -12,7 +12,9 @@ unie (~55 %), pie (~30 %) ou tachetée (~15 %), couleurs tirées parmi six robes
 Le shader ajoute le pelage sans texture : poils courts couchés dans le sens du corps (bruit étiré, avec relief par
 perturbation de la normale), nuances par zones, et poussière de latérite sur le bas des pattes et le ventre.
 
-Animations (sur place) : `Zebu_repos_loop`, `Zebu_marche_loop`, `Zebu_course_loop` (Godot retire `_loop` à
-l'import). Les jambes de la vache sont pilotées par des contraintes IK : l'export doit **échantillonner** les
+Animations (sur place) : `Zebu_repos_loop`, `Zebu_marche_loop`, `Zebu_course_loop` (de la vache), et, ajoutées
+par `zebu_postures.py` : `Zebu_brouter_loop`, `Zebu_se_coucher` (jouée à l'envers pour se lever),
+`Zebu_couche_loop`, `Zebu_dort_loop` (Godot retire `_loop` à l'import). Couché, les jambes sont résolues par une
+IK analytique dans le script (contraintes IK de la vache coupées, influence clée dans chaque action). Les jambes de la vache sont pilotées par des contraintes IK : l'export doit **échantillonner** les
 animations (`export_force_sampling=True`), sinon seules les cibles des sabots sont exportées et les jambes restent
 raides dans le jeu (corrigé le 17/11). Calage : sabot au sol à 0,23 m/s (marche) et 1,81 m/s (course). La mort et le saut de la vache sont retirés : le zébu n'est jamais tué dans le jeu.

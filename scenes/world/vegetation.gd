@@ -26,6 +26,7 @@ var _fondu: Tween
 
 
 func construire(texture_vision: Texture2D) -> void:
+	add_to_group("vegetation")   # les zébus sauvages y cherchent l'herbe la plus dense (densite_herbe)
 	_vision = texture_vision
 	_hasard.seed = Terrain.graine + 11
 	_bruit.seed = Terrain.graine + 12

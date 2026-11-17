@@ -210,4 +210,5 @@ D'après des photos de cases du Sud fournies le 17/11 : petites cases rectangula
 
 Questions ouvertes :
 1. Les collines devraient-ils bloquer la vue (ou donner une vision accrue à qui les longe) ?
-2. Les zébus sauvages devraient-ils préférer paître près du lit (herbe des berges) ?
+2. ~~Les zébus sauvages devraient-ils préférer paître près du lit (herbe des berges) ?~~ Oui, fait le 17/11 :
+   ils broutent là où l'herbe est la plus dense (voir `zebus.md`).
