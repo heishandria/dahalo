@@ -75,24 +75,30 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
 
 ## 4 bis. Végétation basse de la zone de jeu (purement visuel)
 
-| Élément | Nombre | Détail |
-|---|---|---|
-| Touffes d'herbe | ~11 000 | Par plaques ; **bien plus denses sur les berges** ; aucune dans le sable du lit ; aussi sur le dessus des plateaux. Vertes en saison normale, **dorées en sécheresse** (fondu de 6 s) ; elles **ondulent au vent** |
-| Buissons | ~700 | Vert olive, hors du lit |
-| Cailloux | ~450 | Calcaire |
+Modèles du pack **Quaternius Stylized Nature MegaKit** (CC0, voir `assets/models/decor/LISEZMOI.md`) ;
+si un modèle manque, formes générées par le code.
 
-- **Brouillard** : invisible dans les zones jamais explorées (le shader lit la texture du brouillard).
+| Élément | Nombre (PC / Web et mobile) | Détail |
+|---|---|---|
+| Herbes (4 variantes) | 9 000 / ~3 150 | Par plaques ; **bien plus denses sur les berges** ; aucune dans le sable du lit ; aussi sur le dessus des plateaux. **Dorées en sécheresse** (fondu de 6 s) ; elles **ondulent au vent** |
+| Fleurs (2 variantes) | 500 / 175 | **Disparaissent en sécheresse**, reviennent avec les pluies |
+| Buissons (2 variantes) | 600 / 210 | Vert olive, hors du lit |
+| Cailloux (5 variantes) | 450 / 157 | |
+| Rochers | 140 / 49 | **Seulement sur le dessus des plateaux** (personne n'y marche : pas de collision) |
+
+- **Brouillard** : invisible dans les zones jamais explorées (le shader lit la texture du brouillard). Les
+  **plateaux** eux-mêmes sont assombris par le shader du terrain (ils dépassent le voile posé au sol).
 - **Rien ne pousse** sous les bâtiments, champs, ressources et baobabs ; quand on construit, la végétation sous
   l'emprise disparaît (`EventBus.batiment_cree`).
-- Un MultiMesh par type : **3 appels de dessin** pour toute la végétation (tenable sur mobile).
-- Formes générées par le code, en attendant les modèles des packs CC0 (voir `assets/models/decor/LISEZMOI.md`).
+- Un MultiMesh par variante de modèle : une quinzaine d'appels de dessin. Densité réduite sur le Web et le mobile.
 
 ## 5. Paysage autour de la zone de jeu (purement visuel)
 
 | Élément | Où | Détail |
 |---|---|---|
 | Relief | De ±120 m à ±280 m | Collines puis plateau. Côté **proche de la caméra** (bas de l'écran) : collines basses, pour ne pas cacher les unités au bord. Côté **lointain** : **escarpements** jusqu'à ~30 m. Vallée plate le long de la rivière |
-| Rochers, fourrés, épineux, baobabs | 170 / 260 / 140 touffes / 10 | Posés sur le relief, hors de la vallée |
+| Rochers, buissons (modèles du pack), épineux, baobabs | 170 / 260 / 140 touffes / 10 | Posés sur le relief, hors de la vallée |
+| Arbres morts et tordus (pack) | 70 (25 sur Web et mobile) | **Relief lointain seulement** (haut de l'écran) : de près, ils cacheraient le jeu |
 
 - **Aucune collision**, hors du navmesh, invisible pour la mini-carte et le brouillard : aucun effet sur le jeu.
 - Paysage tiré avec la **même graine** que la carte.
@@ -105,8 +111,8 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
 | — | Lit de rivière à sec qui ralentit, trous d'eau | **Fait** (17/11) |
 | — | Plateaux en paliers infranchissables (falaises), rivière en contrebas | **Fait** (17/11) |
 | — | Eau dans la rivière en saison normale, herbe qui reverdit | **Fait** (17/11, visuel) |
-| — | Végétation dense (herbe, buissons, cailloux) | **Fait** (17/11), formes générées par le code |
-| — | Décor en modèles 3D (packs CC0 + modèles sur mesure) | **Décidé** (17/11) : packs à télécharger (navigateur) |
+| — | Végétation dense et décor en modèles 3D (pack CC0 Quaternius) | **Fait** (17/11) |
+| — | Modèles sur mesure (baobab, Alluaudia, raketa, cases) | **Décidé** (17/11), à faire (Tripo) |
 
 Questions ouvertes :
 1. Les plateaux devraient-ils bloquer la vue (ou donner une vision accrue à qui les longe) ?

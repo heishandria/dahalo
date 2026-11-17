@@ -12,6 +12,7 @@ const NOMBRE_ROCHERS := 170
 const NOMBRE_FOURRES := 260
 const NOMBRE_TOUFFES_EPINEUX := 140   # touffes de 3 à 5 tiges (épineux de type Alluaudia)
 const NOMBRE_BAOBABS := 10
+const NOMBRE_ARBRES := 70   # arbres morts et tordus du pack, sur le relief lointain
 
 const COULEUR_ROCHER := Color(0.6, 0.5, 0.4)
 const COULEUR_FOURRE := Color(0.36, 0.38, 0.22)
@@ -285,6 +286,9 @@ func _creer_relief() -> void:
 # --- Décor (MultiMesh : quelques appels de dessin pour des centaines d'objets) ---
 
 func _creer_decor() -> void:
+	var f := BibliothequeDecor.facteur_densite()
+	# Rochers et buissons : modèles du pack CC0 s'ils sont là (sinon boules générées).
+	var rochers_pack := BibliothequeDecor.maillages(["Rock_Medium_1", "Rock_Medium_2", "Rock_Medium_3"])
 	var rocher := SphereMesh.new()
 	rocher.radial_segments = 7
 	rocher.rings = 3
@@ -292,19 +296,47 @@ func _creer_decor() -> void:
 	for k in NOMBRE_ROCHERS:
 		var p := _point_hors_jeu(2.0, 110.0)
 		var e := _hasard.randf_range(0.6, 2.6)
-		var base := Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e * _hasard.randf_range(0.8, 1.6), e * 0.6, e))
-		rochers.append(Transform3D(base, p + Vector3(0, e * 0.15, 0)))
-	_ajouter_multimesh("Rochers", rocher, rochers, COULEUR_ROCHER, 0.12)
+		if rochers_pack.is_empty():
+			var base := Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e * _hasard.randf_range(0.8, 1.6), e * 0.6, e))
+			rochers.append(Transform3D(base, p + Vector3(0, e * 0.15, 0)))
+		else:
+			rochers.append(Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3.ONE * e * 0.4), p - Vector3(0, 0.2, 0)))
+	if rochers_pack.is_empty():
+		_ajouter_multimesh("Rochers", rocher, rochers, COULEUR_ROCHER, 0.12)
+	else:
+		_ajouter_variantes("Rochers", rochers_pack, rochers)
 
+	var buissons_pack := BibliothequeDecor.maillages(["Bush_Common"])
 	var fourre := SphereMesh.new()
 	fourre.radial_segments = 6
 	fourre.rings = 3
 	var fourres: Array[Transform3D] = []
-	for k in NOMBRE_FOURRES:
+	for k in int(NOMBRE_FOURRES * (1.0 if buissons_pack.is_empty() else f)):
 		var p := _point_hors_jeu(3.0, 120.0)
 		var e := _hasard.randf_range(0.7, 1.8)
-		fourres.append(Transform3D(Basis().scaled(Vector3(e * 1.3, e * 0.7, e * 1.3)), p + Vector3(0, e * 0.25, 0)))
-	_ajouter_multimesh("Fourres", fourre, fourres, COULEUR_FOURRE, 0.18)
+		if buissons_pack.is_empty():
+			fourres.append(Transform3D(Basis().scaled(Vector3(e * 1.3, e * 0.7, e * 1.3)), p + Vector3(0, e * 0.25, 0)))
+		else:
+			fourres.append(Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3.ONE * e * 0.5), p))
+	if buissons_pack.is_empty():
+		_ajouter_multimesh("Fourres", fourre, fourres, COULEUR_FOURRE, 0.18)
+	else:
+		_ajouter_variantes("Fourres", buissons_pack, fourres)
+
+	# Arbres morts et arbres tordus (pack CC0), côté lointain seulement : de près, ils cacheraient le jeu.
+	var arbres_pack := BibliothequeDecor.maillages(["DeadTree_1", "DeadTree_2", "DeadTree_3", "DeadTree_4", "DeadTree_5",
+			"TwistedTree_1", "TwistedTree_2", "TwistedTree_3"])
+	if not arbres_pack.is_empty():
+		var arbres: Array[Transform3D] = []
+		var essais := 0
+		while arbres.size() < int(NOMBRE_ARBRES * f) and essais < NOMBRE_ARBRES * 20:
+			essais += 1
+			var p := _point_hors_jeu(10.0, 110.0)
+			if p.x + p.z > -20.0:
+				continue
+			var e := _hasard.randf_range(0.3, 0.5)
+			arbres.append(Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3.ONE * e), p - Vector3(0, 0.2, 0)))
+		_ajouter_variantes("Arbres", arbres_pack, arbres)
 
 	# Épineux : touffes de tiges dressées, un peu écartées (silhouette du bush de l'Androy).
 	var tige := CylinderMesh.new()
@@ -383,6 +415,32 @@ func _ajouter_multimesh(nom: String, maillage: Mesh, transformations: Array[Tran
 	instance.multimesh = multi
 	instance.material_override = materiau
 	add_child(instance)
+
+
+## Modèles du pack répartis au hasard entre leurs variantes (un MultiMesh par variante, matériaux du pack).
+func _ajouter_variantes(nom: String, maillages: Array[Mesh], transformations: Array[Transform3D]) -> void:
+	var parts: Array = []
+	for m in maillages:
+		parts.append([])
+	for t in transformations:
+		parts[_hasard.randi() % maillages.size()].append(t)
+	for k in maillages.size():
+		var multi := MultiMesh.new()
+		multi.transform_format = MultiMesh.TRANSFORM_3D
+		multi.mesh = maillages[k]
+		multi.instance_count = parts[k].size()
+		for i in parts[k].size():
+			multi.set_instance_transform(i, parts[k][i])
+		var instance := MultiMeshInstance3D.new()
+		instance.name = "%s%d" % [nom, k]
+		instance.multimesh = multi
+		add_child(instance)
+
+
+## Texture du brouillard : les plateaux dépassent le voile posé au sol, le shader les assombrit lui-même.
+func brancher_vision(texture_vision: Texture2D) -> void:
+	_materiau_relief.set_shader_parameter("carte_vision", texture_vision)
+	_materiau_relief.set_shader_parameter("demi_carte", GameRules.DEMI_CARTE)
 
 
 ## Changement de saison en fondu : l'herbe jaunit ou reverdit, l'eau se retire ou revient.

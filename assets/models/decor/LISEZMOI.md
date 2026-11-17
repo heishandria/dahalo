@@ -1,24 +1,32 @@
 # Modèles de décor
 
-Pour l'instant, le décor (herbe, buissons, cailloux, rochers et épineux du relief) est fait de formes générées
-par le code (`scenes/world/vegetation.gd`, `scenes/world/paysage.gd`). Ces formes seront remplacées par des
-modèles `.glb` rangés ici.
+## En place : Quaternius — Stylized Nature MegaKit (version Standard, CC0)
 
-## Packs libres de droits (CC0, utilisables sur Steam)
+Dossier `quaternius_megakit/` : sélection de 24 modèles glTF sur les 68 de la version gratuite.
+Source officielle : https://opengameart.org/content/stylized-nature-megakit (déposé par Quaternius),
+licence CC0 1.0 (voir `quaternius_megakit/LICENSE_CC0.txt`) : usage commercial libre, sans attribution.
 
-À télécharger dans un navigateur (les sites bloquent les téléchargements automatiques) :
+| Modèles | Utilisation |
+|---|---|
+| Grass_Common/Wispy (Short, Tall) | Herbe de la zone de jeu (`scenes/world/vegetation.gd`) |
+| Flower_3_Group, Flower_4_Group | Fleurs après les pluies (disparaissent en sécheresse) |
+| Bush_Common, Bush_Common_Flowers | Buissons (zone de jeu et relief) |
+| Pebble_Round/Square | Cailloux |
+| Rock_Medium_1 à 3 | Rochers sur le dessus des plateaux et sur le relief |
+| DeadTree_1 à 5, TwistedTree_1 à 3 | Arbres du relief lointain (`scenes/world/paysage.gd`) |
 
-- Kenney — Nature Kit : https://kenney.nl/assets/nature-kit (rochers, herbes, buissons, arbres, cactus).
-- Quaternius — Stylized Nature MegaKit / Ultimate Nature : https://quaternius.com (même style low-poly).
+Modifications : textures réduites à 1024 px (cartes de relief à 512 px) ; le feuillage rouge automnal
+(`Leaves_TwistedTree_C.png`) est remplacé au chargement par le vert olive (`Leaves_NormalTree_C.png`),
+voir `scenes/world/bibliotheque_decor.gd`. Si un modèle manque, le jeu revient aux formes générées par le code.
 
-Vérifier le fichier de licence (CC0) dans chaque archive, puis copier les `.glb` utiles ici, par catégorie :
+Pour ajouter un modèle : copier le `.gltf`, son `.bin` et ses textures ici, ouvrir le projet dans Godot
+(import), puis l'appeler par son nom avec `BibliothequeDecor.maillage("Nom")`.
 
-```
-assets/models/decor/herbe/      touffes d'herbe
-assets/models/decor/buissons/
-assets/models/decor/rochers/
-assets/models/decor/cactus/     (proches du raketa, en attendant un modèle sur mesure)
-```
+## Pistes pour compléter
+
+- Quaternius, versions Pro / Source du MegaKit (116 modèles) : https://quaternius.com
+- KayKit — Forest Nature Pack (CC0, itch.io, à télécharger dans un navigateur) : https://kaylousberg.itch.io/kaykit-forest
+- Comparatif des sources et des licences : voir la page « Sources du décor Dahalo ».
 
 ## Modèles sur mesure (circuit Canva → Tripo, voir docs/passation.md)
 

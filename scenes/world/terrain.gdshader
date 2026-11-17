@@ -21,6 +21,11 @@ uniform float largeur_riviere = 11.0;
 uniform vec3 couleur_dessus : source_color = vec3(0.78, 0.62, 0.42);   // dessus des plateaux : calcaire et herbe rase
 uniform vec3 couleur_paroi : source_color = vec3(0.5, 0.3, 0.2);      // parois des plateaux : terre brune
 
+// Brouillard sur les plateaux : ils dépassent le voile posé au sol, ils sont donc assombris ici.
+uniform sampler2D carte_vision : filter_linear, hint_default_white;   // R = visible, G = exploré
+uniform float demi_carte = 120.0;
+uniform float opacite_exploree = 0.45;   // comme le voile du brouillard (systems/brouillard.gdshader)
+
 varying vec3 position_monde;
 varying vec3 normale_monde;
 varying vec2 role;   // x = dessus de plateau, y = paroi (couleur de sommet ; 0 pour le sol et le relief)
@@ -92,6 +97,13 @@ void fragment() {
 	// Sécheresse : tout pâlit et tire vers l'ocre
 	c = mix(c, c * vec3(1.1, 1.02, 0.92) + 0.06, secheresse);
 
-	ALBEDO = c * (0.9 + 0.2 * mix(grain, 0.5, paroi));
+	c *= 0.9 + 0.2 * mix(grain, 0.5, paroi);
+	if (role.x + role.y > 0.01) {
+		vec4 v = texture(carte_vision, (p + demi_carte) / (2.0 * demi_carte));
+		float voile = mix(1.0, opacite_exploree, v.g);
+		voile = mix(voile, 0.0, v.r);
+		c = mix(c, vec3(0.05, 0.035, 0.03), voile);
+	}
+	ALBEDO = c;
 	ROUGHNESS = 1.0;
 }

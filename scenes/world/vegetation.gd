@@ -1,44 +1,58 @@
 extends Node3D
-## Végétation basse de la zone de jeu : touffes d'herbe, buissons, cailloux (purement visuel).
-## Un MultiMesh par type (3 appels de dessin pour des milliers d'objets, tenable sur mobile).
+## Végétation basse de la zone de jeu : herbes, fleurs, buissons, cailloux, rochers sur les plateaux (visuel).
+## Modèles des packs CC0 (BibliothequeDecor), ou formes générées par le code s'ils manquent.
+## Un MultiMesh par variante de modèle (une quinzaine d'appels de dessin pour des milliers d'objets).
 ## - masquée dans les zones jamais explorées (le shader lit la texture du brouillard) ;
-## - herbe plus dense sur les berges, absente du lit, présente aussi sur le dessus des plateaux ;
+## - herbe plus dense sur les berges, absente du lit ; fleurs après les pluies, qui disparaissent en sécheresse ;
 ## - rien sous les bâtiments et les ressources : retirée quand un bâtiment est construit (EventBus.batiment_cree).
-## Formes générées par le code en attendant des modèles (packs CC0) : voir assets/models/decor/LISEZMOI.md.
-## Spec : docs/specs/carte.md
+## Densité réduite sur le Web et le mobile (BibliothequeDecor.facteur_densite). Spec : docs/specs/carte.md
 
-const NOMBRE_HERBE := 11000
-const NOMBRE_BUISSONS := 700
+const NOMBRE_HERBE := 9000
+const NOMBRE_FLEURS := 500
+const NOMBRE_BUISSONS := 600
 const NOMBRE_CAILLOUX := 450
+const NOMBRE_ROCHERS_PLATEAUX := 140
+const CASE_EXCLUSION := 4.0
 
 var _materiaux: Array[ShaderMaterial] = []
 var _multis: Array[MultiMesh] = []
-var _positions: Array[PackedVector3Array] = []   # par type : position de chaque instance (pour retirer)
+var _positions: Array[PackedVector3Array] = []   # par MultiMesh : position de chaque instance (pour retirer)
 var _hasard := RandomNumberGenerator.new()
 var _bruit := FastNoiseLite.new()
+var _vision: Texture2D
+var _secheresse := 0.0
 var _fondu: Tween
 
 
 func construire(texture_vision: Texture2D) -> void:
+	_vision = texture_vision
 	_hasard.seed = Terrain.graine + 11
 	_bruit.seed = Terrain.graine + 12
 	_bruit.frequency = 0.04
+	var f := BibliothequeDecor.facteur_densite()
 	var exclusions := _exclusions()
-	_creer("Herbe", _maillage_touffe(), NOMBRE_HERBE, 1.0, 1.0, texture_vision, exclusions, _placer_herbe)
-	_creer("Buissons", _maillage_buisson(), NOMBRE_BUISSONS, 0.0, 0.25, texture_vision, exclusions, _placer_buisson)
-	_creer("Cailloux", _maillage_caillou(), NOMBRE_CAILLOUX, 0.0, 0.0, texture_vision, exclusions, _placer_caillou)
-	_materiaux[1].set_shader_parameter("couleur_fixe", Color(0.38, 0.42, 0.22))
-	_materiaux[2].set_shader_parameter("couleur_fixe", Color(0.66, 0.6, 0.5))
+	# Herbes : surtout les courtes (plus légères), échelle ramenée à ~0,6 m.
+	_creer("Herbe", ["Grass_Common_Short", "Grass_Wispy_Short", "Grass_Common_Short", "Grass_Wispy_Short",
+			"Grass_Common_Tall", "Grass_Wispy_Tall"], [_maillage_touffe()], int(NOMBRE_HERBE * f),
+			{"suit_saison": 1.0, "vent": 1.0, "teinte_secours": Color(0.36, 0.46, 0.17)}, exclusions,
+			_placer_herbe.bind(0.38, 0.55))
+	_creer("Fleurs", ["Flower_3_Group", "Flower_4_Group"], [], int(NOMBRE_FLEURS * f),
+			{"suit_saison": 0.5, "vent": 1.0, "disparait": 1.0}, exclusions, _placer_herbe.bind(0.28, 0.4))
+	_creer("Buissons", ["Bush_Common", "Bush_Common", "Bush_Common_Flowers"], [_maillage_buisson()],
+			int(NOMBRE_BUISSONS * f), {"suit_saison": 0.8, "vent": 0.3, "teinte_secours": Color(0.38, 0.42, 0.22)},
+			exclusions, _placer_buisson)
+	_creer("Cailloux", ["Pebble_Round_1", "Pebble_Round_2", "Pebble_Round_3", "Pebble_Square_1", "Pebble_Square_2"],
+			[_maillage_caillou()], int(NOMBRE_CAILLOUX * f),
+			{"suit_saison": 0.0, "vent": 0.0, "teinte_secours": Color(0.66, 0.6, 0.5)}, exclusions, _placer_caillou)
+	_creer("RochersPlateaux", ["Rock_Medium_1", "Rock_Medium_2", "Rock_Medium_3"], [],
+			int(NOMBRE_ROCHERS_PLATEAUX * f), {"suit_saison": 0.0, "vent": 0.0}, exclusions, _placer_rocher_plateau)
 	EventBus.batiment_cree.connect(_on_batiment_cree)
 	EventBus.meteo_change.connect(_on_meteo)
 
 
-# --- Placement ---
+# --- Exclusions : rien ne pousse sous les bâtiments, ressources et baobabs ---
 
-const CASE_EXCLUSION := 4.0
-
-## Où rien ne pousse : bâtiments, ressources, baobabs déjà sur la carte. Grille de cases de 4 m ->
-## liste des cercles [Vector2 centre, rayon] qui les touchent (test rapide pour des milliers d'instances).
+## Grille de cases de 4 m -> liste des cercles [Vector2 centre, rayon] qui les touchent.
 func _exclusions() -> Dictionary:
 	var grille := {}
 	for groupe in ["batiments", "ressources", "decor"]:
@@ -68,45 +82,6 @@ func _rayon(n: Node) -> float:
 	return 2.0
 
 
-func _creer(nom: String, maillage: Mesh, nombre: int, suit_saison: float, vent: float, texture_vision: Texture2D,
-		exclusions: Dictionary, placer: Callable) -> void:
-	var transformations: Array[Transform3D] = []
-	var essais := 0
-	while transformations.size() < nombre and essais < nombre * 6:
-		essais += 1
-		var t: Transform3D = placer.call()
-		if t.origin == Vector3.INF or _exclu(t.origin, exclusions):
-			continue
-		transformations.append(t)
-	var multi := MultiMesh.new()
-	multi.transform_format = MultiMesh.TRANSFORM_3D
-	multi.use_colors = true
-	multi.mesh = maillage
-	multi.instance_count = transformations.size()
-	var positions := PackedVector3Array()
-	for k in transformations.size():
-		multi.set_instance_transform(k, transformations[k])
-		var v := _hasard.randf_range(0.82, 1.12)
-		multi.set_instance_color(k, Color(v, v * _hasard.randf_range(0.95, 1.05), v))
-		positions.append(transformations[k].origin)
-	var materiau := ShaderMaterial.new()
-	materiau.shader = preload("res://scenes/world/vegetation.gdshader")
-	materiau.set_shader_parameter("carte_vision", texture_vision)
-	materiau.set_shader_parameter("demi_carte", GameRules.DEMI_CARTE)
-	materiau.set_shader_parameter("suit_saison", suit_saison)
-	materiau.set_shader_parameter("vent", vent)
-	materiau.set_shader_parameter("secheresse", 0.0)
-	var instance := MultiMeshInstance3D.new()
-	instance.name = nom
-	instance.multimesh = multi
-	instance.material_override = materiau
-	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(instance)
-	_materiaux.append(materiau)
-	_multis.append(multi)
-	_positions.append(positions)
-
-
 func _exclu(p: Vector3, exclusions: Dictionary) -> bool:
 	var p2 := Vector2(p.x, p.z)
 	for c in exclusions.get(Vector2i((p2 / CASE_EXCLUSION).floor()), []):
@@ -115,16 +90,99 @@ func _exclu(p: Vector3, exclusions: Dictionary) -> bool:
 	return false
 
 
-## Point au hasard dans la zone de jeu, à la hauteur du sol ou du dessus d'un plateau ; INF si sur une paroi.
+# --- Création : un MultiMesh par variante ---
+
+## noms : modèles des packs (un nom répété = variante plus fréquente) ; secours : formes générées si aucun.
+## reglages : suit_saison, vent, disparait, teinte_secours.
+func _creer(nom: String, noms: Array, secours: Array, nombre: int, reglages: Dictionary, exclusions: Dictionary,
+		placer: Callable) -> void:
+	var variantes: Array = []   # [Mesh, est_un_modele_du_pack]
+	for n in noms:
+		var m := BibliothequeDecor.maillage(n)
+		if m != null:
+			variantes.append([m, true])
+	if variantes.is_empty():
+		for m in secours:
+			variantes.append([m, false])
+	if variantes.is_empty() or nombre <= 0:
+		return
+	var transformations: Array = []
+	for v in variantes:
+		transformations.append([])
+	var places := 0
+	var essais := 0
+	while places < nombre and essais < nombre * 8:
+		essais += 1
+		var t: Transform3D = placer.call()
+		if t.origin == Vector3.INF or _exclu(t.origin, exclusions):
+			continue
+		transformations[_hasard.randi() % variantes.size()].append(t)
+		places += 1
+	for k in variantes.size():
+		var maillage := _avec_materiaux(variantes[k][0], variantes[k][1], reglages)
+		_ajouter("%s%d" % [nom, k], maillage, transformations[k])
+
+
+## Copie du maillage dont chaque surface reçoit le shader de végétation (texture du pack conservée).
+func _avec_materiaux(source: Mesh, du_pack: bool, reglages: Dictionary) -> Mesh:
+	var m := source.duplicate() as Mesh
+	var hauteur := maxf(m.get_aabb().end.y, 0.1)
+	for s in m.get_surface_count():
+		var materiau := ShaderMaterial.new()
+		materiau.shader = preload("res://scenes/world/vegetation.gdshader")
+		var origine := source.surface_get_material(s) as BaseMaterial3D
+		if du_pack and origine != null:
+			if origine.albedo_texture != null:
+				materiau.set_shader_parameter("texture_albedo", origine.albedo_texture)
+			materiau.set_shader_parameter("teinte", origine.albedo_color)   # l'herbe du pack est teintée par son matériau
+			if origine.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR:
+				materiau.set_shader_parameter("seuil_alpha", origine.alpha_scissor_threshold)
+		else:
+			materiau.set_shader_parameter("teinte", reglages.get("teinte_secours", Color.WHITE))
+		materiau.set_shader_parameter("carte_vision", _vision)
+		materiau.set_shader_parameter("demi_carte", GameRules.DEMI_CARTE)
+		materiau.set_shader_parameter("suit_saison", reglages.get("suit_saison", 1.0))
+		materiau.set_shader_parameter("disparait_secheresse", reglages.get("disparait", 0.0))
+		materiau.set_shader_parameter("vent", reglages.get("vent", 1.0))
+		materiau.set_shader_parameter("hauteur", hauteur)
+		materiau.set_shader_parameter("secheresse", _secheresse)
+		m.surface_set_material(s, materiau)
+		_materiaux.append(materiau)
+	return m
+
+
+func _ajouter(nom: String, maillage: Mesh, transformations: Array) -> void:
+	var multi := MultiMesh.new()
+	multi.transform_format = MultiMesh.TRANSFORM_3D
+	multi.use_colors = true
+	multi.mesh = maillage
+	multi.instance_count = transformations.size()
+	var positions := PackedVector3Array()
+	for k in transformations.size():
+		var t: Transform3D = transformations[k]
+		multi.set_instance_transform(k, t)
+		var v := _hasard.randf_range(0.85, 1.1)
+		multi.set_instance_color(k, Color(v, v * _hasard.randf_range(0.96, 1.04), v))
+		positions.append(t.origin)
+	var instance := MultiMeshInstance3D.new()
+	instance.name = nom
+	instance.multimesh = multi
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(instance)
+	_multis.append(multi)
+	_positions.append(positions)
+
+
+# --- Placement ---
+
+## Point au hasard dans la zone de jeu, au sol ou sur le dessus d'un plateau ; INF sur une paroi.
 func _point_au_sol() -> Vector3:
 	var limite := GameRules.DEMI_CARTE - 1.0
 	var p := Vector3(_hasard.randf_range(-limite, limite), 0.0, _hasard.randf_range(-limite, limite))
 	var v := Terrain.valeur_plateau(p)
 	var marge := 0.03
-	if v > Terrain.plateaux_seuil - marge and v < Terrain.plateaux_seuil + marge:
+	if absf(v - Terrain.plateaux_seuil) < marge or absf(v - Terrain.plateaux_seuil_haut) < marge:
 		return Vector3.INF   # bord de falaise
-	if v > Terrain.plateaux_seuil_haut - marge and v < Terrain.plateaux_seuil_haut + marge:
-		return Vector3.INF
 	if v > Terrain.plateaux_seuil_haut:
 		p.y = 2.0 * GameRules.PLATEAUX_HAUTEUR
 	elif v > Terrain.plateaux_seuil:
@@ -134,44 +192,56 @@ func _point_au_sol() -> Vector3:
 	return p
 
 
-func _placer_herbe() -> Transform3D:
+func _rien() -> Transform3D:
+	return Transform3D(Basis(), Vector3.INF)
+
+
+func _placer_herbe(echelle_min: float, echelle_max: float) -> Transform3D:
 	var p := _point_au_sol()
 	if p == Vector3.INF:
-		return Transform3D(Basis(), Vector3.INF)
+		return _rien()
 	var d := Terrain.distance_riviere(p)
 	var demi := GameRules.RIVIERE_LARGEUR * 0.5
 	if d < demi - 0.5:
-		return Transform3D(Basis(), Vector3.INF)   # pas dans le sable du lit
+		return _rien()   # pas dans le sable du lit
 	# Densité : plaques d'herbe (bruit), bien plus fournies sur les berges.
 	var densite := 0.25 + 0.75 * smoothstep(-0.1, 0.4, _bruit.get_noise_2d(p.x, p.z))
 	if d < demi + 6.0:
 		densite = 1.0
 	if _hasard.randf() > densite:
-		return Transform3D(Basis(), Vector3.INF)
-	var e := _hasard.randf_range(0.7, 1.4)
-	return Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e, e * _hasard.randf_range(0.8, 1.3), e)), p)
+		return _rien()
+	var e := _hasard.randf_range(echelle_min, echelle_max)
+	return Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e, e * _hasard.randf_range(0.85, 1.2), e)), p)
 
 
 func _placer_buisson() -> Transform3D:
 	var p := _point_au_sol()
 	if p == Vector3.INF or Terrain.dans_riviere(p):
-		return Transform3D(Basis(), Vector3.INF)
-	var e := _hasard.randf_range(0.5, 1.2)
-	return Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e, e * 0.8, e)), p)
+		return _rien()
+	var e := _hasard.randf_range(0.32, 0.6)
+	return Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e, e * 0.9, e)), p)
 
 
 func _placer_caillou() -> Transform3D:
 	var p := _point_au_sol()
 	if p == Vector3.INF:
-		return Transform3D(Basis(), Vector3.INF)
-	var e := _hasard.randf_range(0.15, 0.55)
-	var base := Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e * _hasard.randf_range(1.0, 1.6), e * 0.6, e))
-	return Transform3D(base, p + Vector3(0, e * 0.1, 0))
+		return _rien()
+	var e := _hasard.randf_range(0.7, 1.6)
+	return Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e, e, e)), p)
 
 
-# --- Formes (en attendant les modèles des packs) ---
+## Rochers : seulement sur le dessus des plateaux (personne n'y marche, pas besoin de collision).
+func _placer_rocher_plateau() -> Transform3D:
+	var p := _point_au_sol()
+	if p == Vector3.INF or Terrain.valeur_plateau(p) < Terrain.plateaux_seuil + 0.06:
+		return _rien()
+	var e := _hasard.randf_range(0.35, 0.8)
+	return Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e, e, e)), p - Vector3(0, 0.15, 0))
 
-## Touffe : quelques brins en triangle, ouverts en éventail. UV.y = 0 au pied, 1 à la pointe.
+
+# --- Formes de secours (si les modèles des packs manquent) ---
+
+## Touffe : quelques brins en triangle, ouverts en éventail.
 func _maillage_touffe() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -183,16 +253,12 @@ func _maillage_touffe() -> ArrayMesh:
 		var hauteur := 0.6 + 0.3 * sin(b * 1.7) * sin(b * 1.7)
 		var pointe := dir * (0.22 + 0.1 * cos(b * 3.1)) + Vector3(0, hauteur, 0)
 		st.set_normal(Vector3.UP)
-		st.set_uv(Vector2(0, 0))
 		st.add_vertex(dir * 0.06 - cote)
-		st.set_uv(Vector2(0, 0))
 		st.add_vertex(dir * 0.06 + cote)
-		st.set_uv(Vector2(0, 1))
 		st.add_vertex(pointe)
 	return st.commit()
 
 
-## Buisson : trois boules aplaties fondues en une forme irrégulière.
 func _maillage_buisson() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	var boule := SphereMesh.new()
@@ -204,31 +270,16 @@ func _maillage_buisson() -> ArrayMesh:
 		var a := TAU * k / 3.0
 		var t := Transform3D(Basis().scaled(Vector3(1.0 - 0.15 * k, 1.0 - 0.2 * k, 1.0)), Vector3(cos(a) * 0.25, 0.22, sin(a) * 0.25))
 		st.append_from(boule, 0, t)
-	var m := st.commit()
-	return _avec_uv_hauteur(m, 0.0, 0.6)
+	return st.commit()
 
 
-## Caillou : boule à facettes, très aplatie.
 func _maillage_caillou() -> ArrayMesh:
 	var boule := SphereMesh.new()
 	boule.radial_segments = 6
 	boule.rings = 3
 	var st := SurfaceTool.new()
-	st.append_from(boule, 0, Transform3D())
-	return _avec_uv_hauteur(st.commit(), -0.5, 0.5)
-
-
-## UV.y = hauteur relative (pour l'ombrage pied / sommet du shader).
-func _avec_uv_hauteur(m: ArrayMesh, y_min: float, y_max: float) -> ArrayMesh:
-	var tableaux := m.surface_get_arrays(0)
-	var sommets: PackedVector3Array = tableaux[Mesh.ARRAY_VERTEX]
-	var uv := PackedVector2Array()
-	for s in sommets:
-		uv.append(Vector2(0.0, clampf((s.y - y_min) / (y_max - y_min), 0.0, 1.0)))
-	tableaux[Mesh.ARRAY_TEX_UV] = uv
-	var resultat := ArrayMesh.new()
-	resultat.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, tableaux)
-	return resultat
+	st.append_from(boule, 0, Transform3D(Basis().scaled(Vector3(0.3, 0.12, 0.25)), Vector3.ZERO))
+	return st.commit()
 
 
 # --- Événements ---
@@ -251,6 +302,10 @@ func _on_meteo(secheresse: bool) -> void:
 	if _fondu != null and _fondu.is_valid():
 		_fondu.kill()
 	_fondu = create_tween()
-	var depart := float(_materiaux[0].get_shader_parameter("secheresse"))
-	_fondu.tween_method(func(v: float) -> void: _materiaux[0].set_shader_parameter("secheresse", v),
-			depart, 1.0 if secheresse else 0.0, 6.0)
+	_fondu.tween_method(_appliquer_saison, _secheresse, 1.0 if secheresse else 0.0, 6.0)
+
+
+func _appliquer_saison(valeur: float) -> void:
+	_secheresse = valeur
+	for m in _materiaux:
+		m.set_shader_parameter("secheresse", valeur)

@@ -74,6 +74,7 @@ func _ready() -> void:
 	brouillard.name = "Brouillard"
 	add_child(brouillard)
 	$Vegetation.construire(brouillard.texture_vision())   # après les entités : rien ne pousse dessous
+	$Paysage.brancher_vision(brouillard.texture_vision())
 
 
 func _process(_delta: float) -> void:
