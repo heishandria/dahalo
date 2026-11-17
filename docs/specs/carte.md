@@ -174,7 +174,12 @@ D'après des photos de cases du Sud fournies le 17/11 : petites cases rectangula
   chaume d'épaisseur inégale, bord bas ondulé, mèches de longueurs différentes, porte de planches inégales de
   travers, tôles de récupération mal alignées et rouillées différemment, tenues par des pierres.
 - **3 variantes par bâtiment**, tirées de la position : deux cases voisines ne sont jamais identiques.
-- Textures photo Poly Haven (CC0) en projection triplanaire, éclaircies (bois délavé) ;
+- **Toit d'une famille pauvre** : paille neuve et vieille (grise) fondue par plaques, zones dégarnies, 0 à 2 trous
+  par pan laissant voir les lattes de la charpente, touffes qui dépassent, branches posées en travers pour tenir
+  le chaume, parfois (45 %) une tôle rouillée en rapiéçage tenue par des pierres.
+- Textures plaquées avec de vraies coordonnées (paille dans le sens de la pente, fil du bois le long des rondins),
+  2K pour le chaume et les rondins, filtrage anisotrope.
+- Textures photo Poly Haven (CC0), éclaircies (bois délavé) ;
   `assets/textures/batiments/LISEZMOI.md`. Collisions inchangées ; fanion du clan sur un petit mât au pignon.
 - Pas encore refaits : enclos, palissade, champs, puits.
 

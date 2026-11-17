@@ -1,6 +1,6 @@
 # Textures des bâtiments
 
-Textures photo de **Poly Haven** (https://polyhaven.com), licence **CC0**, résolution 1K.
+Textures photo de **Poly Haven** (https://polyhaven.com), licence **CC0**, résolution 1K (2K pour le chaume et les rondins).
 
 | Fichier | Texture | Rôle (`scenes/buildings/maisons.gd`) |
 |---|---|---|
