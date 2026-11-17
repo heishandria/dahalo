@@ -382,15 +382,19 @@ func _choisir_activite() -> void:
 	var nuit := GameClock.est_nuit
 	var tirage := randf()
 	if etat == Etat.ENCLOS and is_instance_valid(enclos):
+		# Le tas de fourrage et l'auge suivent les réserves du clan : vides, il vient quand même et attend devant,
+		# tête haute, et il se couche moins (affamé ou assoiffé, le troupeau s'agite).
+		var a_manger: bool = ResourceManager.quantite(enclos.faction, "nourriture") > 0.0
+		var a_boire: bool = ResourceManager.quantite(enclos.faction, "eau") > 0.0
 		if nuit:
 			_activite_couche(tirage < 0.8)
 		elif tirage < 0.3 and _prendre_poste(enclos.global_position + Maisons.FOURRAGE_ENCLOS, 3, 1.9):
-			activite = Activite.MANGE
-			_fin_activite = _horloge + randf_range(10.0, 25.0)
+			activite = Activite.MANGE if a_manger else Activite.DEBOUT
+			_fin_activite = _horloge + (randf_range(10.0, 25.0) if a_manger else randf_range(5.0, 10.0))
 		elif tirage < 0.45 and _prendre_poste(enclos.global_position + Maisons.AUGE_ENCLOS, 2, 1.25):
-			activite = Activite.BOIT
+			activite = Activite.BOIT if a_boire else Activite.DEBOUT
 			_fin_activite = _horloge + randf_range(5.0, 10.0)
-		elif tirage < 0.75:
+		elif tirage < (0.75 if a_manger and a_boire else 0.55):
 			_activite_couche(false)
 		else:
 			_activite_debout()

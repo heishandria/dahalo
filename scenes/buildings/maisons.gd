@@ -520,19 +520,25 @@ static func _enclos(graine: int) -> Dictionary:
 		var cote := Vector3(-dir.z, 0, dir.x).normalized() * 0.03
 		_quad(c.st("chaume"), p - dir - cote, p + dir - cote, p + dir + cote, p - dir + cote, Vector3.UP,
 				Color(0.8, 0.7, 0.52) * h.randf_range(0.7, 1.0))
-	_fourrage(c, FOURRAGE_ENCLOS, h)
-	_auge(c, AUGE_ENCLOS, h)
+	# Le tas et l'eau de l'auge sont des maillages à part : l'enclos les fait baisser avec les réserves du clan.
+	var tas := Chantier.new()
+	var eau := Chantier.new()
+	_fourrage(c, tas, FOURRAGE_ENCLOS, h)
+	_auge(c, eau, AUGE_ENCLOS, h)
 	var poteau_entree: Vector3 = Vector3(1.3, 0, 3.9)
 	for paire: Array in perches:
 		if not paire.is_empty() and (paire[0] as Vector3).z > 2.0 and (paire[0] as Vector3).x > 1.0:
 			poteau_entree = paire[1]
 			break
-	return {"maillage": c.assembler(), "banniere": poteau_entree + Vector3(0.45, 0.05, 0)}
+	return {"maillage": c.assembler(), "banniere": poteau_entree + Vector3(0.45, 0.05, 0),
+			"fourrage": tas.assembler(), "eau_auge": eau.assembler()}
 
 
 ## Tas de fourrage : dôme de paille sèche hérissé de brins, raquettes de raketa coupées posées dessus et autour.
-static func _fourrage(c: Chantier, centre: Vector3, h: RandomNumberGenerator) -> void:
-	var paille := c.st("chaume")
+## Le tas (dans `tas`, autour de l'origine) est séparé de la paille et des raquettes tombées au sol (dans `c`,
+## autour de `centre`) : seul le tas diminue quand les réserves baissent.
+static func _fourrage(c: Chantier, tas: Chantier, centre: Vector3, h: RandomNumberGenerator) -> void:
+	var paille := tas.st("chaume")
 	var rayon := 0.62
 	var haut := 0.42
 	var couleur := Color(0.95, 0.85, 0.62)
@@ -546,7 +552,7 @@ static func _fourrage(c: Chantier, centre: Vector3, h: RandomNumberGenerator) ->
 		var t := float(i) / anneaux
 		var a := TAU * k / secteurs
 		var r := rayon * sin(t * PI * 0.5 + PI * 0.5) * bosses[k % secteurs]
-		return centre + Vector3(cos(a) * r, haut * sin(t * PI * 0.5) * (0.9 + 0.2 * bosses[(k + 3) % secteurs]), sin(a) * r)
+		return Vector3(cos(a) * r, haut * sin(t * PI * 0.5) * (0.9 + 0.2 * bosses[(k + 3) % secteurs]), sin(a) * r)
 	for i in anneaux:
 		for k in secteurs:
 			var a: Vector3 = point.call(i, k)
@@ -562,20 +568,23 @@ static func _fourrage(c: Chantier, centre: Vector3, h: RandomNumberGenerator) ->
 	for k in 60:
 		var a := h.randf() * TAU
 		var r := h.randf_range(0.0, rayon * 1.6)
-		var y := 0.05 if r > rayon else haut * cos(r / rayon * PI * 0.5) * 0.95
-		var p := centre + Vector3(cos(a) * r, y, sin(a) * r)
+		var au_sol := r > rayon
+		var y := 0.05 if au_sol else haut * cos(r / rayon * PI * 0.5) * 0.95
+		var p := Vector3(cos(a) * r, y, sin(a) * r) + (centre if au_sol else Vector3.ZERO)
 		var dir := Vector3(cos(h.randf() * TAU), h.randf_range(-0.1, 0.35), sin(h.randf() * TAU)).normalized() * h.randf_range(0.15, 0.3)
 		var cote := dir.cross(Vector3.UP).normalized() * 0.025
-		_quad(paille, p - dir - cote, p + dir - cote, p + dir + cote, p - dir + cote, Vector3.UP, couleur * h.randf_range(0.75, 1.0))
+		_quad(c.st("chaume") if au_sol else paille, p - dir - cote, p + dir - cote, p + dir + cote, p - dir + cote,
+				Vector3.UP, couleur * h.randf_range(0.75, 1.0))
 	# Raquettes de raketa coupées : ovales épais, vert glauque, posées de travers.
-	var uni := c.st("uni")
 	for k in 7:
 		var a := h.randf() * TAU
 		var r := h.randf_range(0.2, rayon * 1.3)
-		var y := 0.06 if r > rayon else haut * cos(r / rayon * PI * 0.5) + 0.02
-		var p := centre + Vector3(cos(a) * r, y, sin(a) * r)
+		var au_sol := r > rayon
+		var y := 0.06 if au_sol else haut * cos(r / rayon * PI * 0.5) + 0.02
+		var p := Vector3(cos(a) * r, y, sin(a) * r) + (centre if au_sol else Vector3.ZERO)
 		var base := Basis(Vector3.UP, h.randf() * TAU) * Basis(Vector3.RIGHT, h.randf_range(-0.5, 0.5))
-		_raquette(uni, p, base, h.randf_range(0.14, 0.2), Color(0.36, 0.5, 0.3) * h.randf_range(0.85, 1.1))
+		_raquette(c.st("uni") if au_sol else tas.st("uni"), p, base, h.randf_range(0.14, 0.2),
+				Color(0.36, 0.5, 0.3) * h.randf_range(0.85, 1.1))
 
 
 ## Raquette de raketa (Opuntia) : ovale plat un peu épais, à plat dans le plan local XZ de `base`.
@@ -596,8 +605,8 @@ static func _raquette(st: SurfaceTool, centre: Vector3, base: Basis, taille: flo
 				st.add_vertex(p)
 
 
-## Auge : tronc creusé posé sur deux cales, un fond d'eau brune.
-static func _auge(c: Chantier, centre: Vector3, h: RandomNumberGenerator) -> void:
+## Auge : tronc creusé posé sur deux cales, un fond d'eau brune (dans `eau`, autour de l'origine).
+static func _auge(c: Chantier, eau: Chantier, centre: Vector3, h: RandomNumberGenerator) -> void:
 	var bois := c.st("bois")
 	var gris := Color(0.75, 0.68, 0.6)
 	var longueur := 1.5
@@ -613,10 +622,9 @@ static func _auge(c: Chantier, centre: Vector3, h: RandomNumberGenerator) -> voi
 	# Cales.
 	for bout in [-0.6, 0.6]:
 		_boite(bois, centre + x * bout + Vector3(0, 0.03, 0), Vector3(0.14, 0.08, 0.6), gris * 0.7, base)
-	# Eau.
-	var eau := c.st("uni")
-	var e := centre + Vector3(0, 0.22, 0)
-	_quad(eau, e - x * 0.93 - z * 0.7, e + x * 0.93 - z * 0.7, e + x * 0.93 + z * 0.7, e - x * 0.93 + z * 0.7,
+	# Eau : surface à 0,22 m ; l'enclos la descend quand l'eau du clan baisse.
+	var e := Vector3(0, 0.22, 0)
+	_quad(eau.st("uni"), e - x * 0.93 - z * 0.7, e + x * 0.93 - z * 0.7, e + x * 0.93 + z * 0.7, e - x * 0.93 + z * 0.7,
 			Vector3.UP, Color(0.28, 0.24, 0.17))
 
 

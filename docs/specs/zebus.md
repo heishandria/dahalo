@@ -9,6 +9,7 @@
 
 Le comportement des zébus est **de la vie de troupeau, sans effet sur les règles** : le cheptel en enclos
 consomme toujours la nourriture et l'eau du clan (ResourceManager), qu'il soit au fourrage ou couché.
+En revanche, le tas de fourrage et l'auge **montrent l'état des réserves** (§2, Réserves).
 Un zébu escorté ne fait rien d'autre que suivre son meneur. Un zébu capturé ou détaché qui était couché
 **se relève d'un bond** (~1 s) avant de suivre.
 
@@ -35,6 +36,12 @@ Chaque zébu enchaîne des activités tirées au sort ; la nuit, presque tous se
 - **Enclos** : le tas de fourrage (paille et raquettes de raketa coupées, données au bétail en saison sèche
   dans le Sud) est au nord-ouest, l'auge (tronc creusé) au nord-est. Les zébus ne marchent pas dedans et ne
   se couchent pas à moins de 2 m du fourrage ni de 1,8 m de l'auge.
+- **Réserves** : le tas de fourrage suit la nourriture du clan, l'eau de l'auge suit l'eau. Pleins tant qu'il
+  reste au moins 3 minutes de réserve pour tout le cheptel (`GameRules.RESERVE_ENCLOS_PLEIN_MIN`), ils baissent
+  ensuite (le tas s'affaisse et rétrécit, l'eau descend de 10 cm) et disparaissent à 0. Tas ou auge vide :
+  le zébu tiré pour manger ou boire vient quand même et **attend devant, tête haute** (5–10 s) ; il se couche
+  beaucoup moins le jour (10 % au lieu de 30 %) et reste debout ou change de place (45 % au lieu de 25 %). Les fuites en cas de manque sont
+  inchangées (`economie.md` §2). Code : `scenes/buildings/enclos.gd` (`remplissage`, `_maj_reserves`).
 - **Allures** : marche 1 m/s, course au-delà de 1,6 m/s (escorte). Le zébu tourne en douceur.
 
 ## 3. Animations
@@ -55,5 +62,5 @@ La marque du clan descend avec l'animal couché.
 - En pratique, dans le Sud, les zébus pâturent le jour avec les bouviers et rentrent au parc la nuit.
   Questions ouvertes :
   1. Les zébus en enclos devraient-ils sortir pâturer le jour (avec un gardien) ?
-  2. Le fourrage de l'enclos devrait-il dépendre des réserves (tas vide quand la nourriture manque) ?
+  2. ~~Le fourrage de l'enclos devrait-il dépendre des réserves ?~~ Oui (17/11) : voir §2, Réserves.
   3. Les zébus couchés devraient-ils être plus longs à capturer (il faut les faire lever) ?

@@ -33,6 +33,9 @@ Prélevé en continu, uniquement pour les zébus **sécurisés en enclos** (pas 
 - 20 zébus = **60 eau/min + 48 nourriture/min**. Le HUD affiche la consommation (« −X/min »).
 - **Manque** : si l'eau **ou** la nourriture tombe à 0, un message d'alerte s'affiche, puis **un zébu s'enfuit
   toutes les 20 s** tant que le manque dure. Il quitte l'enclos, part à ~22 m et redevient sauvage.
+- **Signal visuel** : le tas de fourrage et l'eau de l'auge de chaque enclos restent pleins tant qu'il reste
+  au moins **3 minutes** de réserve pour tout le cheptel (`RESERVE_ENCLOS_PLEIN_MIN`), puis baissent ; à 0, ils
+  sont vides et les zébus attendent devant au lieu de manger ou boire (voir `zebus.md`).
 - C'est le frein contre le leader (GDD §7) : un gros cheptel exige beaucoup de porteurs d'eau et de champs.
 
 ## 3. Sources

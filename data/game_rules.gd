@@ -67,6 +67,9 @@ const RESSOURCES_DEPART := {"nourriture": 150.0, "eau": 100.0, "bois": 150.0, "a
 const CONSO_EAU_ZEBU_S := 0.05
 const CONSO_NOURRITURE_ZEBU_S := 0.04
 const INTERVALLE_FUITE_S := 20.0       # en manque d'eau ou de nourriture, un zébu s'enfuit à cet intervalle
+# Tas de fourrage et eau de l'auge des enclos : pleins tant qu'il reste au moins ces minutes de réserve pour
+# tout le cheptel, puis ils baissent ; vides quand la réserve est à zéro (les zébus n'y vont plus).
+const RESERVE_ENCLOS_PLEIN_MIN := 3.0
 
 # --- Bâtiments ---
 const COUTS_BATIMENTS := {
