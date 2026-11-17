@@ -41,6 +41,9 @@ Lire aussi `CLAUDE.md` (règles d'architecture) et `docs/specs/` (règles codée
 - À décider : vitesse des villageois (5 m/s) contre marche calée pour 0,87 m/s → baisser la vitesse ou ajouter
   une course. Texture à refaire en vues multiples (dos et côtés flous, éclairage figé) : voir la conversation du 17/11.
 - Manquent : animations de travail (bois, eau, champ, porter), mort ; autres rôles.
+- **Zébu 3D** (`assets/models/animaux/zebu.glb`) : vache CC0 de Quaternius transformée par script Blender (bosse,
+  fanon, cornes en lyre, oreilles tombantes, pis retiré), animations repos / marche / course, robe tirée au sort
+  parmi 6 robes malgaches. Encore sans texture de pelage (aspect lisse) : à affiner.
 
 ## Pipeline des personnages 3D (décidé)
 

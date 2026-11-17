@@ -8,6 +8,14 @@ extends CharacterBody3D
 enum Etat { SAUVAGE, SUIT, ENCLOS }
 
 const VITESSE_ERRANCE := 1.5
+# Modèle 3D (assets/models/animaux/LISEZMOI.md) : vitesses auxquelles ses animations sont calées.
+const MODELE := preload("res://assets/models/animaux/zebu.glb")
+const VITESSE_MARCHE_MODELE := 0.4
+const VITESSE_COURSE_MODELE := 1.8
+const SEUIL_COURSE := 2.6
+# Robes courantes des zébus malgaches : rouge-brun, gris, noir, blanc crème, fauve, brun sombre.
+const ROBES := [Color(0.55, 0.3, 0.18), Color(0.62, 0.6, 0.56), Color(0.13, 0.12, 0.11), Color(0.86, 0.82, 0.74),
+		Color(0.72, 0.55, 0.36), Color(0.36, 0.24, 0.17)]
 
 var proprietaire := GameRules.WILD
 var etat := Etat.SAUVAGE
@@ -25,13 +33,66 @@ var _cible_errance := Vector3.ZERO
 var _timer := 0.0
 
 @onready var marque: MeshInstance3D = $Marque
+var _modele: Node3D
+var _animations: AnimationPlayer
+var _anims := {}   # "repos" | "marche" | "course" -> nom de l'animation importée
 
 
 func _ready() -> void:
 	id = CommandBus.enregistrer(self)
 	add_to_group("zebus")
 	_cible_errance = global_position
+	_creer_modele()
 	_maj_marque()
+
+
+## Modèle animé à la place des formes de la scène ; robe tirée de l'identifiant (stable pendant la partie).
+func _creer_modele() -> void:
+	_modele = MODELE.instantiate() as Node3D
+	_modele.rotation.y = PI   # le modèle regarde vers +Z, le zébu avance vers -Z
+	var e := randf_range(0.92, 1.06)
+	_modele.scale = Vector3.ONE * e
+	add_child(_modele)
+	for nom in ["Corps", "Bosse", "Tete"]:
+		(get_node(nom) as Node3D).visible = false
+	marque.position = Vector3(0, 1.55, -0.45)
+	var robe: Color = ROBES[absi(hash(id * 7919)) % ROBES.size()]
+	for mi in _modele.find_children("*", "MeshInstance3D", true, false):
+		var maillage: Mesh = (mi as MeshInstance3D).mesh
+		for s in maillage.get_surface_count():
+			var m := maillage.surface_get_material(s)
+			if m != null and m.resource_name == "Robe":
+				var robe_mat := StandardMaterial3D.new()
+				robe_mat.vertex_color_use_as_albedo = true
+				robe_mat.albedo_color = robe * randf_range(0.92, 1.08)
+				robe_mat.roughness = 0.85
+				(mi as MeshInstance3D).set_surface_override_material(s, robe_mat)
+	_animations = _modele.find_children("*", "AnimationPlayer", true, false).front() as AnimationPlayer
+	if _animations != null:
+		for nom in _animations.get_animation_list():
+			for cle in ["repos", "marche", "course"]:
+				if cle in nom:
+					_anims[cle] = nom
+		_jouer("repos", 1.0)
+		_animations.seek(randf() * 3.0, true)
+
+
+func _jouer(cle: String, vitesse: float) -> void:
+	if _animations == null or not _anims.has(cle):
+		return
+	if _animations.current_animation != _anims[cle]:
+		_animations.play(_anims[cle], 0.25)
+	_animations.speed_scale = vitesse
+
+
+func _animer() -> void:
+	var v := Vector2(velocity.x, velocity.z).length()
+	if v < 0.15:
+		_jouer("repos", 1.0)
+	elif v < SEUIL_COURSE:
+		_jouer("marche", clampf(v / VITESSE_MARCHE_MODELE, 0.6, 3.5))
+	else:
+		_jouer("course", clampf(v / VITESSE_COURSE_MODELE, 0.8, 3.0))
 
 
 func peut_etre_capture_par(faction: int) -> bool:
@@ -138,14 +199,15 @@ func _suivre_sol() -> void:
 	var h := Terrain.hauteur_sol(global_position)
 	if absf(h - _hauteur_visuelle) < 0.01:
 		return
-	for nom in ["Corps", "Bosse", "Tete", "Marque"]:
-		var n := get_node(nom) as Node3D
-		n.position.y += h - _hauteur_visuelle
+	for n in [marque, _modele]:
+		if n != null:
+			n.position.y += h - _hauteur_visuelle
 	_hauteur_visuelle = h
 
 
 func _physics_process(delta: float) -> void:
 	_suivre_sol()
+	_animer()
 	if etat != Etat.SUIT and GameClock.temps_ecoule < immobile_jusqua:
 		velocity = Vector3.ZERO
 		return
