@@ -3,27 +3,29 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://is1wxjkt4qeb"
-path="res://.godot/imported/Bark_DeadTree.png-c9aaa203dabe123485624277e6feb417.ctex"
+path.s3tc="res://.godot/imported/Bark_DeadTree.png-c9aaa203dabe123485624277e6feb417.s3tc.ctex"
+path.etc2="res://.godot/imported/Bark_DeadTree.png-c9aaa203dabe123485624277e6feb417.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/models/decor/quaternius_megakit/Bark_DeadTree.png"
-dest_files=["res://.godot/imported/Bark_DeadTree.png-c9aaa203dabe123485624277e6feb417.ctex"]
+dest_files=["res://.godot/imported/Bark_DeadTree.png-c9aaa203dabe123485624277e6feb417.s3tc.ctex", "res://.godot/imported/Bark_DeadTree.png-c9aaa203dabe123485624277e6feb417.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
-compress/normal_map=0
+compress/normal_map=2
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

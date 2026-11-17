@@ -266,12 +266,27 @@ func possede(faction: int, type_batiment: String) -> bool:
 
 ## Écrans haute densité (Retina) en Forward+ : la 3D est calculée à 67 % de la résolution puis agrandie
 ## (FSR), l'interface reste nette. Sans cela, le shader du sol tourne sur plus de 6 millions de pixels.
+## Web et mobile (Compatibility, Mobile) : la 3D est calculée sur PIXELS_3D_LEGER pixels au plus, puis agrandie
+## (bilinéaire) ; ombres du soleil en 2 découpes au lieu de 4.
+const PIXELS_3D_LEGER := 1_600_000
+
 func _regler_resolution() -> void:
-	if RenderingServer.get_current_rendering_method() != "forward_plus":
+	if RenderingServer.get_current_rendering_method() == "forward_plus":
+		if DisplayServer.screen_get_scale() >= 1.5:
+			get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR
+			get_viewport().scaling_3d_scale = 0.67
 		return
-	if DisplayServer.screen_get_scale() >= 1.5:
-		get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR
-		get_viewport().scaling_3d_scale = 0.67
+	$Soleil.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	if not get_viewport().size_changed.is_connected(_ajuster_echelle_3d):
+		get_viewport().size_changed.connect(_ajuster_echelle_3d)
+	_ajuster_echelle_3d()
+
+
+func _ajuster_echelle_3d() -> void:
+	var taille := DisplayServer.window_get_size()
+	var pixels := maxf(float(taille.x * taille.y), 1.0)
+	get_viewport().scaling_3d_scale = clampf(sqrt(PIXELS_3D_LEGER / pixels), 0.5, 1.0)
 
 
 # --- Carte aléatoire (spec : docs/specs/carte.md) ---

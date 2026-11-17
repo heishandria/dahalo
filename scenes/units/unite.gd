@@ -33,6 +33,8 @@ var cible_enclos = null     # Batiment (enclos adverse) pendant un pillage
 var troupeau_garde = null    # Batiment (enclos du clan) dont il garde le troupeau au pâturage
 var _allure_troupeau := false   # gardien près de son troupeau : il marche au pas des zébus
 var _en_route_garde := false
+var _poste_garde := Vector3.INF   # recalculé deux fois par seconde
+var _chrono_poste_garde := 0.0
 
 # Combat
 var pv := 1.0
@@ -94,6 +96,17 @@ func _ready() -> void:
 		_ajouter_fusil()
 	if data.modele != null:
 		_creer_modele()
+		# Hors de l'écran, le squelette n'est plus animé (gros gain sur le Web).
+		var ecran := VisibleOnScreenNotifier3D.new()
+		ecran.aabb = AABB(Vector3(-0.8, 0.0, -0.8), Vector3(1.6, 2.2, 1.6))
+		ecran.screen_exited.connect(_animer_a_l_ecran.bind(false))
+		ecran.screen_entered.connect(_animer_a_l_ecran.bind(true))
+		add_child(ecran)
+
+
+func _animer_a_l_ecran(visible_a_l_ecran: bool) -> void:
+	if _animations != null and not mort:
+		_animations.active = visible_a_l_ecran
 
 
 
@@ -205,6 +218,7 @@ func garder(e) -> void:
 	troupeau_garde = e
 	etat = Etat.GARDE
 	_en_route_garde = true
+	_poste_garde = Vector3.INF
 
 
 func liberer_garde() -> void:
@@ -426,7 +440,11 @@ func _physics_process(delta: float) -> void:
 			if not _valide(troupeau_garde):
 				liberer_garde()
 				return
-			var poste := _poste_de_garde()
+			_chrono_poste_garde -= delta
+			if _chrono_poste_garde <= 0.0 or _poste_garde == Vector3.INF:
+				_chrono_poste_garde = 0.5
+				_poste_garde = _poste_de_garde()
+			var poste := _poste_garde
 			var distance := global_position.distance_to(poste)
 			_allure_troupeau = distance < 12.0
 			if _en_route_garde and (distance < 1.5 or (distance < 3.0 and agent.is_navigation_finished())):

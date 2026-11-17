@@ -98,6 +98,16 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
   Retina en Forward+, la 3D est rendue à 67 % puis agrandie (FSR). Mesuré sur M1 Pro, plein écran : ~20 ips avant
   ces optimisations, 60 ips après (limite de l'écran). Le premier lancement après une modification des shaders
   est lent (compilation des shaders), les suivants non.
+- **Web et mobile** (Compatibility, Mobile ; 17/11) : la 3D est calculée sur 1,6 million de pixels au plus
+  (`main.gd`, `PIXELS_3D_LEGER`, échelle entre 50 et 100 %, agrandissement bilinéaire, l'interface reste nette) ;
+  ombres du soleil en 2 découpes au lieu de 4. Mesuré en Compatibility sur M1 Pro, écran Retina : 30 → 46 ips.
+  Le sol de la zone de jeu reste le poste le plus lourd (il couvre tout l'écran).
+- **Textures 3D** : toutes importées en « VRAM compressée » avec mipmaps (elles étaient sans compression ni
+  mipmaps : lecture de la pleine résolution au loin, scintillement, ~170 Mo de mémoire vidéo). Les textures
+  de bâtiments sont limitées à 1024 px. Toute nouvelle texture 3D doit suivre ce réglage (l'éditeur ne le
+  devine pas, les matériaux étant créés par le code).
+- **Processeur** : les zébus et unités hors de l'écran ne sont plus animés ; l'espace vital des zébus est
+  recalculé une image sur trois, avec des listes partagées. Banc headless, 70 zébus : 3,2 → 2,2 ms par image.
 
 ## 4 ter. Rendu (direction artistique décidée le 17/11 : « sérieux, un peu réaliste »)
 

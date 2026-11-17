@@ -70,6 +70,13 @@ var _limite_marche := 0.0      # pour se coucher : au-delà, il se couche où il
 var _chemin: Array[Vector3] = []   # trajet entre l'enclos et le pâturage (par la porte)
 var _trajet_sortie := false        # le trajet en cours va vers le pâturage (sinon, il rentre)
 var _depart_prevu := false         # il a remarqué qu'il doit sortir ou rentrer (départs échelonnés)
+var _ecart_memo := Vector3.ZERO    # dernière poussée d'espace vital (recalculée une image sur trois)
+
+# Listes des zébus et des unités, construites une fois par image physique et partagées par tous les zébus
+# (sinon chacun reconstruirait les deux listes à chaque image : coûteux sur le Web).
+static var _image_listes := -1
+static var _zebus_image: Array = []
+static var _unites_image: Array = []
 
 
 func _ready() -> void:
@@ -78,11 +85,22 @@ func _ready() -> void:
 	_cible_errance = global_position
 	_creer_modele()
 	_maj_marque()
+	# Hors de l'écran, le squelette n'est plus animé (gros gain sur le Web avec des dizaines de zébus).
+	var ecran := VisibleOnScreenNotifier3D.new()
+	ecran.aabb = AABB(Vector3(-1.3, 0.0, -1.6), Vector3(2.6, 2.4, 3.2))
+	ecran.screen_exited.connect(_animer_a_l_ecran.bind(false))
+	ecran.screen_entered.connect(_animer_a_l_ecran.bind(true))
+	add_child(ecran)
 	# Les villageois et guerriers contournent les zébus (évitement de leurs agents de navigation).
 	var obstacle := NavigationObstacle3D.new()
 	obstacle.radius = 1.0
 	obstacle.avoidance_enabled = true
 	add_child(obstacle)
+
+
+func _animer_a_l_ecran(visible_a_l_ecran: bool) -> void:
+	if _animations != null:
+		_animations.active = visible_a_l_ecran
 
 
 ## Modèle animé à la place des formes de la scène ; robe tirée de l'identifiant (stable pendant la partie).
@@ -622,18 +640,35 @@ func _maj_posture() -> void:
 ## Poussée qui l'éloigne des zébus et des personnes trop proches (espace vital, sans blocage physique :
 ## un Dahalo doit pouvoir mener son troupeau au milieu des autres). Distances mesurées depuis l'axe du corps.
 func _ecartement() -> Vector3:
+	# Recalculée une image physique sur trois, en décalé d'un zébu à l'autre : la poussée varie lentement.
+	if (Engine.get_physics_frames() + id) % 3 != 0:
+		return _ecart_memo
+	_ecart_memo = _calculer_ecartement()
+	return _ecart_memo
+
+
+func _maj_listes() -> void:
+	var image := Engine.get_physics_frames()
+	if image != _image_listes:
+		_image_listes = image
+		_zebus_image = get_tree().get_nodes_in_group("zebus")
+		_unites_image = get_tree().get_nodes_in_group("unites")
+
+
+func _calculer_ecartement() -> Vector3:
+	_maj_listes()
 	var poussee := Vector3.ZERO
 	var axe := _axe_corps()
-	for z in get_tree().get_nodes_in_group("zebus"):
-		if z == self or not (z is Node3D):
+	for z in _zebus_image:
+		if z == self or not is_instance_valid(z):
 			continue
 		if (z.global_position - global_position).length_squared() > 9.0:
 			continue
 		var autre: Array = z._axe_corps()
 		var proches := _points_proches(axe[0], axe[1], autre[0], autre[1])
 		poussee += _poussee(proches[0], proches[1], ECART_ZEBUS)
-	for u in get_tree().get_nodes_in_group("unites"):
-		if u == meneur:
+	for u in _unites_image:
+		if u == meneur or not is_instance_valid(u):
 			continue
 		var p: Vector3 = u.global_position
 		if (p - global_position).length_squared() > 6.0:

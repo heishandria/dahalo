@@ -15,3 +15,7 @@ Résolution 1K (JPG). « couleur » = Diffuse ; « relief » = normal map au for
 
 Le rendu Web limite un shader à 16 textures (moteur compris) : le shader du terrain en utilise 11 au plus.
 Téléchargées par l'API publique de Poly Haven le 17/11/2026.
+
+Import : **VRAM compressée + mipmaps** (`compress/mode=2`, `mipmaps/generate=true`), cartes de relief sans
+compression « normal map » (`compress/normal_map=2` : le shader lit les trois canaux). Indispensable pour les
+performances, surtout sur le Web et le mobile.

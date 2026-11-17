@@ -3,27 +3,29 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bt2867b1eohf2"
-path="res://.godot/imported/gravelly_sand_couleur.jpg-f8a6c089f8c5eb92982af48c950a173c.ctex"
+path.s3tc="res://.godot/imported/gravelly_sand_couleur.jpg-f8a6c089f8c5eb92982af48c950a173c.s3tc.ctex"
+path.etc2="res://.godot/imported/gravelly_sand_couleur.jpg-f8a6c089f8c5eb92982af48c950a173c.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/textures/terrain/gravelly_sand_couleur.jpg"
-dest_files=["res://.godot/imported/gravelly_sand_couleur.jpg-f8a6c089f8c5eb92982af48c950a173c.ctex"]
+dest_files=["res://.godot/imported/gravelly_sand_couleur.jpg-f8a6c089f8c5eb92982af48c950a173c.s3tc.ctex", "res://.godot/imported/gravelly_sand_couleur.jpg-f8a6c089f8c5eb92982af48c950a173c.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
-compress/normal_map=0
+compress/normal_map=2
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

@@ -153,13 +153,20 @@ func _conso_par_seconde(faction: int, ressource: String, n: int, dehors: int) ->
 	return rations * GameRules.CONSO_NOURRITURE_ZEBU_S
 
 
-## Zébus du clan menés au pâturage (sortis de leur enclos, aller et retour compris).
+## Zébus du clan menés au pâturage (sortis de leur enclos, aller et retour compris). Compté une fois par
+## image pour toutes les factions (appelé aussi par le HUD).
+var _image_paturage := -1
+var _au_paturage := {}
+
 func nb_au_paturage(faction: int) -> int:
-	var n := 0
-	for z in get_tree().get_nodes_in_group("zebus"):
-		if z.dehors and z.etat == Zebu.Etat.ENCLOS and z.proprietaire == faction:
-			n += 1
-	return n
+	var image := Engine.get_process_frames()
+	if image != _image_paturage:
+		_image_paturage = image
+		_au_paturage.clear()
+		for z in get_tree().get_nodes_in_group("zebus"):
+			if z.dehors and z.etat == Zebu.Etat.ENCLOS:
+				_au_paturage[z.proprietaire] = int(_au_paturage.get(z.proprietaire, 0)) + 1
+	return int(_au_paturage.get(faction, 0))
 
 
 # --- Entretien : seuls les zébus en enclos boivent et mangent ---
