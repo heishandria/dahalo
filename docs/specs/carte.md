@@ -43,8 +43,10 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
   descendent à l'écran ; le corps physique et le navmesh restent à y = 0).
 - **Trous d'eau** dans le lit : points d'eau ordinaires (×0,3 en sécheresse), comme ceux qu'on creuse vraiment dans
   le sable des rivières de l'Androy.
-- Rendu : sable clair, plus sombre et humide au milieu hors sécheresse ; berges plus herbeuses. Il se prolonge hors
-  de la zone de jeu par une **vallée à fond plat** dans le relief.
+- Rendu : sable clair, berges plus herbeuses. **En saison normale, un filet d'eau coule au milieu du lit**
+  (~6 m de large, rides animées) ; **en sécheresse il se retire** et le lit est à sec (fondu de 6 s). L'eau est
+  purement visuelle : le ralentissement est le même en toute saison. Le lit se prolonge hors de la zone de jeu
+  par une **vallée à fond plat** dans le relief.
 - Technique : `Terrain` garde la distance au lit sur une grille de 2 m couvrant ±280 m (zone de jeu + relief) ;
   le shader la lit en texture.
 
@@ -67,7 +69,8 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
 - Un seul shader pour le sol de la zone de jeu **et** le relief : raccord sans couture au bord.
 - Latérite rouge plus ou moins sombre, plaques de sable, **herbe sèche** ; roche calcaire beige sur les pentes et les
   hauteurs, avec des **strates horizontales** sur les parois.
-- **Sécheresse** : l'herbe disparaît presque, tout pâlit et tire vers l'ocre (sol et relief, via `EventBus.meteo_change`).
+- **Saisons** : en saison normale l'herbe est **verte** et plus étendue ; en **sécheresse** elle devient dorée et
+  clairsemée, tout pâlit et tire vers l'ocre (sol, plateaux et relief ; fondu de 6 s via `EventBus.meteo_change`).
 - Bruit calculé dans le shader, sans texture : même rendu sur PC, Web (Compatibility) et mobile.
 
 ## 5. Paysage autour de la zone de jeu (purement visuel)
@@ -87,7 +90,7 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
 | Carte générée (GDD §8) | Aléatoire à graine, symétrique | **Fait** (17/11) |
 | — | Lit de rivière à sec qui ralentit, trous d'eau | **Fait** (17/11) |
 | — | Plateaux en paliers infranchissables (falaises), rivière en contrebas | **Fait** (17/11) |
-| — | Eau dans la rivière en saison des pluies, herbe qui reverdit | **Décidé** (17/11), à faire |
+| — | Eau dans la rivière en saison normale, herbe qui reverdit | **Fait** (17/11, visuel) |
 | — | Décor en modèles 3D (packs CC0 + modèles sur mesure) | **Décidé** (17/11), à faire |
 
 Questions ouvertes :

@@ -99,6 +99,18 @@ func _scenario() -> void:
 	await _attendre_images(10)
 	await _capturer("vue_ensemble_5min")
 
+	# Sécheresse : l'eau s'est retirée du lit, l'herbe a jauni (après le fondu de la saison).
+	if trou != null:
+		get_parent().accelerer(ACCELERATION)
+		await _attendre_temps_de_jeu(GameRules.DUREE_JOUR_S * GameRules.CYCLES_ENTRE_SECHERESSES + 20.0)
+		get_parent().accelerer(1.0)
+		selection.annuler()
+		Vision.revele_tout = true
+		rig.zoomer(40.0 / rig.camera.size)
+		rig.centrer_sur(trou.global_position)
+		await _attendre_brouillard()
+		await _capturer("secheresse_riviere")
+
 	print("[captures] %d images" % _numero)
 	get_tree().quit()
 

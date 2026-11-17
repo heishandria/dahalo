@@ -23,6 +23,10 @@ var _bruit := FastNoiseLite.new()
 var _bruit_fin := FastNoiseLite.new()
 var _hasard := RandomNumberGenerator.new()
 var _materiau_relief := ShaderMaterial.new()
+var _materiau_eau := ShaderMaterial.new()
+var _secheresse := 0.0      # 0 : saison normale ; 1 : sécheresse (fondu entre les deux)
+var _fondu: Tween
+const DUREE_FONDU_SAISON := 6.0
 
 
 func construire() -> void:
@@ -38,6 +42,7 @@ func construire() -> void:
 	_materiau_relief.set_shader_parameter("etendue", Terrain.ETENDUE)
 	EventBus.meteo_change.connect(_on_meteo)
 	_creer_sol_jeu()
+	_creer_eau()
 	_creer_plateaux()
 	_creer_relief()
 	_creer_decor()
@@ -86,6 +91,48 @@ func _creer_sol_jeu() -> void:
 			var b := a + cotes
 			indices.append_array([a, a + 1, b, a + 1, b + 1, b])
 	_ajouter_maillage("SolJeu", sommets, normales, indices)
+
+
+# --- Eau : filet qui coule dans le lit en saison normale (ruban le long du tracé) ---
+
+func _creer_eau() -> void:
+	_materiau_eau.shader = preload("res://scenes/world/eau.gdshader")
+	_materiau_eau.set_shader_parameter("distances_riviere", Terrain.texture_distances())
+	_materiau_eau.set_shader_parameter("etendue", Terrain.ETENDUE)
+	var trace := Terrain.riviere
+	var demi := GameRules.RIVIERE_LARGEUR * 0.5
+	var y := -GameRules.RIVIERE_PROFONDEUR * 0.55
+	var sommets := PackedVector3Array()
+	var normales := PackedVector3Array()
+	var indices := PackedInt32Array()
+	for k in trace.size():
+		var p := trace[k]
+		if absf(p.x) > ETENDUE or absf(p.y) > ETENDUE:
+			continue
+		var avant := trace[mini(k + 1, trace.size() - 1)] - trace[maxi(k - 1, 0)]
+		var cote := Vector2(-avant.y, avant.x).normalized() * demi
+		var base := sommets.size()
+		sommets.append(Vector3(p.x - cote.x, y, p.y - cote.y))
+		sommets.append(Vector3(p.x + cote.x, y, p.y + cote.y))
+		normales.append(Vector3.UP)
+		normales.append(Vector3.UP)
+		if base >= 2:
+			indices.append_array([base - 2, base - 1, base, base - 1, base + 1, base])
+	if indices.is_empty():
+		return
+	var tableaux := []
+	tableaux.resize(Mesh.ARRAY_MAX)
+	tableaux[Mesh.ARRAY_VERTEX] = sommets
+	tableaux[Mesh.ARRAY_NORMAL] = normales
+	tableaux[Mesh.ARRAY_INDEX] = indices
+	var maillage := ArrayMesh.new()
+	maillage.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, tableaux)
+	var eau := MeshInstance3D.new()
+	eau.name = "Eau"
+	eau.mesh = maillage
+	eau.material_override = _materiau_eau
+	eau.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(eau)
 
 
 # --- Plateaux : contours en marching squares sur le champ de Terrain ---
@@ -338,5 +385,15 @@ func _ajouter_multimesh(nom: String, maillage: Mesh, transformations: Array[Tran
 	add_child(instance)
 
 
+## Changement de saison en fondu : l'herbe jaunit ou reverdit, l'eau se retire ou revient.
 func _on_meteo(secheresse: bool) -> void:
-	_materiau_relief.set_shader_parameter("secheresse", 1.0 if secheresse else 0.0)
+	if _fondu != null and _fondu.is_valid():
+		_fondu.kill()
+	_fondu = create_tween()
+	_fondu.tween_method(_appliquer_saison, _secheresse, 1.0 if secheresse else 0.0, DUREE_FONDU_SAISON)
+
+
+func _appliquer_saison(valeur: float) -> void:
+	_secheresse = valeur
+	_materiau_relief.set_shader_parameter("secheresse", valeur)
+	_materiau_eau.set_shader_parameter("niveau", 1.0 - valeur)

@@ -8,7 +8,8 @@ uniform float secheresse : hint_range(0.0, 1.0) = 0.0;
 uniform vec3 couleur_laterite : source_color = vec3(0.72, 0.36, 0.2);
 uniform vec3 couleur_laterite_sombre : source_color = vec3(0.56, 0.27, 0.16);
 uniform vec3 couleur_sable : source_color = vec3(0.8, 0.6, 0.42);
-uniform vec3 couleur_herbe : source_color = vec3(0.58, 0.52, 0.3);
+uniform vec3 couleur_herbe : source_color = vec3(0.58, 0.52, 0.3);         // herbe sèche, dorée (sécheresse)
+uniform vec3 couleur_herbe_verte : source_color = vec3(0.4, 0.48, 0.22);  // herbe reverdie (saison normale)
 uniform vec3 couleur_roche : source_color = vec3(0.74, 0.61, 0.46);   // calcaire du plateau Mahafaly
 uniform vec3 couleur_lit : source_color = vec3(0.8, 0.63, 0.43);     // sable clair du lit de rivière
 // Lit de rivière : distance au milieu du lit (rouge = distance / distance_max), fournie par Terrain.
@@ -58,13 +59,15 @@ void fragment() {
 	// Plaques de sable
 	c = mix(c, couleur_sable, smoothstep(0.6, 0.85, moyennes * 0.5 + grandes * 0.5) * 0.4);
 	// Herbe sèche, qui disparaît presque pendant la sécheresse
-	float herbe = smoothstep(0.55, 0.8, bruit_fractal(p / 12.0 + 5.3)) * (1.0 - 0.8 * secheresse);
-	c = mix(c, couleur_herbe, herbe * 0.35);
+	// Herbe : verte et plus étendue en saison normale, dorée et clairsemée en sécheresse.
+	float herbe = smoothstep(0.5 + 0.1 * secheresse, 0.8, bruit_fractal(p / 12.0 + 5.3)) * (1.0 - 0.7 * secheresse);
+	vec3 teinte_herbe = mix(couleur_herbe_verte, couleur_herbe, secheresse);
+	c = mix(c, teinte_herbe, herbe * mix(0.5, 0.35, secheresse));
 	// Lit de rivière à sec : sable clair, plus sombre et humide au milieu hors sécheresse ; berges herbeuses.
 	float d_riviere = texture(distances_riviere, (p + etendue) / (2.0 * etendue)).r * distance_max;
 	float demi = largeur_riviere * 0.5;
 	float berge = 1.0 - smoothstep(demi, demi + 6.0, d_riviere);
-	c = mix(c, couleur_herbe * 0.9, berge * 0.45 * (1.0 - 0.6 * secheresse));
+	c = mix(c, teinte_herbe * 0.9, berge * 0.45 * (1.0 - 0.6 * secheresse));
 	vec3 sable = couleur_lit * (0.92 + 0.12 * moyennes);
 	sable = mix(sable, sable * 0.78, (1.0 - smoothstep(0.0, demi * 0.6, d_riviere)) * (1.0 - secheresse));
 	c = mix(c, sable, 1.0 - smoothstep(demi - 1.0, demi + 0.8, d_riviere + (grain - 0.5) * 1.2));
@@ -81,7 +84,7 @@ void fragment() {
 	// Lecture du relief en vue isométrique : creux plus sombres, hauteurs plus claires
 	c *= 0.88 + 0.3 * smoothstep(0.0, 28.0, position_monde.y);
 	// Plateaux en paliers : dessus plus clair (calcaire, herbe rase), parois de terre brune à strates.
-	vec3 dessus = mix(couleur_dessus * (0.9 + 0.2 * moyennes), couleur_herbe, herbe * 0.6);
+	vec3 dessus = mix(couleur_dessus * (0.9 + 0.2 * moyennes), teinte_herbe, herbe * 0.6);
 	c = mix(c, dessus, role.x);
 	vec3 terre = couleur_paroi * (0.85 + 0.3 * strates);
 	terre *= 0.88 + 0.12 * sin(position_monde.y * 3.0 + strates * 3.0);
