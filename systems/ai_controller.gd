@@ -388,7 +388,7 @@ func _enclos_a_piller():
 			continue
 		var n := 0
 		for z in get_tree().get_nodes_in_group("zebus"):
-			if z.enclos == e and z.etat == Zebu.Etat.ENCLOS:
+			if z.enclos == e and z.etat == Zebu.Etat.ENCLOS and not z.dehors:
 				n += 1
 		if n > max_zebus:
 			max_zebus = n
@@ -397,17 +397,19 @@ func _enclos_a_piller():
 
 
 func _zebu_cible(dahalo):
-	# Priorité aux zébus sauvages ; la nuit, l'IA tente aussi de piller le joueur.
+	# Priorité aux zébus sauvages ; la nuit, l'IA tente aussi de piller le joueur. Un troupeau adverse au
+	# pâturage est une proie de jour comme de nuit.
 	var meilleur = null
 	var d_min := INF
 	for z in get_tree().get_nodes_in_group("zebus"):
 		if not z.peut_etre_capture_par(faction) or not Vision.est_explore(faction, z.global_position):
 			continue
 		var sauvage: bool = z.proprietaire == GameRules.WILD
-		if not sauvage and not GameClock.est_nuit:
+		var au_paturage: bool = z.etat == Zebu.Etat.ENCLOS and z.dehors
+		if not sauvage and not au_paturage and not GameClock.est_nuit:
 			continue
 		var d: float = dahalo.global_position.distance_to(z.global_position)
-		if not sauvage:
+		if not sauvage and not au_paturage:
 			d *= 1.5
 		if d < d_min:
 			d_min = d

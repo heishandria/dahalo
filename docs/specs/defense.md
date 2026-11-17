@@ -48,6 +48,7 @@
 |---|---|
 | Passer la corde à un zébu sauvage, ou reprendre un zébu escorté par l'ennemi | **1,5 s** |
 | **Détacher un zébu dans un enclos adverse** | **4 s par zébu** (20 s pour un raid complet de 5) |
+| Voler un zébu d'un troupeau adverse **au pâturage** (`zebus.md` §4) | **2 s par zébu** |
 
 - Pendant ce temps le Dahalo est immobile, le zébu aussi ; une étiquette « Corde… 60 % » s'affiche au-dessus de lui.
 - **L'enclos donne l'alerte dès le début** du détachement (message + mini-carte), pas après le vol.

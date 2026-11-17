@@ -142,8 +142,24 @@ func zebu_perdu(faction: int) -> void:
 
 ## Consommation du cheptel par minute (pour l'affichage).
 func conso_par_minute(faction: int, ressource: String) -> float:
-	var par_zebu := GameRules.CONSO_EAU_ZEBU_S if ressource == "eau" else GameRules.CONSO_NOURRITURE_ZEBU_S
-	return nb_zebus(faction) * par_zebu * 60.0
+	return _conso_par_seconde(faction, ressource, nb_zebus(faction), nb_au_paturage(faction)) * 60.0
+
+
+## Au pâturage, un zébu broute : il ne prend qu'une part de sa ration de nourriture sur les réserves (l'eau, si).
+func _conso_par_seconde(faction: int, ressource: String, n: int, dehors: int) -> float:
+	if ressource == "eau":
+		return n * GameRules.CONSO_EAU_ZEBU_S
+	var rations := float(n) - float(mini(dehors, n)) * (1.0 - GameRules.PATURAGE_FACTEUR_NOURRITURE)
+	return rations * GameRules.CONSO_NOURRITURE_ZEBU_S
+
+
+## Zébus du clan menés au pâturage (sortis de leur enclos, aller et retour compris).
+func nb_au_paturage(faction: int) -> int:
+	var n := 0
+	for z in get_tree().get_nodes_in_group("zebus"):
+		if z.dehors and z.etat == Zebu.Etat.ENCLOS and z.proprietaire == faction:
+			n += 1
+	return n
 
 
 # --- Entretien : seuls les zébus en enclos boivent et mangent ---
@@ -156,8 +172,9 @@ func _process(delta: float) -> void:
 		if n == 0:
 			_maj_manque(f, false)
 			continue
-		stocks[f]["eau"] = maxf(0.0, quantite(f, "eau") - n * GameRules.CONSO_EAU_ZEBU_S * delta)
-		stocks[f]["nourriture"] = maxf(0.0, quantite(f, "nourriture") - n * GameRules.CONSO_NOURRITURE_ZEBU_S * delta)
+		var dehors := nb_au_paturage(f)
+		stocks[f]["eau"] = maxf(0.0, quantite(f, "eau") - _conso_par_seconde(f, "eau", n, dehors) * delta)
+		stocks[f]["nourriture"] = maxf(0.0, quantite(f, "nourriture") - _conso_par_seconde(f, "nourriture", n, dehors) * delta)
 		var manque := quantite(f, "eau") <= 0.0 or quantite(f, "nourriture") <= 0.0
 		_maj_manque(f, manque)
 		if not manque and a_technologie(f, "pacte_eleveurs"):

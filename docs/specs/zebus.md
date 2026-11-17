@@ -9,7 +9,8 @@
 
 Le comportement des zébus est **de la vie de troupeau, sans effet sur les règles** : le cheptel en enclos
 consomme toujours la nourriture et l'eau du clan (ResourceManager), qu'il soit au fourrage ou couché.
-En revanche, le tas de fourrage et l'auge **montrent l'état des réserves** (§2, Réserves).
+En revanche, le tas de fourrage et l'auge **montrent l'état des réserves** (§2, Réserves). Seule exception
+aux règles : le **pâturage** (§4), décidé par le joueur.
 Un zébu escorté ne fait rien d'autre que suivre son meneur. Un zébu capturé ou détaché qui était couché
 **se relève d'un bond** (~1 s) avant de suivre.
 
@@ -56,11 +57,38 @@ Chaque zébu enchaîne des activités tirées au sort ; la nuit, presque tous se
 
 La marque du clan descend avec l'animal couché.
 
-## 4. Écarts avec le GDD et questions ouvertes
+## 4. Pâturage (troupeau mené dehors le jour)
+
+Comme dans le Sud, où les zébus pâturent le jour avec les bouviers et rentrent au parc la nuit.
+
+- **Ordre** : bouton « Mener au pâturage / Garder au parc » dans le panneau de l'enclos (ligne « Troupeau »),
+  commande `paturage` (CommandBus). Il reste actif chaque jour jusqu'à ce qu'on l'arrête.
+- **Gardien** : l'enclos prend le villageois du clan le plus proche (inoccupé de préférence) ; sans villageois,
+  l'ordre est refusé. Le gardien suit le troupeau au pas (1,4 m/s), un peu en retrait côté village, et attend à
+  la porte la nuit. S'il reçoit **un autre ordre** ou **tombe**, le pâturage s'arrête et le troupeau rentre.
+- **Où** : l'enclos choisit le meilleur coin d'herbe parmi 16 points tirés entre **14 et 28 m** (densité
+  d'herbe, un peu de préférence pour le côté de la porte, pas au sommet des collines). Les zébus s'y dispersent
+  dans un rayon de **7 m** et broutent, se couchent ou flânent comme un troupeau sauvage.
+- **Quand** : ils sortent **5 s après l'aube** et rentrent **30 s avant la nuit**, chacun dans les 6 s
+  (départs échelonnés). Ils passent **par la porte** (sud), au pas soutenu de **1,3 m/s**.
+- **Effet sur les réserves** : un zébu au pâturage (aller et retour compris) ne prend que **25 %** de sa ration
+  de nourriture sur les réserves (`PATURAGE_FACTEUR_NOURRITURE`) ; l'eau est inchangée. Le HUD affiche la
+  consommation réelle.
+- **Risque** : un zébu au pâturage reste au clan (il compte pour la victoire) mais se vole en **2 s** au lieu de
+  4 s (`DUREE_CAPTURE_PATURAGE_S`), avec alerte « vos zébus au pâturage ». L'IA vise un troupeau adverse au
+  pâturage **de jour comme de nuit** (les zébus d'enclos, seulement la nuit). Le pillage d'un enclos ne prend que
+  les zébus restés dedans.
+- Le panneau de l'enclos affiche « Pâturage : N dehors, gardés par un villageois ».
+- Constantes : `GameRules.PATURAGE_*`. Code : `enclos.gd` (`mener_au_paturage`, `troupeau_dehors`),
+  `zebu.gd` (`dehors`, `_partir`, `_etape_suivante`), `unite.gd` (état `GARDE`).
+
+## 5. Écarts avec le GDD et questions ouvertes
 
 - Le GDD ne décrit pas la vie du troupeau : ajout du 17/11 à la demande (zébus trop groupés, sans activité).
 - En pratique, dans le Sud, les zébus pâturent le jour avec les bouviers et rentrent au parc la nuit.
   Questions ouvertes :
-  1. Les zébus en enclos devraient-ils sortir pâturer le jour (avec un gardien) ?
+  1. ~~Les zébus en enclos devraient-ils sortir pâturer le jour ?~~ Oui (17/11), au choix du joueur : §4.
+     Écart : le GDD ne prévoit pas cette commande. L'IA ne mène pas encore son propre troupeau au pâturage.
   2. ~~Le fourrage de l'enclos devrait-il dépendre des réserves ?~~ Oui (17/11) : voir §2, Réserves.
-  3. Les zébus couchés devraient-ils être plus longs à capturer (il faut les faire lever) ?
+  3. ~~Les zébus couchés devraient-ils être plus longs à capturer ?~~ Non (17/11) : ce serait une règle
+     invisible qui freinerait les raids de nuit, cœur du thème ; le zébu met déjà ~1 s à se relever.

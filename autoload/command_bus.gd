@@ -16,6 +16,7 @@ extends Node
 ##   construire : "type_batiment": "enclos" | "champ" | "camp_bois" | "puits" | "tsena", "position": Vector3
 ##                (palissade : "rotation_y" facultatif, pour aligner le segment sur un tracé)
 ##   rechercher : "technologie": clé de GameRules.TECHNOLOGIES (dans le bâtiment adapté)
+##   paturage   : "enclos": id, "actif": bool (mener le troupeau de cet enclos au pâturage le jour, avec un gardien)
 ##   commerce   : "action": "vendre_zebu" | "vendre_bois" | "vendre_nourriture" | "acheter_bois" | "acheter_nourriture" | "acheter_zebu" (nécessite un Tsena)
 
 var monde = null           # référence vers main.gd (création d'entités)
@@ -68,6 +69,10 @@ func emettre(cmd: Dictionary) -> void:
 					return
 			if faction == GameRules.PLAYER:
 				EventBus.message.emit("Il faut le bâtiment adapté pour cette recherche.")
+		"paturage":
+			var e = get_entite(cmd.get("enclos", 0))
+			if e != null and e.faction == faction and e.has_method("mener_au_paturage"):
+				e.mener_au_paturage(bool(cmd.get("actif", false)))
 		"commerce":
 			for t in get_tree().get_nodes_in_group("tsena"):
 				if t.faction == faction:

@@ -1,7 +1,8 @@
 class_name Zebu
 extends CharacterBody3D
 ## Zébu : sauvage (erre autour de son troupeau), escorté (suit un Dahalo),
-## ou sécurisé dans un enclos (compte pour la victoire).
+## ou sécurisé dans un enclos (compte pour la victoire). Un zébu d'enclos peut être mené au pâturage le jour
+## (`dehors`) : il reste au clan, mais il est plus facile à voler.
 ## Le zébu est au cœur du jeu et de la culture du Sud : il n'est jamais tué ici,
 ## seulement capturé, escorté ou repris (GDD §3, §7).
 
@@ -9,6 +10,7 @@ enum Etat { SAUVAGE, SUIT, ENCLOS }
 
 const VITESSE_ERRANCE := 1.0       # pas tranquille d'un zébu qui pâture
 const VITESSE_PAS_BROUTE := 0.35   # quelques pas lents, tête basse, d'une touffe à l'autre
+const VITESSE_TRAJET := 1.3        # mené au pâturage ou ramené au parc : pas soutenu
 const RAYON_PATURAGE := 11.0       # un troupeau sauvage se disperse sur ~22 m autour de son centre
 # Modèle 3D (assets/models/animaux/LISEZMOI.md) : vitesses auxquelles ses animations sont calées.
 const MODELE := preload("res://assets/models/animaux/zebu.glb")
@@ -42,6 +44,7 @@ var vole := false                 # pris dans l'enclos ou l'escorte d'un autre c
 var victime := GameRules.WILD     # clan à qui il a été volé (pour les traces)
 var immobile_jusqua := -INF       # tenu par un Dahalo qui le détache : il ne bouge pas
 var date_securisation := -INF     # temps de jeu de la dernière mise en enclos
+var dehors := false               # zébu d'enclos sorti au pâturage (aller et retour compris)
 
 var _cible_errance := Vector3.ZERO
 
@@ -50,7 +53,7 @@ var _modele: Node3D
 var _animations: AnimationPlayer
 var _anims := {}   # "repos", "marche", "course", "brouter", "se_coucher", "couche", "dort" -> nom importé
 
-enum Activite { DEBOUT, BROUTE, MANGE, BOIT, COUCHE }
+enum Activite { DEBOUT, BROUTE, MANGE, BOIT, COUCHE, TRAJET }
 enum Posture { DEBOUT, DESCEND, COUCHE, SE_LEVE }
 var activite := Activite.DEBOUT
 var _posture := Posture.DEBOUT
@@ -63,7 +66,10 @@ var _vers_herbe := false       # en broutant : il marche encore vers le coin d'h
 var _arrive := false           # arrivé à sa cible
 var _dort := false             # couché pour la nuit (tête posée) plutôt que pour ruminer
 var _regard := Vector3.ZERO    # point à regarder une fois arrivé (fourrage, auge)
-var _limite_marche := 0.0      # pour se coucher : au-delà, il se couche où il est
+var _limite_marche := 0.0      # pour se coucher : au-delà, il se couche où il est ; en trajet : étape suivante
+var _chemin: Array[Vector3] = []   # trajet entre l'enclos et le pâturage (par la porte)
+var _trajet_sortie := false        # le trajet en cours va vers le pâturage (sinon, il rentre)
+var _depart_prevu := false         # il a remarqué qu'il doit sortir ou rentrer (départs échelonnés)
 
 
 func _ready() -> void:
@@ -165,14 +171,14 @@ func peut_etre_capture_par(faction: int) -> bool:
 
 func duree_capture() -> float:
 	if etat == Etat.ENCLOS and proprietaire != GameRules.WILD:
-		return GameRules.DUREE_DETACHER_S
+		return GameRules.DUREE_CAPTURE_PATURAGE_S if dehors else GameRules.DUREE_DETACHER_S
 	return GameRules.DUREE_CAPTURE_SAUVAGE_S
 
 
 ## Un Dahalo commence à le détacher : l'enclos donne l'alerte.
 func debut_detachement(_par) -> void:
 	if etat == Etat.ENCLOS and is_instance_valid(enclos) and enclos.has_method("signaler_intrusion"):
-		enclos.signaler_intrusion()
+		enclos.signaler_intrusion(dehors, global_position)
 
 
 func suivre(unite) -> void:
@@ -183,13 +189,15 @@ func suivre(unite) -> void:
 	if etat == Etat.ENCLOS and proprietaire != GameRules.WILD:
 		ResourceManager.zebu_perdu(proprietaire)
 		if proprietaire == GameRules.PLAYER:
-			EventBus.message.emit("Alerte : des Dahalo volent un zébu dans votre enclos !")
+			EventBus.message.emit("Alerte : des Dahalo volent un zébu %s !"
+					% ("au pâturage" if dehors else "dans votre enclos"))
 	elif etat == Etat.SUIT and is_instance_valid(meneur):
 		meneur.zebus_escortes.erase(self)
 		if meneur.faction == GameRules.PLAYER:
 			EventBus.message.emit("Un zébu de votre escorte a été repris !")
 	etat = Etat.SUIT
 	enclos = null
+	_quitter_paturage()
 	meneur = unite
 	proprietaire = unite.faction
 	unite.zebus_escortes.append(self)
@@ -202,6 +210,7 @@ func securiser(e) -> void:
 	meneur = null
 	etat = Etat.ENCLOS
 	enclos = e
+	_quitter_paturage()
 	proprietaire = e.faction
 	centre_errance = e.global_position
 	rayon_errance = 2.8
@@ -231,6 +240,7 @@ func fuir() -> void:
 	enclos = null
 	meneur = null
 	vole = false
+	_quitter_paturage()
 	proprietaire = GameRules.WILD
 	centre_errance = destination
 	rayon_errance = RAYON_PATURAGE
@@ -246,6 +256,7 @@ func liberer() -> void:
 
 
 func _relacher() -> void:
+	_quitter_paturage()
 	etat = Etat.SAUVAGE
 	meneur = null
 	proprietaire = GameRules.WILD
@@ -301,6 +312,9 @@ func _physics_process(delta: float) -> void:
 		tolerance = 0.4
 	elif activite == Activite.BROUTE and _pas_de_broute and not _vers_herbe:
 		vitesse = VITESSE_PAS_BROUTE
+	elif activite == Activite.TRAJET:
+		vitesse = VITESSE_TRAJET
+		tolerance = 0.9   # la porte est étroite : pas besoin d'y passer pile au centre
 
 	var dir := cible - global_position
 	dir.y = 0.0
@@ -337,10 +351,18 @@ func _tourner_vers(dir: Vector3, part: float) -> void:
 ## Choisit et déroule l'activité du moment (zébu sauvage ou en enclos). Pas d'effet sur les règles : le
 ## cheptel consomme toujours la nourriture et l'eau du clan (ResourceManager) ; c'est la vie du troupeau.
 func _comportement() -> void:
+	# Pâturage : quand le troupeau doit sortir ou rentrer, chacun s'y met dans les secondes qui suivent.
+	if etat == Etat.ENCLOS and is_instance_valid(enclos) and activite != Activite.TRAJET and not _depart_prevu \
+			and enclos.troupeau_dehors() != dehors:
+		_depart_prevu = true
+		_fin_activite = minf(_fin_activite, _horloge + randf_range(0.0, 6.0))
 	if _horloge >= _fin_activite:
 		_choisir_activite()
 		return
 	match activite:
+		Activite.TRAJET:
+			if _posture == Posture.DEBOUT and (_arrive or _horloge > _limite_marche):
+				_etape_suivante()
 		Activite.BROUTE:
 			# Il marche d'abord jusqu'au coin d'herbe choisi ; puis il alterne : tête au sol quelques secondes,
 			# quelques pas lents vers la touffe voisine.
@@ -373,6 +395,11 @@ func _choisir_activite() -> void:
 	_regard = Vector3.ZERO
 	_pas_de_broute = false
 	_vers_herbe = false
+	_depart_prevu = false
+	if etat == Etat.ENCLOS and is_instance_valid(enclos) and enclos.troupeau_dehors() != dehors:
+		_se_lever(false)
+		_partir(not dehors)
+		return
 	if _posture == Posture.COUCHE or _posture == Posture.DESCEND:
 		# Couché : il se relève le matin, sinon seulement après un bon moment.
 		if GameClock.est_nuit and randf() < 0.85:
@@ -381,7 +408,7 @@ func _choisir_activite() -> void:
 		_se_lever(false)
 	var nuit := GameClock.est_nuit
 	var tirage := randf()
-	if etat == Etat.ENCLOS and is_instance_valid(enclos):
+	if etat == Etat.ENCLOS and is_instance_valid(enclos) and not dehors:
 		# Le tas de fourrage et l'auge suivent les réserves du clan : vides, il vient quand même et attend devant,
 		# tête haute, et il se couche moins (affamé ou assoiffé, le troupeau s'agite).
 		var a_manger: bool = ResourceManager.quantite(enclos.faction, "nourriture") > 0.0
@@ -399,7 +426,7 @@ func _choisir_activite() -> void:
 		else:
 			_activite_debout()
 		return
-	# Sauvage : surtout brouter le jour, en cherchant l'herbe la plus dense autour du troupeau.
+	# Sauvage, ou au pâturage : surtout brouter le jour, en cherchant l'herbe la plus dense autour du troupeau.
 	if nuit:
 		_activite_couche(tirage < 0.8)
 	elif tirage < 0.6:
@@ -412,6 +439,54 @@ func _choisir_activite() -> void:
 		_activite_couche(false)
 	else:
 		_activite_debout()
+
+
+## Pâturage : sortir par la porte jusqu'au coin d'herbe, ou rentrer par la porte jusqu'à une place dans l'enclos.
+func _partir(sortie: bool) -> void:
+	activite = Activite.TRAJET
+	_fin_activite = INF
+	_trajet_sortie = sortie
+	dehors = true
+	var decale := func() -> Vector3: return Vector3(randf_range(-0.5, 0.5), 0.0, randf_range(-0.6, 0.6))
+	_chemin.clear()
+	var a := randf() * TAU
+	if sortie:
+		centre_errance = enclos.centre_paturage
+		rayon_errance = GameRules.PATURAGE_RAYON
+		var ici: Vector3 = global_position - enclos.global_position
+		if absf(ici.x) < 4.2 and absf(ici.z) < 4.2:   # encore dans l'enclos : par la porte
+			_chemin.append(enclos.porte_dedans() + decale.call())
+			_chemin.append(enclos.porte_dehors() + decale.call())
+		_chemin.append(_borne_troupeau(centre_errance + Vector3(cos(a), 0.0, sin(a)) * sqrt(randf()) * rayon_errance))
+	else:
+		centre_errance = enclos.global_position
+		rayon_errance = 2.8
+		_chemin.append(enclos.porte_dehors() + decale.call())
+		_chemin.append(enclos.porte_dedans() + decale.call())
+		_chemin.append(enclos.global_position + Vector3(cos(a), 0.0, sin(a) - 0.3) * sqrt(randf()) * 2.2)
+	_etape_suivante()
+
+
+func _etape_suivante() -> void:
+	if _chemin.is_empty():
+		if not _trajet_sortie:
+			dehors = false   # rentré : de nouveau tenu par la clôture
+		activite = Activite.DEBOUT
+		_fin_activite = _horloge + randf_range(0.5, 2.0)
+		return
+	_cible_errance = _chemin.pop_front()
+	_cible_errance.y = 0.0
+	_arrive = false
+	_limite_marche = _horloge + global_position.distance_to(_cible_errance) * 1.6 + 8.0
+
+
+## Plus au pâturage (volé, enfui, relâché, de nouveau sécurisé) : le trajet en cours est abandonné.
+func _quitter_paturage() -> void:
+	dehors = false
+	_chemin.clear()
+	_depart_prevu = false
+	if activite == Activite.TRAJET:
+		activite = Activite.DEBOUT
 
 
 func _activite_debout() -> void:
@@ -430,7 +505,7 @@ func _activite_couche(longtemps: bool) -> void:
 	for essai in 6:
 		var a := randf() * TAU
 		_cible_errance = _borne_troupeau(centre_errance + Vector3(cos(a), 0.0, sin(a)) * sqrt(randf()) * rayon_errance * 0.9)
-		if etat != Etat.ENCLOS or not is_instance_valid(enclos):
+		if etat != Etat.ENCLOS or not is_instance_valid(enclos) or dehors:
 			break
 		var local: Vector3 = _cible_errance - enclos.global_position
 		if Vector2(local.x, local.z).distance_to(Vector2(Maisons.FOURRAGE_ENCLOS.x, Maisons.FOURRAGE_ENCLOS.z)) > 2.0 \
@@ -565,7 +640,7 @@ func _ecartement() -> Vector3:
 			continue
 		poussee += _poussee(_point_proche(axe[0], axe[1], p), p, ECART_PERSONNES)
 	# Dans l'enclos : on ne marche pas dans le fourrage ni dans l'auge.
-	if etat == Etat.ENCLOS and is_instance_valid(enclos):
+	if etat == Etat.ENCLOS and is_instance_valid(enclos) and not dehors:
 		var fourrage: Vector3 = enclos.global_position + Maisons.FOURRAGE_ENCLOS
 		fourrage.y = 0.0
 		poussee += _poussee(_point_proche(axe[0], axe[1], fourrage), fourrage, 1.0)
@@ -622,7 +697,7 @@ static func _points_proches(a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> A
 
 ## Dans l'enclos, les deux bouts du corps restent à l'intérieur de la clôture (carré arrondi, non tourné).
 func _rester_dans_enclos() -> void:
-	if etat != Etat.ENCLOS:
+	if etat != Etat.ENCLOS or dehors:
 		return
 	var axe := _axe_corps()
 	var centre := Vector3(centre_errance.x, 0.0, centre_errance.z)

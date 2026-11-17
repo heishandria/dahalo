@@ -71,6 +71,15 @@ const INTERVALLE_FUITE_S := 20.0       # en manque d'eau ou de nourriture, un z�
 # tout le cheptel, puis ils baissent ; vides quand la réserve est à zéro (les zébus n'y vont plus).
 const RESERVE_ENCLOS_PLEIN_MIN := 3.0
 
+# --- Pâturage : les zébus d'un enclos sortent le jour, gardés par un villageois (docs/specs/zebus.md §4) ---
+const PATURAGE_FACTEUR_NOURRITURE := 0.25  # part de sa ration qu'un zébu au pâturage prend sur les réserves
+const PATURAGE_DISTANCE_MIN := 14.0        # le coin d'herbe choisi est entre ces distances de l'enclos (m)
+const PATURAGE_DISTANCE_MAX := 28.0
+const PATURAGE_RAYON := 7.0                # le troupeau se disperse dans ce rayon autour du coin d'herbe
+const PATURAGE_RETOUR_AVANT_NUIT_S := 30.0 # le troupeau rentre avant la tombée de la nuit
+const PATURAGE_SORTIE_APRES_AUBE_S := 5.0
+const DUREE_CAPTURE_PATURAGE_S := 2.0      # voler un zébu au pâturage (4 s dans l'enclos)
+
 # --- Bâtiments ---
 const COUTS_BATIMENTS := {
 	"enclos": {"bois": 100.0},

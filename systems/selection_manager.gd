@@ -211,6 +211,14 @@ func _placer_fantome(pos: Vector3) -> bool:
 	return valide
 
 
+## Mener le troupeau de l'enclos sélectionné au pâturage (avec un gardien), ou le garder au parc.
+func basculer_paturage() -> void:
+	var e = batiment_selectionne
+	if not _batiment_valide(e) or e.type_batiment != "enclos":
+		return
+	CommandBus.emettre({"type": "paturage", "faction": GameRules.PLAYER, "enclos": e.id, "actif": not e.paturage})
+
+
 func commercer(action: String) -> void:
 	CommandBus.emettre({"type": "commerce", "faction": GameRules.PLAYER, "action": action})
 

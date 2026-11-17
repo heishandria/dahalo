@@ -31,6 +31,8 @@ Prélevé en continu, uniquement pour les zébus **sécurisés en enclos** (pas 
 | Nourriture | 0,04 | 2,4 |
 
 - 20 zébus = **60 eau/min + 48 nourriture/min**. Le HUD affiche la consommation (« −X/min »).
+- **Pâturage** : un zébu mené dehors le jour ne prend que **25 %** de sa ration de nourriture (l'eau ne change
+  pas) ; en échange, il se vole plus vite. Voir `zebus.md` §4.
 - **Manque** : si l'eau **ou** la nourriture tombe à 0, un message d'alerte s'affiche, puis **un zébu s'enfuit
   toutes les 20 s** tant que le manque dure. Il quitte l'enclos, part à ~22 m et redevient sauvage.
 - **Signal visuel** : le tas de fourrage et l'eau de l'auge de chaque enclos restent pleins tant qu'il reste

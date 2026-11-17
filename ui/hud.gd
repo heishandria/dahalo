@@ -144,6 +144,11 @@ func _remplir_contexte() -> void:
 		for role in roles:
 			var data: UnitData = CommandBus.monde.donnees_unite(role)
 			_bouton_contexte(ligne, selection_mgr.former.bind(role), _etat_formation.bind(role), data.description)
+	if b.type_batiment == "enclos":
+		var ligne := _ligne_contexte("Troupeau")
+		_bouton_contexte(ligne, selection_mgr.basculer_paturage, _etat_paturage,
+				"Le jour, un villageois mène les zébus brouter dehors : ils mangent beaucoup moins sur les réserves, "
+				+ "mais se volent plus vite. Ils rentrent avant la nuit.")
 	if b.type_batiment == "tsena":
 		var ligne := _ligne_contexte("Marché")
 		for action in ACTIONS_TSENA:
@@ -192,6 +197,13 @@ func _texte_etat(b) -> String:
 					ici += 1
 			lignes.append("Zébus dans cet enclos : %d   |   Cheptel : %d / %d" % [ici, ResourceManager.nb_zebus(f),
 					ResourceManager.capacite_zebus(f)])
+			if b.paturage:
+				var dehors := 0
+				for z in get_tree().get_nodes_in_group("zebus"):
+					if z.enclos == b and z.etat == Zebu.Etat.ENCLOS and z.dehors:
+						dehors += 1
+				lignes.append("Pâturage : %d dehors, gardés par un villageois%s" % [dehors,
+						"" if b.troupeau_dehors() else " (sortie au matin)"])
 		"palissade":
 			lignes.append("Solidité : %d / %d" % [int(b.pv), int(GameRules.PALISSADE_PV)])
 	if b.en_formation > 0:
@@ -228,6 +240,15 @@ func _etat_recherche(tech: String) -> Dictionary:
 	var cout: Dictionary = def["cout"]
 	# Une seule recherche à la fois par bâtiment.
 	return {"texte": texte + _cout_court(cout), "actif": occupe == "", "payable": ResourceManager.peut_payer(f, cout)}
+
+
+func _etat_paturage() -> Dictionary:
+	var b = selection_mgr.batiment_selectionne
+	if b == null or b.type_batiment != "enclos":
+		return {"texte": "", "actif": false}
+	if b.paturage:
+		return {"texte": "Garder\nau parc", "actif": true}
+	return {"texte": "Mener au\npâturage", "actif": true}
 
 
 func _etat_commerce(action: String) -> Dictionary:

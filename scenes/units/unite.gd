@@ -5,7 +5,7 @@ extends CharacterBody3D
 ## (spec : docs/specs/combat.md). Les zébus, eux, ne sont jamais tués.
 ## Machine à états simple ; les ordres arrivent uniquement via executer(), appelé par CommandBus.
 
-enum Etat { INACTIF, DEPLACEMENT, VERS_RESSOURCE, RECOLTE, RETOUR_DEPOT, CAPTURE, PILLAGE, ATTAQUE, MORT }
+enum Etat { INACTIF, DEPLACEMENT, VERS_RESSOURCE, RECOLTE, RETOUR_DEPOT, CAPTURE, PILLAGE, ATTAQUE, MORT, GARDE }
 
 const DIST_RECOLTE := 2.2
 const DIST_DEPOT := 3.5
@@ -30,6 +30,9 @@ var _timer_recolte := 0.0
 var cible_zebu = null        # Zebu
 var zebus_escortes: Array = []
 var cible_enclos = null     # Batiment (enclos adverse) pendant un pillage
+var troupeau_garde = null    # Batiment (enclos du clan) dont il garde le troupeau au pâturage
+var _allure_troupeau := false   # gardien près de son troupeau : il marche au pas des zébus
+var _en_route_garde := false
 
 # Combat
 var pv := 1.0
@@ -101,6 +104,7 @@ func executer(cmd: Dictionary, rang: int = 0) -> void:
 		return
 	_fin_capture()
 	_sabotage_auto = false
+	troupeau_garde = null   # un autre ordre : il quitte le troupeau (l'enclos le fait rentrer)
 	_derniere_commande = cmd
 	_dernier_rang = rang
 	match cmd.get("type", ""):
@@ -193,8 +197,49 @@ func est_inactif() -> bool:
 	return etat == Etat.INACTIF
 
 
+## Gardien du troupeau d'un enclos au pâturage (commande « paturage », choisi par l'enclos).
+func garder(e) -> void:
+	if mort:
+		return
+	_stop()
+	troupeau_garde = e
+	etat = Etat.GARDE
+	_en_route_garde = true
+
+
+func liberer_garde() -> void:
+	troupeau_garde = null
+	if etat == Etat.GARDE:
+		_stop()
+
+
+## Où se tient le gardien : un peu en retrait du troupeau, du côté du village ; à la porte si le troupeau
+## est à l'enclos.
+func _poste_de_garde() -> Vector3:
+	var e = troupeau_garde
+	var somme := Vector3.ZERO
+	var n := 0
+	for z in get_tree().get_nodes_in_group("zebus"):
+		if z.enclos == e and z.dehors and z.etat == Zebu.Etat.ENCLOS:
+			somme += z.global_position
+			n += 1
+	if n == 0:
+		if e.troupeau_dehors():
+			return e.centre_paturage
+		return e.porte_dehors() + Vector3(1.8, 0.0, 0.5)
+	var centre := somme / n
+	var vers_village: Vector3 = e.global_position - centre
+	vers_village.y = 0.0
+	if vers_village.length() > 0.1:
+		centre += vers_village.normalized() * 3.0
+	centre.y = 0.0
+	return centre
+
+
 func vitesse_actuelle() -> float:
 	var v := data.vitesse
+	if etat == Etat.GARDE and _allure_troupeau:
+		return minf(v, 1.4)
 	if not zebus_escortes.is_empty():
 		v *= GameRules.MALUS_VITESSE_ESCORTE_RAID_ECLAIR if ResourceManager.a_technologie(faction, "raid_eclair") \
 				else GameRules.MALUS_VITESSE_ESCORTE
@@ -377,6 +422,24 @@ func _physics_process(delta: float) -> void:
 			return
 		Etat.MORT:
 			return
+		Etat.GARDE:
+			if not _valide(troupeau_garde):
+				liberer_garde()
+				return
+			var poste := _poste_de_garde()
+			var distance := global_position.distance_to(poste)
+			_allure_troupeau = distance < 12.0
+			if _en_route_garde and (distance < 1.5 or (distance < 3.0 and agent.is_navigation_finished())):
+				_en_route_garde = false
+			elif not _en_route_garde and distance > 4.0:
+				_en_route_garde = true
+			if not _en_route_garde:
+				velocity = Vector3.ZERO
+				_deplacement_demande = false
+				_repere_blocage = Vector3.INF
+				return
+			if agent.target_position.distance_to(poste) > 1.0:
+				agent.target_position = poste
 		Etat.ATTAQUE:
 			if not _ennemi_valide(cible_attaque) or not Vision.est_visible(faction, cible_attaque.global_position):
 				cible_attaque = null
@@ -470,7 +533,7 @@ func _avancer() -> void:
 	# Coincée en chemin (foule, obstacle) : elle abandonne et redevient disponible pour un autre ordre.
 	# Pas pendant une attaque (sabotage d'une palissade) ni pendant la récolte (allers-retours qui reprennent).
 	if etat != Etat.ATTAQUE and _est_bloquee():
-		if etat in [Etat.VERS_RESSOURCE, Etat.RETOUR_DEPOT]:
+		if etat in [Etat.VERS_RESSOURCE, Etat.RETOUR_DEPOT, Etat.GARDE]:
 			agent.target_position = agent.target_position   # recalcule le chemin et réessaie
 			return
 		_stop()
@@ -662,7 +725,8 @@ func _capturer(z) -> void:
 func _prochain_zebu_a_piller() -> void:
 	if zebus_escortes.size() < GameRules.MAX_ZEBUS_ESCORTE and _valide(cible_enclos):
 		var dans_enclos := func(z) -> bool:
-			return z.etat == Zebu.Etat.ENCLOS and z.enclos == cible_enclos and z.peut_etre_capture_par(faction)
+			return z.etat == Zebu.Etat.ENCLOS and not z.dehors and z.enclos == cible_enclos \
+					and z.peut_etre_capture_par(faction)
 		var proie = _plus_proche(get_tree().get_nodes_in_group("zebus"), dans_enclos)
 		if proie != null:
 			cible_zebu = proie

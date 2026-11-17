@@ -53,7 +53,7 @@
 | Case centrale | Dépôt de toutes les ressources | Former : Villageois, Pisteur ; Recherche : âges et technologies de la Case |
 | Case des Hommes | — | Former : Dahalo, Lanceur, Tireur ; Recherche : Sagaies acérées, Raid éclair |
 | Tsena | — | Marché : vendre zébu, acheter bois / nourriture, vendre bois / nourriture, acheter zébu ; Recherche : Maîtres du Tsena |
-| Enclos | Zébus dans cet enclos, cheptel / capacité | — |
+| Enclos | Zébus dans cet enclos, cheptel / capacité ; au pâturage : nombre dehors | Troupeau : Mener au pâturage / Garder au parc (`zebus.md` §4) |
 | Camp de bûcherons | Dépôt de bois | — |
 | Palissade | Solidité (PV / 150) | — |
 
