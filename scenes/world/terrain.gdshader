@@ -1,25 +1,34 @@
-// Sol de l'Androy : latérite, plaques de sable, herbe sèche ; roche calcaire sur les pentes et les hauteurs.
-// Utilisé par le sol de la zone de jeu ET par le relief qui l'entoure (raccord sans couture).
-// Bruit calculé dans le shader (aucune texture) : même rendu sur PC, Web et mobile.
+// Sol de l'Androy en textures photo (Poly Haven, CC0 ; voir assets/textures/terrain/LISEZMOI.md) :
+// latérite rouge, plaques de sable, herbe (verte en saison normale, fanée en sécheresse), lit de rivière
+// (sable, craquelé en sécheresse), plateaux (dessus caillouteux, parois de falaise) et relief autour.
+// Les masques (où mettre quoi) sont calculés ici avec du bruit ; les textures donnent la matière.
+// Utilisé par le sol de la zone de jeu, les plateaux et le relief : raccords sans couture.
 shader_type spatial;
 render_mode diffuse_lambert, specular_disabled, cull_disabled;   // parois des plateaux : sens des triangles indifférent
 
 uniform float secheresse : hint_range(0.0, 1.0) = 0.0;
-uniform vec3 couleur_laterite : source_color = vec3(0.72, 0.36, 0.2);
-uniform vec3 couleur_laterite_sombre : source_color = vec3(0.56, 0.27, 0.16);
-uniform vec3 couleur_sable : source_color = vec3(0.8, 0.6, 0.42);
-uniform vec3 couleur_herbe : source_color = vec3(0.58, 0.52, 0.3);         // herbe sèche, dorée (sécheresse)
-uniform vec3 couleur_herbe_verte : source_color = vec3(0.4, 0.48, 0.22);  // herbe reverdie (saison normale)
-uniform vec3 couleur_roche : source_color = vec3(0.74, 0.61, 0.46);   // calcaire du plateau Mahafaly
-uniform vec3 couleur_lit : source_color = vec3(0.8, 0.63, 0.43);     // sable clair du lit de rivière
+
+// Textures (couleur ; relief = normal map au format OpenGL). Le rendu Web (Compatibility) limite un shader
+// à 16 textures, moteur compris : en garder 11 au plus ici (le sable et le dessus reprennent le relief de la latérite).
+uniform sampler2D tex_laterite : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D tex_laterite_relief : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D tex_herbe_verte : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D tex_herbe_seche : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D tex_sable : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D tex_craquele : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D tex_falaise : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D tex_falaise_relief : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D tex_dessus : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float taille_motif = 7.0;        // mètres couverts par une répétition des textures de sol
+uniform float taille_falaise = 6.0;
+uniform float force_relief = 0.8;
+uniform vec3 etalonnage : source_color = vec3(1.12, 0.98, 0.86);   // teinte d'ensemble (poussière chaude)
+
 // Lit de rivière : distance au milieu du lit (rouge = distance / distance_max), fournie par Terrain.
 uniform sampler2D distances_riviere : filter_linear, repeat_disable, hint_default_white;
 uniform float etendue = 280.0;
 uniform float distance_max = 32.0;
 uniform float largeur_riviere = 11.0;
-
-uniform vec3 couleur_dessus : source_color = vec3(0.78, 0.62, 0.42);   // dessus des plateaux : calcaire et herbe rase
-uniform vec3 couleur_paroi : source_color = vec3(0.5, 0.3, 0.2);      // parois des plateaux : terre brune
 
 // Brouillard sur les plateaux : ils dépassent le voile posé au sol, ils sont donc assombris ici.
 uniform sampler2D carte_vision : filter_linear, hint_default_white;   // R = visible, G = exploré
@@ -48,6 +57,13 @@ float bruit_fractal(vec2 p) {
 	return 0.5 * bruit(p) + 0.3 * bruit(p * 2.1 + 17.0) + 0.2 * bruit(p * 4.3 + 41.0);
 }
 
+// Normal map (OpenGL) -> normale dans le monde, pour un plan dont on donne les axes.
+vec3 relief(sampler2D carte, vec2 uv, vec3 tangente, vec3 bitangente, vec3 normale, float force) {
+	vec3 n = texture(carte, uv).rgb * 2.0 - 1.0;
+	n.xy *= force;
+	return normalize(tangente * n.x + bitangente * n.y + normale * n.z);
+}
+
 void vertex() {
 	position_monde = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	normale_monde = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
@@ -56,48 +72,63 @@ void vertex() {
 
 void fragment() {
 	vec2 p = position_monde.xz;
+	vec2 uv = p / taille_motif;
+	vec2 uv_large = p / (taille_motif * 2.3) + vec2(0.37, 0.71);   // seconde échelle : casse la répétition
 	float grandes = bruit_fractal(p / 22.0);
 	float moyennes = bruit_fractal(p / 5.0);
-	float grain = bruit(p * 1.7);
+	float pente = 1.0 - clamp(normale_monde.y, 0.0, 1.0);
+	float paroi_relief = smoothstep(0.2, 0.5, pente);
+	vec3 haut = vec3(0.0, 1.0, 0.0);
+	vec3 axe_x = vec3(1.0, 0.0, 0.0);
+	vec3 axe_z = vec3(0.0, 0.0, 1.0);
 
-	vec3 c = mix(couleur_laterite_sombre, couleur_laterite, smoothstep(0.3, 0.7, grandes));
+	// Sol de base : latérite, variée par une terre rouge plus fine en grandes plaques.
+	vec3 laterite = mix(texture(tex_laterite, uv).rgb, texture(tex_laterite, uv_large).rgb, 0.35);
+	// Variation en grandes plaques : la même latérite, à une autre échelle, plus sombre et plus rouge.
+	vec3 variation = texture(tex_laterite, uv * 0.43 + vec2(0.21, 0.63)).rgb * vec3(0.88, 0.74, 0.68);
+	vec3 c = mix(laterite, variation, smoothstep(0.45, 0.7, grandes) * 0.6);
+	vec3 n = relief(tex_laterite_relief, uv, axe_x, axe_z, haut, force_relief);
+
 	// Plaques de sable
-	c = mix(c, couleur_sable, smoothstep(0.6, 0.85, moyennes * 0.5 + grandes * 0.5) * 0.4);
-	// Herbe sèche, qui disparaît presque pendant la sécheresse
-	// Herbe : verte et plus étendue en saison normale, dorée et clairsemée en sécheresse.
-	float herbe = smoothstep(0.5 + 0.1 * secheresse, 0.8, bruit_fractal(p / 12.0 + 5.3)) * (1.0 - 0.7 * secheresse);
-	vec3 teinte_herbe = mix(couleur_herbe_verte, couleur_herbe, secheresse);
-	c = mix(c, teinte_herbe, herbe * mix(0.5, 0.35, secheresse));
-	// Lit de rivière à sec : sable clair, plus sombre et humide au milieu hors sécheresse ; berges herbeuses.
+	float sable_plaques = smoothstep(0.62, 0.85, moyennes * 0.5 + grandes * 0.5) * 0.75;
+	vec3 sable = texture(tex_sable, uv * 0.8).rgb;
+	c = mix(c, sable, sable_plaques);
+
+	// Herbe : verte et plus étendue en saison normale, fanée et clairsemée en sécheresse.
+	float herbe = smoothstep(0.5 + 0.1 * secheresse, 0.78, bruit_fractal(p / 12.0 + 5.3)) * (1.0 - 0.5 * secheresse);
+	vec3 teinte_herbe = mix(texture(tex_herbe_verte, uv * 1.2).rgb, texture(tex_herbe_seche, uv * 1.2).rgb, secheresse);
+
+	// Lit de rivière et berges (plus herbeuses).
 	float d_riviere = texture(distances_riviere, (p + etendue) / (2.0 * etendue)).r * distance_max;
 	float demi = largeur_riviere * 0.5;
 	float berge = 1.0 - smoothstep(demi, demi + 6.0, d_riviere);
-	c = mix(c, teinte_herbe * 0.9, berge * 0.45 * (1.0 - 0.6 * secheresse));
-	vec3 sable = couleur_lit * (0.92 + 0.12 * moyennes);
-	sable = mix(sable, sable * 0.78, (1.0 - smoothstep(0.0, demi * 0.6, d_riviere)) * (1.0 - secheresse));
-	c = mix(c, sable, 1.0 - smoothstep(demi - 1.0, demi + 0.8, d_riviere + (grain - 0.5) * 1.2));
-	// Roche calcaire : pentes raides et hauteurs du relief
-	float pente = 1.0 - clamp(normale_monde.y, 0.0, 1.0);
-	float roche = clamp(smoothstep(0.15, 0.4, pente) + 0.6 * smoothstep(8.0, 20.0, position_monde.y), 0.0, 1.0);
-	// Sur les parois, le bruit est pris à la verticale (sinon il s'étire) : strates calcaires horizontales.
-	float paroi = smoothstep(0.2, 0.5, pente);
-	float strates = bruit_fractal(vec2(position_monde.x + position_monde.z, position_monde.y * 2.5) / 4.0);
-	float texture_roche = mix(moyennes, strates, paroi);
-	vec3 c_roche = couleur_roche * (0.8 + 0.35 * texture_roche);
-	c_roche *= 0.92 + 0.08 * sin(position_monde.y * 2.2 + strates * 4.0);
-	c = mix(c, c_roche, roche);
-	// Lecture du relief en vue isométrique : creux plus sombres, hauteurs plus claires
-	c *= 0.88 + 0.3 * smoothstep(0.0, 28.0, position_monde.y);
-	// Plateaux en paliers : dessus plus clair (calcaire, herbe rase), parois de terre brune à strates.
-	vec3 dessus = mix(couleur_dessus * (0.9 + 0.2 * moyennes), teinte_herbe, herbe * 0.6);
-	c = mix(c, dessus, role.x);
-	vec3 terre = couleur_paroi * (0.85 + 0.3 * strates);
-	terre *= 0.88 + 0.12 * sin(position_monde.y * 3.0 + strates * 3.0);
-	c = mix(c, terre, role.y);
-	// Sécheresse : tout pâlit et tire vers l'ocre
-	c = mix(c, c * vec3(1.1, 1.02, 0.92) + 0.06, secheresse);
+	herbe = max(herbe, berge * 0.7 * (1.0 - 0.5 * secheresse));
+	c = mix(c, teinte_herbe, herbe * 0.8);
+	float lit = 1.0 - smoothstep(demi - 1.0, demi + 0.8, d_riviere + (bruit(p * 1.7) - 0.5) * 1.2);
+	vec3 fond_lit = mix(sable, texture(tex_craquele, uv * 0.7).rgb, secheresse * smoothstep(0.0, demi, demi - d_riviere + 1.0));
+	c = mix(c, fond_lit, lit);
+	n = normalize(mix(n, relief(tex_laterite_relief, uv * 0.8, axe_x, axe_z, haut, force_relief * 0.6), lit));
 
-	c *= 0.9 + 0.2 * mix(grain, 0.5, paroi);
+	// Parois : plateaux (role.y) et pentes raides du relief. Texture de falaise posée à la verticale.
+	vec2 uv_paroi = vec2(position_monde.x + position_monde.z, position_monde.y) / taille_falaise;
+	vec3 falaise = texture(tex_falaise, uv_paroi).rgb;
+	float paroi = clamp(max(role.y, paroi_relief + 0.6 * smoothstep(8.0, 20.0, position_monde.y)), 0.0, 1.0);
+	vec3 n_falaise = relief(tex_falaise_relief, uv_paroi, normalize(vec3(0.7071, 0.0, 0.7071)), haut, normale_monde, force_relief);
+	c = mix(c, falaise, paroi);
+	n = normalize(mix(n, n_falaise, paroi));
+
+	// Dessus des plateaux : sol sec et caillouteux, un peu d'herbe.
+	vec3 dessus = mix(texture(tex_dessus, uv).rgb, teinte_herbe, herbe * 0.5);
+	vec3 n_dessus = relief(tex_laterite_relief, uv * 1.1, axe_x, axe_z, haut, force_relief);
+	c = mix(c, dessus, role.x);
+	n = normalize(mix(n, n_dessus, role.x));
+
+	// Lecture du relief en vue isométrique : creux plus sombres, hauteurs plus claires.
+	c *= 0.9 + 0.22 * smoothstep(0.0, 28.0, position_monde.y);
+	// Sécheresse : tout pâlit un peu et tire vers l'ocre.
+	c = mix(c, c * vec3(1.08, 1.02, 0.92) + 0.03, secheresse);
+	c *= etalonnage;
+
 	if (role.x + role.y > 0.01) {
 		vec4 v = texture(carte_vision, (p + demi_carte) / (2.0 * demi_carte));
 		float voile = mix(1.0, opacite_exploree, v.g);
@@ -105,5 +136,6 @@ void fragment() {
 		c = mix(c, vec3(0.05, 0.035, 0.03), voile);
 	}
 	ALBEDO = c;
-	ROUGHNESS = 1.0;
+	NORMAL = normalize((VIEW_MATRIX * vec4(n, 0.0)).xyz);
+	ROUGHNESS = 0.95;
 }

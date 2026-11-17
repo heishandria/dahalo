@@ -24,6 +24,19 @@ var _bruit := FastNoiseLite.new()
 var _bruit_fin := FastNoiseLite.new()
 var _hasard := RandomNumberGenerator.new()
 var _materiau_relief := ShaderMaterial.new()
+# Textures photo du terrain (Poly Haven, CC0) : voir assets/textures/terrain/LISEZMOI.md.
+const DOSSIER_TEXTURES := "res://assets/textures/terrain/"
+const TEXTURES_TERRAIN := {
+	"tex_laterite": "red_laterite_soil_stones_couleur.jpg",
+	"tex_laterite_relief": "red_laterite_soil_stones_relief.jpg",
+	"tex_herbe_verte": "sparse_grass_couleur.jpg",
+	"tex_herbe_seche": "withered_grass_couleur.jpg",
+	"tex_sable": "gravelly_sand_couleur.jpg",
+	"tex_craquele": "mud_cracked_dry_riverbed_002_couleur.jpg",
+	"tex_falaise": "cliff_side_couleur.jpg",
+	"tex_falaise_relief": "cliff_side_relief.jpg",
+	"tex_dessus": "dry_ground_rocks_couleur.jpg",
+}
 var _materiau_eau := ShaderMaterial.new()
 var _secheresse := 0.0      # 0 : saison normale ; 1 : sécheresse (fondu entre les deux)
 var _fondu: Tween
@@ -41,6 +54,8 @@ func construire() -> void:
 	_materiau_relief.shader = preload("res://scenes/world/terrain.gdshader")
 	_materiau_relief.set_shader_parameter("distances_riviere", Terrain.texture_distances())
 	_materiau_relief.set_shader_parameter("etendue", Terrain.ETENDUE)
+	for parametre in TEXTURES_TERRAIN:
+		_materiau_relief.set_shader_parameter(parametre, load(DOSSIER_TEXTURES + String(TEXTURES_TERRAIN[parametre])))
 	EventBus.meteo_change.connect(_on_meteo)
 	_creer_sol_jeu()
 	_creer_eau()

@@ -66,12 +66,28 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
 
 ## 4. Sol
 
-- Un seul shader pour le sol de la zone de jeu **et** le relief : raccord sans couture au bord.
-- Latérite rouge plus ou moins sombre, plaques de sable, **herbe sèche** ; roche calcaire beige sur les pentes et les
-  hauteurs, avec des **strates horizontales** sur les parois.
-- **Saisons** : en saison normale l'herbe est **verte** et plus étendue ; en **sécheresse** elle devient dorée et
-  clairsemée, tout pâlit et tire vers l'ocre (sol, plateaux et relief ; fondu de 6 s via `EventBus.meteo_change`).
-- Bruit calculé dans le shader, sans texture : même rendu sur PC, Web (Compatibility) et mobile.
+- **Textures photo** (Poly Haven, CC0 ; `assets/textures/terrain/LISEZMOI.md`), un seul shader pour le sol de la
+  zone de jeu, les plateaux et le relief (raccords sans couture) :
+
+| Zone | Texture |
+|---|---|
+| Sol de base | Latérite rouge caillouteuse, variée en grandes plaques |
+| Plaques de sable, lit de rivière | Sable graveleux |
+| Herbe (plaques, berges) | Herbe clairsemée verte ; **herbe fanée en sécheresse** |
+| Lit de rivière en sécheresse | **Boue craquelée** |
+| Parois des plateaux, pentes du relief | Falaise stratifiée (Namaqualand) |
+| Dessus des plateaux | Sol sec et caillouteux |
+
+- Les masques (où va chaque texture) viennent du bruit et de la distance à la rivière ; textures de relief (normal
+  maps) sur la latérite et la falaise. Étalonnage chaud et poussiéreux.
+- **Saisons** : fondu de 6 s via `EventBus.meteo_change` (herbe, lit, teinte d'ensemble).
+- Le rendu Web limite un shader à 16 textures, moteur compris : le shader du terrain en utilise 11.
+
+## 4 ter. Rendu (direction artistique décidée le 17/11 : « sérieux, un peu réaliste »)
+
+- **PC : Forward+** — occlusion ambiante (SSAO), brume de poussière légère, ombres douces (soleil à 1,5°), contraste
+  +5 %, saturation −10 %. **Mobile** : rendu Mobile ; **Web** : Compatibility (sans SSAO ; brume simple).
+- Lumière ambiante chaude le jour, bleutée la nuit.
 
 ## 4 bis. Végétation basse de la zone de jeu (purement visuel)
 

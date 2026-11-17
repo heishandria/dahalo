@@ -24,6 +24,16 @@ ambient_light_source = 2
 ambient_light_color = Color(0.86, 0.78, 0.68, 1)
 ambient_light_energy = 0.7
 tonemap_mode = 2
+ssao_enabled = true
+ssao_radius = 2.0
+ssao_intensity = 1.6
+fog_enabled = true
+fog_light_color = Color(0.86, 0.76, 0.62, 1)
+fog_density = 0.0008
+fog_sky_affect = 0.0
+adjustment_enabled = true
+adjustment_contrast = 1.05
+adjustment_saturation = 0.9
 
 [sub_resource type="NavigationMesh" id="NavMesh"]
 geometry_parsed_geometry_type = 1
@@ -41,7 +51,10 @@ script = ExtResource("1_main")
 [node name="Soleil" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.866, 0, 0.5, 0.4096, 0.5736, -0.7094, -0.2868, 0.8192, 0.4967, 0, 20, 0)
 light_energy = 1.3
+light_angular_distance = 1.5
 shadow_enabled = true
+shadow_blur = 1.5
+directional_shadow_max_distance = 160.0
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Env")

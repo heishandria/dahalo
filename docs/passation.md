@@ -72,6 +72,10 @@ couleurs ternes et poussiéreuses. Les personnages sont inventés, jamais copié
      l'auteur sur OpenGameArt) intégré : herbes, fleurs, buissons, cailloux, rochers, arbres morts et tordus
      (`assets/models/decor/LISEZMOI.md`). Comparatif des autres sources : page « Sources du décor Dahalo » ;
   5. modèles sur mesure (baobab, épineux, raketa, cases, enclos) via Canva → Tripo.
-- Direction artistique : choisir UN style pour les personnages (3D stylisée, cohérente avec la carte) ;
+- **Direction artistique décidée (17/11)** : la richesse de la référence « maquette » (paliers, eau, végétation
+  dense) mais en **sérieux, un peu réaliste** : textures photo, couleurs ternes et poussiéreuses. **PC d'abord**
+  (Forward+), mobile et Web allégés. Les personnages devront suivre ce ton (plutôt l'image réaliste du villageois
+  que les fiches manga). Le pack Quaternius (stylisé) reste un bouche-trou à remplacer par des modèles plus réalistes ;
   vérifier les cavaliers et les scarifications des fiches Dahalo (culture).
+- Gaea (terrain érodé, Windows, licence payante pour un jeu vendu) : piste pour le relief de fond, plus tard.
 - Mettre le GDD à jour avec les décisions prises ; vérifier les termes malgaches.

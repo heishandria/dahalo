@@ -1,7 +1,8 @@
 # Dahalo : Les Seigneurs des Zébus — consignes pour Claude Code
 
 RTS de gestion et de survie dans le grand Sud de Madagascar (Androy, pays Mahafaly).
-Moteur : **Godot 4.4+**, langage **GDScript**, rendu **Mobile** (cible PC/Steam puis mobile).
+Moteur : **Godot 4.4+**, langage **GDScript**. Rendu **Forward+ sur PC** (cible principale : Steam),
+**Mobile** sur téléphone, **Compatibility** sur le Web (shaders : 16 textures au plus, moteur compris).
 Référence de design : le GDD (projet Claude « Dahalo », doc `GDD-Dahalo.md`). Signaler toute incohérence avec lui.
 
 ## Règles d'architecture (à respecter dans tout nouveau code)
