@@ -9,7 +9,7 @@ extends Node3D
 
 const NOMBRE_HERBE := 9000
 const NOMBRE_FLEURS := 500
-const NOMBRE_BUISSONS := 600
+const NOMBRE_BUISSONS := 1100
 const NOMBRE_CAILLOUX := 450
 const NOMBRE_ROCHERS_PLATEAUX := 140
 const CASE_EXCLUSION := 4.0
@@ -43,7 +43,7 @@ func construire(texture_vision: Texture2D) -> void:
 	_creer("Fleurs", ["Flower_3_Group", "Flower_4_Group"], [], int(NOMBRE_FLEURS * f),
 			{"suit_saison": 0.5, "vent": 1.0, "disparait": 1.0}, exclusions, _placer_herbe.bind(0.28, 0.4))
 	_creer("Buissons", ["Bush_Common", "Bush_Common", "Bush_Common_Flowers"], [_maillage_buisson()],
-			int(NOMBRE_BUISSONS * f), {"suit_saison": 0.8, "vent": 0.3, "teinte_secours": Color(0.38, 0.42, 0.22)},
+			int(NOMBRE_BUISSONS * f), {"suit_saison": 0.35, "vent": 0.3, "teinte_secours": Color(0.38, 0.42, 0.22)},
 			exclusions, _placer_buisson)
 	_creer("Cailloux", ["Pebble_Round_1", "Pebble_Round_2", "Pebble_Round_3", "Pebble_Square_1", "Pebble_Square_2"],
 			[_maillage_caillou()], int(NOMBRE_CAILLOUX * f),
@@ -216,9 +216,14 @@ func _placer_herbe(echelle_min: float, echelle_max: float) -> Transform3D:
 	return Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e, e * _hasard.randf_range(0.85, 1.2), e)), p)
 
 
+## Arbustes regroupés en fourrés (bush du Sud) : denses par plaques, rares ailleurs ; ils restent vert terne
+## en sécheresse (suit_saison faible), contrairement à l'herbe.
 func _placer_buisson() -> Transform3D:
 	var p := _point_au_sol()
 	if p == Vector3.INF or Terrain.dans_riviere(p):
+		return _rien()
+	var fourre := smoothstep(0.05, 0.45, _bruit.get_noise_2d(p.x * 0.6 + 400.0, p.z * 0.6))
+	if _hasard.randf() > 0.12 + 0.88 * fourre:
 		return _rien()
 	var e := _hasard.randf_range(0.32, 0.6)
 	return Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e, e * 0.9, e)), p)

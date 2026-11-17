@@ -95,7 +95,8 @@ void fragment() {
 	c = mix(c, sable, sable_plaques);
 
 	// Herbe : verte et plus étendue en saison normale, fanée et clairsemée en sécheresse.
-	float herbe = smoothstep(0.5 + 0.1 * secheresse, 0.78, bruit_fractal(p / 12.0 + 5.3)) * (1.0 - 0.5 * secheresse);
+	// Couverture : environ un tiers du sol en saison normale (le Sud n'est pas un désert), bien moins en sécheresse.
+	float herbe = smoothstep(0.43 + 0.17 * secheresse, 0.72, bruit_fractal(p / 12.0 + 5.3)) * (1.0 - 0.5 * secheresse);
 	vec3 teinte_herbe = mix(texture(tex_herbe_verte, uv * 1.2).rgb, texture(tex_herbe_seche, uv * 1.2).rgb, secheresse);
 
 	// Lit de rivière et berges (plus herbeuses).

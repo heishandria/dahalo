@@ -79,7 +79,7 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
 |---|---|
 | Sol de base | Latérite rouge caillouteuse, variée en grandes plaques |
 | Plaques de sable, lit de rivière | Sable graveleux |
-| Herbe (plaques, berges) | Herbe clairsemée verte ; **herbe fanée en sécheresse** |
+| Herbe (plaques, berges) | Herbe clairsemée verte sur ~1/3 du sol en saison normale ; **fanée et plus rare en sécheresse** |
 | Lit de rivière en sécheresse | **Boue craquelée** |
 | Parois des plateaux, pentes du relief | Falaise stratifiée (Namaqualand) |
 | Dessus des plateaux | Sol sec et caillouteux |
@@ -113,7 +113,7 @@ si un modèle manque, formes générées par le code.
 |---|---|---|
 | Herbes (4 variantes) | 9 000 / ~3 150 | Par plaques ; **bien plus denses sur les berges** ; aucune dans le sable du lit ; aussi sur le dessus des plateaux. **Dorées en sécheresse** (fondu de 6 s) ; elles **ondulent au vent** |
 | Fleurs (2 variantes) | 500 / 175 | **Disparaissent en sécheresse**, reviennent avec les pluies |
-| Buissons (2 variantes) | 600 / 210 | Vert olive, hors du lit |
+| Buissons (2 variantes) | 1 100 / 385 | **Regroupés en fourrés** (bush du Sud), rares ailleurs ; hors du lit ; **restent vert terne en sécheresse** |
 | Cailloux (5 variantes) | 450 / 157 | |
 | Rochers | 140 / 49 | **Seulement sur le dessus des plateaux** (personne n'y marche : pas de collision) |
 
