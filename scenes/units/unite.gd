@@ -243,7 +243,45 @@ func aller_recolter(r) -> void:
 	type_charge = r.type_ressource
 	cible_ressource = r
 	etat = Etat.VERS_RESSOURCE
-	agent.target_position = r.global_position
+	_poste = _poste_dans_champ(r) if _est_champ(r) else Vector3.INF
+	agent.target_position = _poste if _poste != Vector3.INF else r.global_position
+
+
+# --- Travail aux champs : le villageois entre dans le champ et avance le long des rangs ---
+
+const DUREE_POSTE := Vector2(6.0, 9.0)   # secondes de travail à un même endroit avant d'avancer
+const DEMI_ZONE_CHAMP := 2.2             # les postes restent à l'intérieur de la parcelle (6 × 6 m)
+var _poste := Vector3.INF                # endroit du champ où travailler (Vector3.INF : pas un champ)
+var _chrono_poste := 0.0
+
+
+func _est_champ(n) -> bool:
+	return _valide(n) and n is NoeudRessource and n.type_batiment == "champ"
+
+
+## Poste au hasard dans le champ, entre deux rangs (dans un sillon), pour que les villageois ne s'empilent pas.
+func _poste_dans_champ(champ) -> Vector3:
+	var ecart_rangs := 0.78
+	var x := randf_range(-DEMI_ZONE_CHAMP, DEMI_ZONE_CHAMP)
+	var z := (floorf(randf_range(-DEMI_ZONE_CHAMP, DEMI_ZONE_CHAMP) / ecart_rangs) + 0.5) * ecart_rangs
+	_chrono_poste = randf_range(DUREE_POSTE.x, DUREE_POSTE.y)
+	return champ.global_position + Vector3(x, 0, clampf(z, -DEMI_ZONE_CHAMP, DEMI_ZONE_CHAMP))
+
+
+## Après un moment au même endroit, le villageois avance de quelques pas le long de son rang.
+func _avancer_dans_le_champ(delta: float) -> bool:
+	_chrono_poste -= delta
+	if _chrono_poste > 0.0 or not _est_champ(cible_ressource):
+		return false
+	var suivant := _poste + Vector3(randf_range(0.8, 1.6) * (1.0 if randf() < 0.5 else -1.0), 0, 0)
+	var centre: Vector3 = cible_ressource.global_position
+	if absf(suivant.x - centre.x) > DEMI_ZONE_CHAMP:
+		suivant = _poste_dans_champ(cible_ressource)   # bout du rang : un autre sillon
+	_poste = suivant
+	_chrono_poste = randf_range(DUREE_POSTE.x, DUREE_POSTE.y)
+	etat = Etat.VERS_RESSOURCE
+	agent.target_position = _poste
+	return true
 
 
 # --- Boucle ---
@@ -299,9 +337,15 @@ func _physics_process(delta: float) -> void:
 			if not _valide(cible_ressource):
 				_stop()
 				return
-			if _proche(cible_ressource, DIST_RECOLTE) or _arrivee_au_plus_pres(cible_ressource, DIST_RECOLTE):
+			var arrive := _proche(cible_ressource, DIST_RECOLTE) or _arrivee_au_plus_pres(cible_ressource, DIST_RECOLTE)
+			if _poste != Vector3.INF and _est_champ(cible_ressource):
+				# Champ : on va jusqu'à son poste, au milieu des plants.
+				arrive = global_position.distance_to(_poste) < 0.6 \
+						or (agent.is_navigation_finished() and global_position.distance_to(_poste) < 2.0)
+			if arrive:
 				etat = Etat.RECOLTE
 				_timer_recolte = 0.0
+				velocity = Vector3.ZERO
 				return
 			if agent.is_navigation_finished():
 				# Source hors d'atteinte (arbre au cœur d'un bosquet) : la plus proche du même type, sinon arrêt.
@@ -457,6 +501,8 @@ func _afficher_action(texte: String) -> void:
 # --- Récolte ---
 
 func _recolter(delta: float) -> void:
+	if _avancer_dans_le_champ(delta):
+		return
 	var perdue: bool = not _valide(cible_ressource) or cible_ressource.epuise()
 	if not perdue and not cible_ressource.disponible():
 		if cible_ressource.attendre_recolte():

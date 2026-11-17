@@ -58,7 +58,10 @@ Les sources naturelles sont accessibles à tous les clans ; champs et puits seul
 4. **Vide** : il est **resemé automatiquement pour 15 bois** et repasse en culture : les villageois restés
    sur le champ enchaînent (cultiver → récolter → déposer → cultiver…). Sans bois, il passe **en friche**
    et réessaie toutes les 2 s dès que le bois revient.
-5. Une **étiquette** au-dessus du champ indique l'état : « En culture 40 % – 2 villageois », « Mûr : 150 nourriture »,
+5. **Les villageois entrent dans le champ** : chacun reçoit un poste au hasard dans un sillon, au milieu des
+   plants, et avance de quelques pas le long de son rang toutes les 6 à 9 s (cultiver comme récolter). Prévu pour
+   jouer les animations de travail sur le personnage pendant toute la durée.
+6. Une **étiquette** au-dessus du champ indique l'état : « En culture 40 % – 2 villageois », « Mûr : 150 nourriture »,
    « En friche ».
 
 Chaque clan démarre avec **2 champs mûrs**.
