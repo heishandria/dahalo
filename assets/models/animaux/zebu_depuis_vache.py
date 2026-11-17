@@ -160,8 +160,21 @@ for v in me.vertices:
     k -= 0.22 * smooth(-1.5, -3.8, p.y) * smooth(3.0, 4.3, p.z)
     k -= 0.3 * smooth(1.3, 0.4, p.z)
     k += 0.08 * smooth(2.8, 2.2, p.z) * smooth(1.3, 2.0, p.z)
-    k = max(0.35, min(1.08, k))
+    k = max(0.35, min(1.0, k))
     teinte.data[v.index].color = (k, k, k, 1.0)
+# Position de repos de chaque sommet (en mètres, échelle réelle) dans deux jeux de coordonnées de texture :
+# UV1 = (y, z), UV2 = (x, 0). Le motif de la robe (taches) est calculé dans le jeu à partir de cette position :
+# il suit l'animal quand il bouge.
+for nom in [c.name for c in me.color_attributes if c.name != "Teinte"]:
+    me.color_attributes.remove(me.color_attributes[nom])
+while me.uv_layers:
+    me.uv_layers.remove(me.uv_layers[0])
+uv_yz = me.uv_layers.new(name="Repos_yz")
+uv_x = me.uv_layers.new(name="Repos_x")
+for boucle in me.loops:
+    p = me.vertices[boucle.vertex_index].co * ECHELLE
+    uv_yz.data[boucle.index].uv = (p.y, p.z)
+    uv_x.data[boucle.index].uv = (p.x, 0.0)
 for p in me.polygons:
     p.use_smooth = True
 

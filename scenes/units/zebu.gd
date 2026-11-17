@@ -16,6 +16,10 @@ const SEUIL_COURSE := 2.6
 # Robes courantes des zébus malgaches : rouge-brun, gris, noir, blanc crème, fauve, brun sombre.
 const ROBES := [Color(0.55, 0.3, 0.18), Color(0.62, 0.6, 0.56), Color(0.13, 0.12, 0.11), Color(0.86, 0.82, 0.74),
 		Color(0.72, 0.55, 0.36), Color(0.36, 0.24, 0.17)]
+const BLANC := Color(0.88, 0.85, 0.78)
+# Motifs : unie ~55 %, pie (grandes plaques) ~30 %, tachetée ~15 % (scenes/units/robe_zebu.gdshader).
+const PART_PIE := 0.3
+const PART_TACHETEE := 0.15
 
 var proprietaire := GameRules.WILD
 var etat := Etat.SAUVAGE
@@ -56,16 +60,12 @@ func _creer_modele() -> void:
 	for nom in ["Corps", "Bosse", "Tete"]:
 		(get_node(nom) as Node3D).visible = false
 	marque.position = Vector3(0, 1.55, -0.45)
-	var robe: Color = ROBES[absi(hash(id * 7919)) % ROBES.size()]
+	var robe_mat := _robe_aleatoire()
 	for mi in _modele.find_children("*", "MeshInstance3D", true, false):
 		var maillage: Mesh = (mi as MeshInstance3D).mesh
 		for s in maillage.get_surface_count():
 			var m := maillage.surface_get_material(s)
 			if m != null and m.resource_name == "Robe":
-				var robe_mat := StandardMaterial3D.new()
-				robe_mat.vertex_color_use_as_albedo = true
-				robe_mat.albedo_color = robe * randf_range(0.92, 1.08)
-				robe_mat.roughness = 0.85
 				(mi as MeshInstance3D).set_surface_override_material(s, robe_mat)
 	_animations = _modele.find_children("*", "AnimationPlayer", true, false).front() as AnimationPlayer
 	if _animations != null:
@@ -75,6 +75,31 @@ func _creer_modele() -> void:
 					_anims[cle] = nom
 		_jouer("repos", 1.0)
 		_animations.seek(randf() * 3.0, true)
+
+
+## Robe tirée au sort : unie, pie (plaques blanches sur couleur, ou l'inverse) ou tachetée.
+func _robe_aleatoire() -> ShaderMaterial:
+	var h := RandomNumberGenerator.new()
+	h.seed = hash(id * 7919 + 13)
+	var m := ShaderMaterial.new()
+	m.shader = preload("res://scenes/units/robe_zebu.gdshader")
+	var base: Color = ROBES[h.randi() % ROBES.size()] * h.randf_range(0.92, 1.08)
+	var tirage := h.randf()
+	var motif := 0
+	var taches := BLANC
+	if tirage < PART_TACHETEE:
+		motif = 2
+		taches = BLANC if base.get_luminance() < 0.5 else ROBES[h.randi_range(0, 2)]
+	elif tirage < PART_TACHETEE + PART_PIE:
+		motif = 1
+		if base.get_luminance() > 0.6:   # robe claire : plaques sombres
+			taches = ROBES[[0, 2, 5][h.randi() % 3]]
+	m.set_shader_parameter("couleur_base", base)
+	m.set_shader_parameter("couleur_taches", taches)
+	m.set_shader_parameter("motif", motif)
+	m.set_shader_parameter("graine", h.randf_range(0.0, 100.0))
+	m.set_shader_parameter("couverture", h.randf_range(0.3, 0.65))
+	return m
 
 
 func _jouer(cle: String, vitesse: float) -> void:
