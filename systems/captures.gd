@@ -52,7 +52,7 @@ func _scenario() -> void:
 	for i in 60:
 		for j in 60:
 			var p := Vector3(-GameRules.DEMI_CARTE + i * 4.0, 0.0, -GameRules.DEMI_CARTE + j * 4.0)
-			if Terrain.valeur_plateau(p) > Terrain.plateaux_seuil_haut and (plateau == Vector3.INF \
+			if Terrain.hauteur_relief(p) > 3.0 and (plateau == Vector3.INF \
 					or p.distance_to(base_joueur) < plateau.distance_to(base_joueur)):
 				plateau = p
 	if plateau != Vector3.INF:

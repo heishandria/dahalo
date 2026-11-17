@@ -179,20 +179,15 @@ func _ajouter(nom: String, maillage: Mesh, transformations: Array) -> void:
 
 # --- Placement ---
 
-## Point au hasard dans la zone de jeu, au sol ou sur le dessus d'un plateau ; INF sur une paroi.
+## Point au hasard dans la zone de jeu, posé sur le sol (collines comprises) ; INF sur une pente rocheuse raide.
 func _point_au_sol() -> Vector3:
 	var limite := GameRules.DEMI_CARTE - 1.0
 	var p := Vector3(_hasard.randf_range(-limite, limite), 0.0, _hasard.randf_range(-limite, limite))
-	var v := Terrain.valeur_plateau(p)
-	var marge := 0.03
-	if absf(v - Terrain.plateaux_seuil) < marge or absf(v - Terrain.plateaux_seuil_haut) < marge:
-		return Vector3.INF   # bord de falaise
-	if v > Terrain.plateaux_seuil_haut:
-		p.y = 2.0 * GameRules.PLATEAUX_HAUTEUR
-	elif v > Terrain.plateaux_seuil:
-		p.y = GameRules.PLATEAUX_HAUTEUR
-	else:
-		p.y = Terrain.hauteur_sol(p)
+	var pente := Vector2(Terrain.hauteur_relief(p + Vector3(0.5, 0, 0)) - Terrain.hauteur_relief(p - Vector3(0.5, 0, 0)),
+			Terrain.hauteur_relief(p + Vector3(0, 0, 0.5)) - Terrain.hauteur_relief(p - Vector3(0, 0, 0.5))).length()
+	if pente > 0.6:
+		return Vector3.INF   # roche à nu
+	p.y = Terrain.hauteur_sol(p)
 	return p
 
 
@@ -237,10 +232,10 @@ func _placer_caillou() -> Transform3D:
 	return Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e, e, e)), p)
 
 
-## Rochers : seulement sur le dessus des plateaux (personne n'y marche, pas besoin de collision).
+## Rochers : seulement sur les collines, au-dessus de la partie praticable (pas besoin de collision).
 func _placer_rocher_plateau() -> Transform3D:
 	var p := _point_au_sol()
-	if p == Vector3.INF or Terrain.valeur_plateau(p) < Terrain.plateaux_seuil + 0.06:
+	if p == Vector3.INF or Terrain.hauteur_relief(p) < GameRules.COLLINES_INFRANCHISSABLE + 0.6:
 		return _rien()
 	var e := _hasard.randf_range(0.35, 0.8)
 	return Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e, e, e)), p - Vector3(0, 0.15, 0))

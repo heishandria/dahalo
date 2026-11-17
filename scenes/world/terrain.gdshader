@@ -37,7 +37,7 @@ uniform float opacite_exploree = 0.45;   // comme le voile du brouillard (system
 
 varying vec3 position_monde;
 varying vec3 normale_monde;
-varying vec2 role;   // x = dessus de plateau, y = paroi (couleur de sommet ; 0 pour le sol et le relief)
+varying vec2 role;   // couleur de sommet (réservée ; 0 partout aujourd'hui)
 
 float hachage(vec2 p) {
 	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -109,23 +109,28 @@ void fragment() {
 	c = mix(c, fond_lit, lit);
 	n = normalize(mix(n, relief(tex_laterite_relief, uv * 0.8, axe_x, axe_z, haut, force_relief * 0.6), lit));
 
-	// Parois : plateaux (role.y) et pentes raides du relief. Texture de falaise posée à la verticale, projetée
+	// Parois : pentes raides des collines et du relief. Texture de falaise posée à la verticale, projetée
 	// sur deux plans (X-Y et Z-Y) mélangés selon l'orientation de la pente : pas d'étirement en bandes.
 	vec2 uv_paroi = vec2(position_monde.x + position_monde.z, position_monde.y) / taille_falaise;
 	vec2 uv_px = vec2(position_monde.z, position_monde.y) / taille_falaise;
 	vec2 uv_pz = vec2(position_monde.x, position_monde.y) / taille_falaise;
 	float poids_x = abs(normale_monde.x) / max(abs(normale_monde.x) + abs(normale_monde.z), 0.001);
 	vec3 falaise = mix(texture(tex_falaise, uv_pz).rgb, texture(tex_falaise, uv_px).rgb, poids_x);
-	float paroi = clamp(max(role.y, paroi_relief + 0.6 * smoothstep(8.0, 20.0, position_monde.y)), 0.0, 1.0);
+	// Collines de la zone de jeu : roche dès que la pente se raidit un peu en hauteur (collines rocheuses).
+	float roche_colline = smoothstep(0.03, 0.12, pente) * smoothstep(0.3, 1.2, position_monde.y);
+	float paroi = clamp(max(paroi_relief, roche_colline) + 0.6 * smoothstep(8.0, 20.0, position_monde.y), 0.0, 1.0);
 	vec3 n_falaise = relief(tex_falaise_relief, uv_paroi, normalize(vec3(0.7071, 0.0, 0.7071)), haut, normale_monde, force_relief);
 	c = mix(c, falaise, paroi);
 	n = normalize(mix(n, n_falaise, paroi));
 
-	// Dessus des plateaux : sol sec et caillouteux, un peu d'herbe.
-	vec3 dessus = mix(texture(tex_dessus, uv).rgb, teinte_herbe, herbe * 0.5);
+	// Collines : sol sec et caillouteux sur les hauteurs peu pentues, un peu d'herbe.
+	float sur_hauteur = smoothstep(0.5, 1.6, position_monde.y) * (1.0 - paroi);
+	// Sur les collines : sol caillouteux assombri, mêlé de roche (pas une plaque de sable claire).
+	vec3 dessus = mix(texture(tex_dessus, uv).rgb * vec3(0.78, 0.7, 0.64), falaise * 0.85, 0.35);
+	dessus = mix(dessus, teinte_herbe, herbe * 0.35);
 	vec3 n_dessus = relief(tex_laterite_relief, uv * 1.1, axe_x, axe_z, haut, force_relief);
-	c = mix(c, dessus, role.x);
-	n = normalize(mix(n, n_dessus, role.x));
+	c = mix(c, dessus, sur_hauteur);
+	n = normalize(mix(n, n_dessus, sur_hauteur));
 
 	// Lecture du relief en vue isométrique : creux plus sombres, hauteurs plus claires.
 	c *= 0.9 + 0.22 * smoothstep(0.0, 28.0, position_monde.y);
@@ -133,7 +138,9 @@ void fragment() {
 	c = mix(c, c * vec3(1.08, 1.02, 0.92) + 0.03, secheresse);
 	c *= etalonnage;
 
-	if (role.x + role.y > 0.01) {
+	// Brouillard sur les collines de la zone de jeu : elles dépassent le voile posé au sol (y = 0,2).
+	bool dans_le_jeu = abs(p.x) < demi_carte && abs(p.y) < demi_carte;
+	if (dans_le_jeu && position_monde.y > 0.18) {
 		vec4 v = texture(carte_vision, (p + demi_carte) / (2.0 * demi_carte));
 		float voile = mix(1.0, opacite_exploree, v.g);
 		voile = mix(voile, 0.0, v.r);

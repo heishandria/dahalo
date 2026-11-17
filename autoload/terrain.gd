@@ -1,5 +1,5 @@
 extends Node
-## Terrain de la partie : graine de la carte, lit de rivière à sec et plateaux en paliers.
+## Terrain de la partie : graine de la carte, lit de rivière à sec et collines rocheuses érodées.
 ## Garde la distance au lit en tout point (grille), pour le jeu (ralentissement dans le sable),
 ## le rendu (shader du sol) et le relief (vallée de la rivière). Rempli par le générateur de carte.
 ## Spec : docs/specs/carte.md
@@ -13,48 +13,49 @@ var graine := 0
 var riviere := PackedVector2Array()             # tracé du lit (points dans le plan XZ)
 var _distances := PackedFloat32Array()
 var _texture: ImageTexture
-# Plateaux : champ aux sommets d'une grille de PLATEAUX_CASE m sur la zone de jeu (voir GenerateurCarte).
-const PLATEAUX_CASE := 2.0
-const PLATEAUX_N := 120
-var plateaux_champ := PackedFloat32Array()
-var plateaux_seuil := INF
-var plateaux_seuil_haut := INF
+# Collines : hauteur aux sommets d'une grille de CASE_RELIEF m sur la zone de jeu (voir GenerateurCarte).
+const CASE_RELIEF := 2.0
+const N_RELIEF := 120
+var reliefs := PackedFloat32Array()
 
 
-func initialiser_plateaux(plateaux: Dictionary) -> void:
-	plateaux_champ = plateaux["champ"]
-	plateaux_seuil = plateaux["seuil"]
-	plateaux_seuil_haut = plateaux["seuil_haut"]
+func initialiser_collines(collines: Dictionary) -> void:
+	reliefs = collines["hauteurs"]
 
 
-## Valeur du champ des plateaux (interpolée) ; 0 hors de la zone de jeu.
-func valeur_plateau(pos: Vector3) -> float:
-	if plateaux_champ.is_empty():
+## Hauteur des collines (interpolée) ; 0 hors de la zone de jeu.
+func hauteur_relief(pos: Vector3) -> float:
+	if reliefs.is_empty():
 		return 0.0
 	var d := GameRules.DEMI_CARTE
 	if absf(pos.x) >= d or absf(pos.z) >= d:
 		return 0.0
-	var fx := (pos.x + d) / PLATEAUX_CASE
-	var fz := (pos.z + d) / PLATEAUX_CASE
-	var i := mini(int(fx), PLATEAUX_N - 1)
-	var j := mini(int(fz), PLATEAUX_N - 1)
-	var c := PLATEAUX_N + 1
-	var haut := lerpf(plateaux_champ[j * c + i], plateaux_champ[j * c + i + 1], fx - i)
-	var bas := lerpf(plateaux_champ[(j + 1) * c + i], plateaux_champ[(j + 1) * c + i + 1], fx - i)
+	var fx := (pos.x + d) / CASE_RELIEF
+	var fz := (pos.z + d) / CASE_RELIEF
+	var i := mini(int(fx), N_RELIEF - 1)
+	var j := mini(int(fz), N_RELIEF - 1)
+	var c := N_RELIEF + 1
+	var haut := lerpf(reliefs[j * c + i], reliefs[j * c + i + 1], fx - i)
+	var bas := lerpf(reliefs[(j + 1) * c + i], reliefs[(j + 1) * c + i + 1], fx - i)
 	return lerpf(haut, bas, fz - j)
 
 
-## Vrai si un objet de ce rayon, posé là, toucherait un plateau.
-func sur_plateau(pos: Vector3, rayon: float = 0.0) -> bool:
-	if valeur_plateau(pos) > plateaux_seuil:
+## Vrai si un objet de ce rayon, posé là, serait sur une colline (on n'y construit pas).
+func sur_colline(pos: Vector3, rayon: float = 0.0) -> bool:
+	if hauteur_relief(pos) > GameRules.COLLINES_CONSTRUCTIBLE:
 		return true
 	if rayon <= 0.0:
 		return false
 	for k in 8:
 		var a := TAU * k / 8.0
-		if valeur_plateau(pos + Vector3(cos(a), 0.0, sin(a)) * rayon) > plateaux_seuil:
+		if hauteur_relief(pos + Vector3(cos(a), 0.0, sin(a)) * rayon) > GameRules.COLLINES_CONSTRUCTIBLE:
 			return true
 	return false
+
+
+## Vrai là où la colline est trop haute pour qu'on y passe (collision et navmesh).
+func infranchissable(pos: Vector3) -> bool:
+	return hauteur_relief(pos) > GameRules.COLLINES_INFRANCHISSABLE
 
 
 ## Profondeur du lit de rivière (berges en pente douce) à cette distance du milieu du lit.
@@ -63,18 +64,17 @@ static func profondeur_riviere(distance: float) -> float:
 	return GameRules.RIVIERE_PROFONDEUR * (1.0 - smoothstep(demi - 1.5, demi + 2.0, distance))
 
 
-## Hauteur du sol où l'on marche (0, ou en contrebas dans le lit). Les plateaux ne sont pas praticables.
+## Hauteur du sol : pied des collines (praticable jusqu'à COLLINES_INFRANCHISSABLE), lit de rivière en contrebas.
+## Les unités et les zébus suivent cette hauteur à l'écran (leur corps physique reste à y = 0).
 func hauteur_sol(pos: Vector3) -> float:
-	return -profondeur_riviere(distance_riviere(pos))
+	return hauteur_relief(pos) - profondeur_riviere(distance_riviere(pos))
 
 
 func initialiser(nouvelle_graine: int, trace: PackedVector2Array) -> void:
 	assert(N == int(2.0 * ETENDUE / CASE), "Terrain.N doit valoir 2 × ETENDUE / CASE")
 	graine = nouvelle_graine
 	riviere = trace
-	plateaux_champ = PackedFloat32Array()
-	plateaux_seuil = INF
-	plateaux_seuil_haut = INF
+	reliefs = PackedFloat32Array()
 	_distances.resize(N * N)
 	_distances.fill(DISTANCE_MAX)
 	# Pour chaque segment, on ne met à jour que les cases proches : rapide même avec un long tracé.

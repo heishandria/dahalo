@@ -17,8 +17,10 @@ var _hasard := RandomNumberGenerator.new()
 var _occupes: Array = []      # [Vector2 centre, rayon] : emplacements déjà pris
 var _bases: Array = []        # Vector2 des deux bases
 var _riviere := PackedVector2Array()
-var _champ := PackedFloat32Array()   # champ des plateaux aux sommets de la grille
-var _seuil := INF                    # au-dessus : plateau (infranchissable)
+var _champ := PackedFloat32Array()   # champ des collines aux sommets de la grille (forme générale)
+var _masque := PackedFloat32Array()  # 0 près des bases, de la rivière et des réservations (rien n'y pousse)
+var _seuil := INF                    # seuil du champ : contour approximatif des collines
+var _hauteurs := PackedFloat32Array()   # hauteur finale des collines aux sommets (après érosion)
 
 
 ## Description renvoyée :
@@ -27,11 +29,13 @@ var _seuil := INF                    # au-dessus : plateau (infranchissable)
 ##  arbres, points_eau, raketa, baobabs : Array de Vector3,
 ##  troupeaux : Array de [Vector3 centre, int nombre], migrations : Array de Vector3,
 ##  zones_test : Array de Vector3 (emplacements libres pour les duels du test de fumée),
-##  plateaux : {champ: PackedFloat32Array ((N+1)² sommets), seuil, seuil_haut}.
+##  plateaux : {hauteurs: PackedFloat32Array} — hauteur des collines aux (N+1)² sommets de la grille de 2 m.
 func generer(graine: int) -> Dictionary:
 	_hasard.seed = graine
 	_occupes.clear()
 	_champ = PackedFloat32Array()
+	_masque = PackedFloat32Array()
+	_hauteurs = PackedFloat32Array()
 	_seuil = INF
 	var carte := {"graine": graine, "arbres": [], "points_eau": [], "raketa": [], "baobabs": [],
 			"troupeaux": [], "migrations": [], "zones_test": [], "reperes": {}}
@@ -149,11 +153,13 @@ func _plateaux(graine: int) -> Dictionary:
 	bruit.fractal_octaves = 2
 	var cotes := N + 1
 	_champ.resize(cotes * cotes)
+	_masque.resize(cotes * cotes)
 	for j in cotes:
 		for i in cotes:
 			var p := _sommet(i, j)
 			var n := maxf(bruit.get_noise_2d(p.x, p.y), bruit.get_noise_2d(-p.x, -p.y)) * 0.5 + 0.5
-			_champ[j * cotes + i] = n * _masque_plateaux(p)
+			_masque[j * cotes + i] = _masque_plateaux(p)
+			_champ[j * cotes + i] = n * _masque[j * cotes + i]
 	var tries := Array(_champ)
 	tries.sort()
 	var part := GameRules.PLATEAUX_PART
@@ -163,10 +169,159 @@ func _plateaux(graine: int) -> Dictionary:
 			break
 		part *= 0.6   # un plateau coupe la carte : on en met moins
 		_seuil = INF
+	_hauteurs.resize(cotes * cotes)
+	_hauteurs.fill(0.0)
 	if _seuil != INF:
 		_supprimer_ilots(12)
-	var seuil_haut := maxf(float(tries[int((1.0 - GameRules.PLATEAUX_PART_HAUT) * (tries.size() - 1))]), _seuil + 0.02)
-	return {"champ": _champ, "seuil": _seuil, "seuil_haut": seuil_haut}
+		_former_collines(graine)
+		_eroder(graine)
+		_eboulements(25)
+		_symetriser()
+		if not _bases_reliees():
+			push_warning("Collines : accès entre les bases coupé après l'érosion, collines retirées.")
+			_hauteurs.fill(0.0)
+	return {"hauteurs": _hauteurs}
+
+
+# --- Collines : forme arrondie, puis érosion ---
+
+## Forme de départ : la hauteur monte en douceur avec le champ (dôme arrondi), avec un peu de détail.
+func _former_collines(graine: int) -> void:
+	var detail := FastNoiseLite.new()
+	detail.seed = graine + 9
+	detail.frequency = 0.09
+	detail.fractal_octaves = 3
+	var c := N + 1
+	for k in c * c:
+		var forme := smoothstep(_seuil - 0.08, _seuil + 0.12, _champ[k])
+		if forme <= 0.0:
+			continue
+		var p := _sommet(k % c, k / c)
+		_hauteurs[k] = GameRules.COLLINES_HAUTEUR * pow(forme, 1.3) * (0.85 + 0.3 * detail.get_noise_2d(p.x, p.y))
+
+
+## Érosion par gouttes de pluie (méthode classique « droplet erosion ») : chaque goutte descend la pente,
+## arrache de la matière quand elle va vite et la dépose quand elle ralentit : ravines et cônes au pied.
+## Unités : la grille (1 = une case de 2 m), hauteurs en mètres.
+const EROSION_INERTIE := 0.05
+const EROSION_CAPACITE := 3.0
+const EROSION_CAPACITE_MIN := 0.01
+const EROSION_DEPOT := 0.15
+const EROSION_ARRACHAGE := 0.2
+const EROSION_EVAPORATION := 0.03
+const EROSION_GRAVITE := 4.0
+const EROSION_ETAPES := 24
+
+
+func _eroder(graine: int) -> void:
+	var hasard := RandomNumberGenerator.new()
+	hasard.seed = graine + 13
+	var c := N + 1
+	var departs: Array[int] = []
+	for k in c * c:
+		if _hauteurs[k] > 0.3:
+			departs.append(k)
+	if departs.is_empty():
+		return
+	for goutte in GameRules.COLLINES_GOUTTES:
+		var depart: int = departs[hasard.randi() % departs.size()]
+		var px := float(depart % c) + hasard.randf_range(-0.5, 0.5)
+		var pz := float(depart / c) + hasard.randf_range(-0.5, 0.5)
+		var dx := 0.0
+		var dz := 0.0
+		var vitesse := 1.0
+		var eau := 1.0
+		var sediment := 0.0
+		for etape in EROSION_ETAPES:
+			if px < 0.0 or pz < 0.0 or px >= c - 1 or pz >= c - 1:
+				break
+			var ici := _hauteur_et_pente(px, pz)
+			dx = dx * EROSION_INERTIE - ici.y * (1.0 - EROSION_INERTIE)
+			dz = dz * EROSION_INERTIE - ici.z * (1.0 - EROSION_INERTIE)
+			var longueur := sqrt(dx * dx + dz * dz)
+			if longueur < 0.000001:
+				break   # cuvette plate : la goutte s'arrête
+			dx /= longueur
+			dz /= longueur
+			var ancien_x := px
+			var ancien_z := pz
+			px += dx
+			pz += dz
+			if px < 0.0 or pz < 0.0 or px >= c - 1 or pz >= c - 1:
+				break
+			var denivele := _hauteur_et_pente(px, pz).x - ici.x
+			var capacite := maxf(-denivele * vitesse * eau * EROSION_CAPACITE, EROSION_CAPACITE_MIN)
+			if sediment > capacite or denivele > 0.0:
+				var depot := minf(denivele, sediment) if denivele > 0.0 else (sediment - capacite) * EROSION_DEPOT
+				sediment -= depot
+				_modifier(ancien_x, ancien_z, depot)
+			else:
+				var arrache := minf((capacite - sediment) * EROSION_ARRACHAGE, -denivele)
+				_modifier(ancien_x, ancien_z, -arrache)
+				sediment += arrache
+			vitesse = sqrt(maxf(0.0, vitesse * vitesse + denivele * EROSION_GRAVITE))
+			eau *= 1.0 - EROSION_EVAPORATION
+
+
+## Hauteur (x) et pente (y, z) interpolées en un point de la grille.
+func _hauteur_et_pente(px: float, pz: float) -> Vector3:
+	var c := N + 1
+	var i := int(px)
+	var j := int(pz)
+	var fx := px - i
+	var fz := pz - j
+	var h00 := _hauteurs[j * c + i]
+	var h10 := _hauteurs[j * c + i + 1]
+	var h01 := _hauteurs[(j + 1) * c + i]
+	var h11 := _hauteurs[(j + 1) * c + i + 1]
+	var gx := (h10 - h00) * (1.0 - fz) + (h11 - h01) * fz
+	var gz := (h01 - h00) * (1.0 - fx) + (h11 - h10) * fx
+	var h := h00 * (1.0 - fx) * (1.0 - fz) + h10 * fx * (1.0 - fz) + h01 * (1.0 - fx) * fz + h11 * fx * fz
+	return Vector3(h, gx, gz)
+
+
+## Ajoute (ou retire) de la matière autour d'un point, répartie sur les 4 sommets voisins ; jamais sous le sol.
+func _modifier(px: float, pz: float, quantite: float) -> void:
+	var c := N + 1
+	var i := int(px)
+	var j := int(pz)
+	var fx := px - i
+	var fz := pz - j
+	var poids := [(1.0 - fx) * (1.0 - fz), fx * (1.0 - fz), (1.0 - fx) * fz, fx * fz]
+	var sommets := [j * c + i, j * c + i + 1, (j + 1) * c + i, (j + 1) * c + i + 1]
+	for n in 4:
+		var k: int = sommets[n]
+		_hauteurs[k] = maxf(0.0, _hauteurs[k] + quantite * float(poids[n]))
+
+
+## Éboulement : là où la pente dépasse COLLINES_PENTE_MAX, la matière glisse vers le bas (formes arrondies).
+func _eboulements(passes: int) -> void:
+	var c := N + 1
+	var ecart_max := GameRules.COLLINES_PENTE_MAX * CASE
+	for passe in passes:
+		for j in range(1, c - 1):
+			for i in range(1, c - 1):
+				var k := j * c + i
+				if _hauteurs[k] <= 0.01:
+					continue
+				for voisin in [k + 1, k - 1, k + c, k - c]:
+					var ecart: float = _hauteurs[k] - _hauteurs[voisin]
+					if ecart > ecart_max:
+						var glisse := (ecart - ecart_max) * 0.25
+						_hauteurs[k] -= glisse
+						_hauteurs[voisin] += glisse
+	# Rien près des bases, de la rivière et des emplacements réservés (dépôts de l'érosion compris).
+	for k in c * c:
+		_hauteurs[k] *= smoothstep(0.0, 0.3, _masque[k])
+
+
+## Carte symétrique par rapport au centre : le sommet (i, j) et son image (N - i, N - j) prennent la moyenne.
+func _symetriser() -> void:
+	var total := (N + 1) * (N + 1)
+	for k in total / 2 + 1:
+		var moyenne := (_hauteurs[k] + _hauteurs[total - 1 - k]) * 0.5
+		_hauteurs[k] = moyenne
+		_hauteurs[total - 1 - k] = moyenne
 
 
 func _masque_plateaux(p: Vector2) -> float:
@@ -198,15 +353,21 @@ func _valeur(p: Vector2) -> float:
 
 
 func _sur_plateau(p: Vector2, rayon: float) -> bool:
-	if _champ.is_empty() or _seuil == INF:
+	if _hauteurs.is_empty():
 		return false
-	if _valeur(p) > _seuil - 0.02:
+	if _hauteur_en(p) > 0.15:
 		return true
 	for k in 8:
 		var a := TAU * k / 8.0
-		if _valeur(p + Vector2(cos(a), sin(a)) * (rayon + 1.5)) > _seuil - 0.02:
+		if _hauteur_en(p + Vector2(cos(a), sin(a)) * (rayon + 1.5)) > 0.15:
 			return true
 	return false
+
+
+func _hauteur_en(p: Vector2) -> float:
+	var px := clampf((p.x + GameRules.DEMI_CARTE) / CASE, 0.0, N - 0.001)
+	var pz := clampf((p.y + GameRules.DEMI_CARTE) / CASE, 0.0, N - 0.001)
+	return _hauteur_et_pente(px, pz).x
 
 
 ## Abaisse sous le seuil les plateaux de moins de `minimum` cases (îlots et rubans fins, peu lisibles).
@@ -245,7 +406,9 @@ func _bases_reliees() -> bool:
 	for j in N:
 		for i in N:
 			var centre := _sommet(i, j) + Vector2(CASE, CASE) * 0.5
-			libre[j * N + i] = 1 if _valeur(centre) <= _seuil else 0
+			var bloquee := _hauteur_en(centre) > GameRules.COLLINES_INFRANCHISSABLE if not _hauteurs.is_empty() \
+					else _valeur(centre) > _seuil
+			libre[j * N + i] = 0 if bloquee else 1
 	var depart := _case(_bases[0])
 	var vu := PackedByteArray()
 	vu.resize(N * N)

@@ -25,7 +25,7 @@ l'IA est l'image de celle du joueur. Les deux clans ont donc exactement les mêm
 | Lit de rivière à sec | 1 | Traverse toute la carte **entre les deux bases** (perpendiculaire à leur axe), en méandres tirés au hasard ; passe par le centre |
 | Trous d'eau | 1 paire | Creusés dans le sable du lit, entre 20 et 60 m du centre |
 | Troupeaux sauvages | 3 | 8 zébus au centre (dans le lit) + une paire de 6, à plus de 45 m des bases |
-| Plateaux en paliers | ~10 % de la carte | Voir §3 bis |
+| Collines rocheuses érodées | ~10 % de la carte | Voir §3 bis |
 | Bosquets d'épineux neutres | 7 paires | 8 à 14 arbres, à plus de 30 m des bases, hors du lit |
 | Raketa | 3 paires | À plus de 22 m des bases, hors du lit |
 | Baobabs (décor, obstacles) | 5 paires | À plus de 25 m des bases, hors du lit |
@@ -50,19 +50,25 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
 - Technique : `Terrain` garde la distance au lit sur une grille de 2 m couvrant ±280 m (zone de jeu + relief) ;
   le shader la lit en texture.
 
-## 3 bis. Plateaux en paliers (falaises infranchissables)
+## 3 bis. Collines rocheuses érodées (remplacent les plateaux en paliers le 17/11)
 
-- **Forme** : champ de bruit symétrique (même valeur en *p* et *−p*), nul à moins de **42 m des bases**, à moins
-  de ~6 m du lit de rivière et autour des emplacements réservés (zones de test, troupeau du centre). Plateau là où
-  le champ dépasse un seuil choisi pour couvrir **10 %** de la carte ; **second palier** au cœur des plus grands
-  (2,5 % de la carte). Les îlots de moins de 12 cases (48 m²) sont supprimés.
-- **Relief** : palier de **2,5 m** (second palier : 5 m), parois verticales, contours lisses (« marching squares »
-  sur une grille de 2 m). Dessus clair (calcaire, herbe rase), parois de terre brune à strates.
-- **Jeu** : **infranchissables** (collision et navmesh : boîtes sur le calque 4) ; **on n'y construit pas**.
-  Ils ne bloquent pas la vue pour l'instant.
-- **Équité et accès** : symétriques ; le générateur vérifie (parcours de la grille) que la base du joueur rejoint
-  celle de l'IA et le centre. Sinon il réduit les plateaux (jusqu'à 5 essais), puis les supprime.
-- **Mini-carte** : plateaux en ocre clair, lit de rivière en sable, une fois explorés.
+- **Forme de départ** : champ de bruit symétrique (même valeur en *p* et *−p*), nul à moins de **42 m des bases**,
+  à moins de ~6 m du lit de rivière et autour des emplacements réservés ; dôme arrondi là où il dépasse un seuil
+  choisi pour couvrir **10 %** de la carte (îlots de moins de 48 m² supprimés). Hauteur de départ : 14 m au cœur.
+- **Érosion** (dans le générateur, à graine) :
+  1. **gouttes de pluie** (10 000) : chaque goutte descend la pente, arrache de la matière quand elle va vite et
+     la dépose en ralentissant → **ravines** sur les flancs, **cônes d'éboulis** au pied ;
+  2. **éboulements** : pente ramenée à 1,5 au plus (~56°) → formes arrondies ;
+  3. **symétrisation** (moyenne de *p* et *−p*) pour garder l'équité.
+  Résultat : collines jusqu'à ~10 m. Coût : ~1 s au chargement.
+- **Jeu** : on marche sur le **pied** des collines ; **au-dessus de 0,9 m, infranchissable** (collision et navmesh :
+  boîtes sur le calque 4) ; **on ne construit pas au-dessus de 0,3 m**. Les unités et zébus suivent la hauteur à
+  l'écran. Le générateur vérifie (parcours de la grille) que les deux bases et le centre restent reliés ; sinon
+  il retire les collines.
+- **Rendu** : roche stratifiée sur les pentes, sol caillouteux sombre mêlé de roche sur les hauteurs, rochers
+  posés au-dessus de la partie praticable ; assombries par le brouillard dans les zones inexplorées.
+- **Mini-carte** : parties infranchissables en ocre clair, lit de rivière en sable, une fois explorés.
+- Valeurs : `COLLINES_*` et `PLATEAUX_PART`, `PLATEAUX_DISTANCE_BASES` dans `data/game_rules.gd`.
 
 ## 4. Sol
 
@@ -134,11 +140,11 @@ si un modèle manque, formes générées par le code.
 |---|---|---|
 | Carte générée (GDD §8) | Aléatoire à graine, symétrique | **Fait** (17/11) |
 | — | Lit de rivière à sec qui ralentit, trous d'eau | **Fait** (17/11) |
-| — | Plateaux en paliers infranchissables (falaises), rivière en contrebas | **Fait** (17/11) |
+| — | Collines rocheuses érodées (pied praticable, sommet infranchissable), rivière en contrebas | **Fait** (17/11) |
 | — | Eau dans la rivière en saison normale, herbe qui reverdit | **Fait** (17/11, visuel) |
 | — | Végétation dense et décor en modèles 3D (pack CC0 Quaternius) | **Fait** (17/11) |
 | — | Modèles sur mesure (baobab, Alluaudia, raketa, cases) | **Décidé** (17/11), à faire (Tripo) |
 
 Questions ouvertes :
-1. Les plateaux devraient-ils bloquer la vue (ou donner une vision accrue à qui les longe) ?
+1. Les collines devraient-ils bloquer la vue (ou donner une vision accrue à qui les longe) ?
 2. Les zébus sauvages devraient-ils préférer paître près du lit (herbe des berges) ?

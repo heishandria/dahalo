@@ -92,7 +92,7 @@ func _calculer_terrain(n: int) -> void:
 	for j in n:
 		for i in n:
 			var p := Vector3(-GameRules.DEMI_CARTE + (i + 0.5) * case, 0.0, -GameRules.DEMI_CARTE + (j + 0.5) * case)
-			if Terrain.sur_plateau(p):
+			if Terrain.infranchissable(p):
 				_terrain[j * n + i] = 1
 			elif Terrain.dans_riviere(p):
 				_terrain[j * n + i] = 2

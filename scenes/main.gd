@@ -198,8 +198,8 @@ func raison_emplacement_invalide(faction: int, type_batiment: String, pos: Vecto
 		return "trop près du bord de la carte"
 	if not Vision.est_explore(faction, pos):
 		return "zone inexplorée"
-	if Terrain.sur_plateau(pos, r):
-		return "on ne construit pas sur un plateau"
+	if Terrain.sur_colline(pos, r):
+		return "on ne construit pas sur une colline"
 	if Terrain.distance_riviere(pos) < GameRules.RIVIERE_LARGEUR * 0.5 + r:
 		return "on ne construit pas dans le lit de la rivière"
 	for groupe in ["batiments", "ressources", "decor"]:
@@ -273,7 +273,7 @@ func _graine() -> int:
 func _generer_carte(graine: int) -> void:
 	carte = GenerateurCarte.new().generer(graine)
 	Terrain.initialiser(graine, carte["riviere"])
-	Terrain.initialiser_plateaux(carte["plateaux"])
+	Terrain.initialiser_collines(carte["plateaux"])
 	print("[carte] graine %d" % graine)
 	$Paysage.construire()   # sol de la zone de jeu, plateaux, relief et décor (visuel)
 	_creer_plateaux_physiques()
@@ -308,28 +308,28 @@ func _generer_carte(graine: int) -> void:
 		_troupeau(t[0], t[1])
 
 
-## Plateaux : obstacles infranchissables (calque 4 : navmesh + collisions). Une boîte par suite de cases
-## bloquées sur une même ligne de la grille, sous le visuel construit par Paysage.
+## Collines : là où elles dépassent COLLINES_INFRANCHISSABLE, obstacle (calque 4 : navmesh + collisions).
+## Une boîte par suite de cases bloquées sur une même ligne de la grille, sous le visuel construit par Paysage.
 func _creer_plateaux_physiques() -> void:
 	var corps := StaticBody3D.new()
 	corps.name = "Plateaux"
 	corps.collision_layer = 8
 	corps.collision_mask = 0
-	var n := Terrain.PLATEAUX_N
-	var case := Terrain.PLATEAUX_CASE
+	var n := Terrain.N_RELIEF
+	var case := Terrain.CASE_RELIEF
 	var d := GameRules.DEMI_CARTE
 	for j in n:
 		var debut := -1
 		for i in n + 1:
-			var bloquee := i < n and Terrain.sur_plateau(Vector3(-d + (i + 0.5) * case, 0.0, -d + (j + 0.5) * case))
+			var bloquee := i < n and Terrain.infranchissable(Vector3(-d + (i + 0.5) * case, 0.0, -d + (j + 0.5) * case))
 			if bloquee and debut < 0:
 				debut = i
 			elif not bloquee and debut >= 0:
 				var forme := CollisionShape3D.new()
 				var boite := BoxShape3D.new()
-				boite.size = Vector3((i - debut) * case, GameRules.PLATEAUX_HAUTEUR, case)
+				boite.size = Vector3((i - debut) * case, 3.0, case)
 				forme.shape = boite
-				forme.position = Vector3(-d + (debut + i) * 0.5 * case, GameRules.PLATEAUX_HAUTEUR * 0.5,
+				forme.position = Vector3(-d + (debut + i) * 0.5 * case, 1.5,
 						-d + (j + 0.5) * case)
 				corps.add_child(forme)
 				debut = -1

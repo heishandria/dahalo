@@ -50,11 +50,14 @@ const RIVIERE_LARGEUR := 11.0              # largeur du lit de sable (m)
 const RIVIERE_RALENTISSEMENT := 0.6        # vitesse des unités et des zébus dans le sable
 const RIVIERE_TROUS_EAU := 1               # paires de trous d'eau creusés dans le sable du lit
 const RIVIERE_PROFONDEUR := 0.8            # le lit est en contrebas (visuel ; on y marche normalement)
-# Plateaux en paliers : obstacles infranchissables (falaises), on ne construit pas dessus.
-const PLATEAUX_PART := 0.1                 # part de la carte couverte par les plateaux
-const PLATEAUX_PART_HAUT := 0.025          # part couverte par le second palier (au cœur des grands plateaux)
-const PLATEAUX_HAUTEUR := 2.5              # hauteur d'un palier (m)
-const PLATEAUX_DISTANCE_BASES := 42.0      # pas de plateau plus près d'une base
+# Collines rocheuses arrondies et érodées : leur pied est praticable, le reste infranchissable.
+const PLATEAUX_PART := 0.1                 # part de la carte où le champ des collines dépasse son seuil
+const PLATEAUX_DISTANCE_BASES := 42.0      # pas de colline plus près d'une base
+const COLLINES_HAUTEUR := 14.0             # hauteur au cœur des plus grandes collines (m)
+const COLLINES_INFRANCHISSABLE := 0.9      # au-dessus de cette hauteur (m), on ne passe plus
+const COLLINES_CONSTRUCTIBLE := 0.3        # au-dessus, on ne construit plus
+const COLLINES_PENTE_MAX := 1.5            # pente maximale après éboulement (dénivelé / distance, ~56°)
+const COLLINES_GOUTTES := 10000            # gouttes de pluie simulées pour l'érosion
 
 # --- Ressources ---
 const RESSOURCES := ["nourriture", "eau", "bois", "ariary"]
