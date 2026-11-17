@@ -109,9 +109,13 @@ void fragment() {
 	c = mix(c, fond_lit, lit);
 	n = normalize(mix(n, relief(tex_laterite_relief, uv * 0.8, axe_x, axe_z, haut, force_relief * 0.6), lit));
 
-	// Parois : plateaux (role.y) et pentes raides du relief. Texture de falaise posée à la verticale.
+	// Parois : plateaux (role.y) et pentes raides du relief. Texture de falaise posée à la verticale, projetée
+	// sur deux plans (X-Y et Z-Y) mélangés selon l'orientation de la pente : pas d'étirement en bandes.
 	vec2 uv_paroi = vec2(position_monde.x + position_monde.z, position_monde.y) / taille_falaise;
-	vec3 falaise = texture(tex_falaise, uv_paroi).rgb;
+	vec2 uv_px = vec2(position_monde.z, position_monde.y) / taille_falaise;
+	vec2 uv_pz = vec2(position_monde.x, position_monde.y) / taille_falaise;
+	float poids_x = abs(normale_monde.x) / max(abs(normale_monde.x) + abs(normale_monde.z), 0.001);
+	vec3 falaise = mix(texture(tex_falaise, uv_pz).rgb, texture(tex_falaise, uv_px).rgb, poids_x);
 	float paroi = clamp(max(role.y, paroi_relief + 0.6 * smoothstep(8.0, 20.0, position_monde.y)), 0.0, 1.0);
 	vec3 n_falaise = relief(tex_falaise_relief, uv_paroi, normalize(vec3(0.7071, 0.0, 0.7071)), haut, normale_monde, force_relief);
 	c = mix(c, falaise, paroi);

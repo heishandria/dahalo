@@ -7,7 +7,7 @@ extends Node3D
 ## Spec : docs/specs/carte.md
 
 const ETENDUE := Terrain.ETENDUE   # le relief couvre toute la vue possible de la caméra
-const PAS := 4.0                # maillage du relief (DEMI_CARTE doit en être un multiple)
+const PAS := 2.5                # maillage du relief (DEMI_CARTE et ETENDUE doivent en être des multiples)
 const NOMBRE_ROCHERS := 170
 const NOMBRE_FOURRES := 260
 const NOMBRE_TOUFFES_EPINEUX := 140   # touffes de 3 à 5 tiges (épineux de type Alluaudia)
@@ -20,8 +20,9 @@ const COULEUR_TIGE := Color(0.4, 0.42, 0.3)
 const COULEUR_BAOBAB := Color(0.55, 0.45, 0.38)
 const COULEUR_COURONNE := Color(0.32, 0.38, 0.2)
 
-var _bruit := FastNoiseLite.new()
-var _bruit_fin := FastNoiseLite.new()
+var _montagnes := FastNoiseLite.new()   # crêtes et vallées (bruit « ridged » avec déformation de domaine)
+var _massifs := FastNoiseLite.new()     # hauteur des massifs à grande échelle (cols plus bas entre eux)
+var _bord := FastNoiseLite.new()        # déforme le pied des montagnes : il ne suit pas le carré de la carte
 var _hasard := RandomNumberGenerator.new()
 var _materiau_relief := ShaderMaterial.new()
 # Textures photo du terrain (Poly Haven, CC0) : voir assets/textures/terrain/LISEZMOI.md.
@@ -45,11 +46,19 @@ const DUREE_FONDU_SAISON := 6.0
 
 func construire() -> void:
 	var graine := Terrain.graine   # même graine que la carte : même partie, même paysage
-	_bruit.seed = graine
-	_bruit.frequency = 0.018
-	_bruit.fractal_octaves = 3
-	_bruit_fin.seed = graine + 1
-	_bruit_fin.frequency = 0.09
+	_montagnes.seed = graine
+	_montagnes.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	_montagnes.fractal_type = FastNoiseLite.FRACTAL_RIDGED
+	_montagnes.fractal_octaves = 5
+	_montagnes.frequency = 0.011
+	_montagnes.domain_warp_enabled = true
+	_montagnes.domain_warp_amplitude = 28.0
+	_montagnes.domain_warp_frequency = 0.008
+	_massifs.seed = graine + 1
+	_massifs.frequency = 0.0045
+	_bord.seed = graine + 2
+	_bord.frequency = 0.014
+	_bord.fractal_octaves = 2
 	_hasard.seed = graine
 	_materiau_relief.shader = preload("res://scenes/world/terrain.gdshader")
 	_materiau_relief.set_shader_parameter("distances_riviere", Terrain.texture_distances())
@@ -64,24 +73,26 @@ func construire() -> void:
 	_creer_decor()
 
 
-## Hauteur du relief : 0 dans la zone de jeu, collines basses près du bord, puis un plateau au loin.
-## La caméra regarde vers -X -Z : côté proche (bas de l'écran, +X +Z) le relief reste bas pour ne pas
-## cacher les unités, qui circulent jusqu'à ±56 m ; côté lointain (haut de l'écran), de vrais escarpements.
+## Hauteur du relief : 0 dans la zone de jeu ; au-delà, des massifs à crêtes et vallées dont le pied, déformé
+## par du bruit, ne suit pas le carré de la carte.
+## La caméra regarde vers -X -Z : côté proche (bas de l'écran, +X +Z) les montagnes restent basses pour ne pas
+## cacher les unités au bord de la zone de jeu ; côté lointain (haut de l'écran), elles montent jusqu'à ~40 m.
 func hauteur(x: float, z: float) -> float:
 	var d := maxf(absf(x), absf(z)) - GameRules.DEMI_CARTE
 	if d <= 0.0:
-		return 0.0
-	var n := (_bruit.get_noise_2d(x, z) + 1.0) * 0.5
+		return Terrain.hauteur_sol(Vector3(x, 0.0, z))   # raccord avec la zone de jeu (lit de rivière compris)
+	# Pied des montagnes : avance et recule (±16 m) au lieu de suivre le bord de la carte.
+	var pied := d + _bord.get_noise_2d(x, z) * 16.0
+	var montee := smoothstep(0.0, 4.0, d) * smoothstep(-6.0, 38.0, pied)
 	var lointain := smoothstep(-40.0, 40.0, -(x + z))   # 1 en haut de l'écran, 0 en bas
-	var montee := smoothstep(0.0, 30.0, d)
-	var collines := montee * (2.0 + 10.0 * n)
-	var escarpement := smoothstep(6.0, 18.0, d) * (10.0 + 12.0 * n) * lointain
-	var plateau := smoothstep(30.0, 70.0, d) * 8.0
-	var detail := _bruit_fin.get_noise_2d(x, z) * (1.5 + 2.0 * lointain) * montee
+	var amplitude := lerpf(9.0, 38.0, lointain)
+	var crete := pow((_montagnes.get_noise_2d(x, z) + 1.0) * 0.5, 1.5)
+	var massif := 0.55 + 0.45 * _massifs.get_noise_2d(x, z)
+	var h := montee * (1.5 + crete * amplitude * massif)
 	# La rivière sort de la zone de jeu par une vallée à fond plat.
 	var d_riviere := Terrain.distance_riviere(Vector3(x, 0.0, z))
 	var vallee := smoothstep(GameRules.RIVIERE_LARGEUR * 0.5, GameRules.RIVIERE_LARGEUR * 0.5 + 26.0, d_riviere)
-	return maxf(0.0, (collines + escarpement + plateau + detail) * vallee) - Terrain.profondeur_riviere(d_riviere)
+	return maxf(0.0, h * vallee) - Terrain.profondeur_riviere(d_riviere)
 
 
 # --- Sol de la zone de jeu : grille de 2 m, lit de rivière en contrebas ---
@@ -266,10 +277,14 @@ func _creer_relief() -> void:
 			var x := -ETENDUE + i * PAS
 			var z := -ETENDUE + j * PAS
 			sommets[i * cotes + j] = Vector3(x, hauteur(x, z), z)
-			# Normale par différences finies : relief lisse.
-			var dx := hauteur(x + 1.0, z) - hauteur(x - 1.0, z)
-			var dz := hauteur(x, z + 1.0) - hauteur(x, z - 1.0)
-			normales[i * cotes + j] = Vector3(-dx, 2.0, -dz).normalized()
+	# Normales par différences entre sommets voisins (pas de calcul de hauteur supplémentaire).
+	for i in cotes:
+		for j in cotes:
+			var g := sommets[maxi(i - 1, 0) * cotes + j].y
+			var dr := sommets[mini(i + 1, cotes - 1) * cotes + j].y
+			var h := sommets[i * cotes + maxi(j - 1, 0)].y
+			var b := sommets[i * cotes + mini(j + 1, cotes - 1)].y
+			normales[i * cotes + j] = Vector3(g - dr, 2.0 * PAS, h - b).normalized()
 	var indices := PackedInt32Array()
 	for i in cotes - 1:
 		for j in cotes - 1:

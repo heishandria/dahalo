@@ -121,7 +121,7 @@ si un modèle manque, formes générées par le code.
 
 | Élément | Où | Détail |
 |---|---|---|
-| Relief | De ±120 m à ±280 m | Collines puis plateau. Côté **proche de la caméra** (bas de l'écran) : collines basses, pour ne pas cacher les unités au bord. Côté **lointain** : **escarpements** jusqu'à ~30 m. Vallée plate le long de la rivière |
+| Relief | De ±120 m à ±280 m | **Massifs à crêtes et vallées** (bruit « ridged » avec déformation de domaine), hauteurs variées avec des cols ; leur pied avance et recule (±16 m) au lieu de suivre le carré de la carte. Côté **proche de la caméra** (bas de l'écran) : bas (≤ ~11 m), pour ne pas cacher les unités au bord ; côté **lointain** : jusqu'à ~40 m. Roche stratifiée sur les pentes (projetée sur deux plans). Vallée plate le long de la rivière. Maillage de 2,5 m |
 | Rochers, buissons (modèles du pack), épineux, baobabs | 170 / 260 / 140 touffes / 10 | Posés sur le relief, hors de la vallée |
 | Arbres morts et tordus (pack) | 70 (25 sur Web et mobile) | **Relief lointain seulement** (haut de l'écran) : de près, ils cacheraient le jeu |
 
