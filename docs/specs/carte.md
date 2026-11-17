@@ -168,6 +168,7 @@ D'après des photos de cases du Sud fournies le 17/11 : petites cases rectangula
 | Case des Hommes | Murs en **roseaux tressés** tenus par trois lattes, piquet au milieu de chaque mur |
 | Camp de bûcherons | Abri ouvert de chaume sur quatre poteaux, **tas de bûches**, billot, branches |
 | Tsena | Abri ouvert couvert de **tôle rouillée**, deux étals sur tréteaux avec paniers, sacs |
+| Enclos à zébus | D'après une photo fournie le 17/11 : **perches dressées tordues**, espacées au hasard, plus ou moins hautes et penchées, **trois rangs de traverses** tordues (certaines manquent, d'autres se chevauchent), perches en écharpe ; **contour en carré arrondi et cabossé** (±0,35 m) ; **sol piétiné et boueux** au bord fondu, litière de paille. Ouverture de 2 m au sud, poteaux d'entrée plus hauts |
 
 - **Fait main, rien n'est d'équerre** : angles décalés, murs de hauteurs inégales, rondins et poteaux tordus et
   penchés (longueurs, diamètres et jours variables), panneaux tressés bombés, toit affaissé au milieu et bosselé,
@@ -181,7 +182,8 @@ D'après des photos de cases du Sud fournies le 17/11 : petites cases rectangula
   2K pour le chaume et les rondins, filtrage anisotrope.
 - Textures photo Poly Haven (CC0), éclaircies (bois délavé) ;
   `assets/textures/batiments/LISEZMOI.md`. Collisions inchangées ; fanion du clan sur un petit mât au pignon.
-- Pas encore refaits : enclos, palissade, champs, puits.
+- Pas encore refaits : palissade, champs, puits. Les collisions de l'enclos restent un carré de 8 × 8 m (le visuel
+  s'en écarte de quelques dizaines de centimètres).
 
 ## 5. Paysage autour de la zone de jeu (purement visuel)
 

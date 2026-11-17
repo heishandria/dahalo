@@ -28,12 +28,12 @@ func _ready() -> void:
 ## Cases, camp de bûcherons et Tsena : modèle de scenes/buildings/maisons.gd à la place des boîtes de la scène
 ## (collisions inchangées). Le fanion du clan est déplacé sur le modèle.
 func _remplacer_modele(banniere: MeshInstance3D) -> void:
-	if not type_batiment in ["case_centrale", "case_hommes", "camp_bois", "tsena"]:
+	if not type_batiment in ["case_centrale", "case_hommes", "camp_bois", "tsena", "enclos"]:
 		return
 	var modele := Maisons.modele(type_batiment, Plantes.variante_en(global_position))
 	if modele.is_empty():
 		return
-	for nom in ["Murs", "Toit", "Mat"]:
+	for nom in ["Murs", "Toit", "Mat", "Nord", "Est", "Ouest", "SudGauche", "SudDroite"]:
 		var n := get_node_or_null(nom) as Node3D
 		if n:
 			n.visible = false

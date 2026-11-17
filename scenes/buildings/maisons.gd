@@ -35,6 +35,8 @@ static func modele(type_batiment: String, variante: int = 0) -> Dictionary:
 			resultat = _abri_bois(graine)
 		"tsena":
 			resultat = _marche(graine)
+		"enclos":
+			resultat = _enclos(graine)
 	_cache[cle] = resultat
 	return resultat
 
@@ -51,7 +53,7 @@ static func _materiau(nom: String) -> StandardMaterial3D:
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	m.roughness = 0.95
 	var fichiers := {"chaume": "reed_roof_04", "bois": "wood_trunk_wall", "roseaux": "bamboo_wall",
-			"planches": "weathered_planks", "tole": "rusty_corrugated_iron"}
+			"planches": "weathered_planks", "tole": "rusty_corrugated_iron", "boue": "brown_mud_02"}
 	var base: String = fichiers[nom]
 	m.albedo_texture = load(DOSSIER + base + "_couleur.jpg")
 	if ResourceLoader.exists(DOSSIER + base + "_relief.jpg"):
@@ -59,12 +61,17 @@ static func _materiau(nom: String) -> StandardMaterial3D:
 		m.normal_texture = load(DOSSIER + base + "_relief.jpg")
 		m.normal_scale = 1.4
 	# Taille (m) couverte par une répétition de la texture : UV en mètres × 1 / taille.
-	var tailles := {"chaume": 1.6, "bois": 2.2, "roseaux": 1.2, "planches": 1.4, "tole": 1.6}
+	var tailles := {"chaume": 1.6, "bois": 2.2, "roseaux": 1.2, "planches": 1.4, "tole": 1.6, "boue": 3.0}
 	m.uv1_scale = Vector3.ONE / float(tailles[nom])
 	# Les textures photo sont sombres ; le bois des cases du Sud est gris-brun délavé par le soleil.
 	var eclairage := {"chaume": Color(1.15, 1.05, 0.92), "bois": Color(1.9, 1.75, 1.55), "roseaux": Color(1.25, 1.15, 1.0),
-			"planches": Color(1.6, 1.5, 1.35), "tole": Color(1.7, 1.55, 1.45)}
+			"planches": Color(1.6, 1.5, 1.35), "tole": Color(1.7, 1.55, 1.45), "boue": Color(1.05, 0.95, 0.88)}
 	m.albedo_color = eclairage[nom]
+	if nom == "boue":
+		# Sol de l'enclos posé sur le terrain : bord fondu (alpha des sommets), pas de double face.
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.cull_mode = BaseMaterial3D.CULL_BACK
+		m.roughness = 1.0
 	if nom == "tole":
 		m.metallic = 0.4
 		m.roughness = 0.7
@@ -388,6 +395,124 @@ static func _marche(graine: int) -> Dictionary:
 	for k in 3:
 		_boite(c.st("planches"), Vector3(-2.0 + k * 0.5, 0.22, -1.2), Vector3(0.4, 0.45, 0.35), Color(0.9, 0.82, 0.68))
 	return {"maillage": c.assembler(), "banniere": Vector3(2.3, 2.95, -1.8)}
+
+
+# --- Enclos à zébus : clôture de perches tordues et de traverses ligaturées, contour irrégulier ---
+
+## D'après une photo d'enclos fournie le 17/11 : perches dressées tordues, plus ou moins hautes et penchées,
+## espacées au hasard, trois rangs de traverses tordues (certaines manquent), quelques perches en écharpe ;
+## sol piétiné et boueux, litière de paille. Contour : carré arrondi et cabossé (±0,35 m) autour de l'emprise
+## de 8 × 8 m ; ouverture de 2 m au sud (+Z), comme les collisions.
+static func _enclos(graine: int) -> Dictionary:
+	var h := RandomNumberGenerator.new()
+	h.seed = graine
+	var c := Chantier.new()
+	var bruit := FastNoiseLite.new()
+	bruit.seed = graine
+	bruit.frequency = 1.3
+	var gris := Color(0.82, 0.78, 0.72)   # bois délavé, gris
+	# Contour : points le long d'un carré arrondi (super-ellipse), cabossé.
+	var contour: Array[Vector3] = []
+	var n := 64
+	for k in n:
+		var t := TAU * k / n
+		var ct := cos(t)
+		var s := sin(t)
+		var r := 3.95 / pow(pow(absf(ct), 4.0) + pow(absf(s), 4.0), 0.25)
+		r += bruit.get_noise_1d(t * 2.0) * 0.35
+		contour.append(Vector3(ct * r, 0, s * r))
+	# Perches le long du contour, espacées au hasard ; rien dans l'ouverture (x entre -1,1 et 1,1, côté +Z).
+	var perches: Array = []   # [pied, tête]
+	var distance := 0.0
+	var prochaine := 0.0
+	for k in n:
+		var a := contour[k]
+		var b := contour[(k + 1) % n]
+		var l := a.distance_to(b)
+		while prochaine <= distance + l:
+			var p := a.lerp(b, (prochaine - distance) / l)
+			var dans_ouverture := p.z > 2.0 and absf(p.x) < 1.15
+			if not dans_ouverture:
+				var hauteur := h.randf_range(1.1, 1.75)
+				if absf(absf(p.x) - 1.3) < 0.35 and p.z > 2.0:
+					hauteur += 0.35   # poteaux de l'entrée, plus hauts
+				var tete := p + Vector3(h.randf_range(-0.14, 0.14), hauteur, h.randf_range(-0.14, 0.14))
+				perches.append([p + Vector3(0, -0.15, 0), tete])
+				_tordu(c.st("bois"), p + Vector3(0, -0.15, 0), tete, h.randf_range(0.035, 0.06), 5, gris * h.randf_range(0.7, 1.0), h, 0.07)
+			else:
+				perches.append([])   # marque l'ouverture
+			prochaine += h.randf_range(0.55, 1.05)
+		distance += l
+	# Traverses : trois rangs, chaque traverse va d'une perche à une perche suivante (1 à 3 plus loin), tordue,
+	# légèrement en dehors ; certaines manquent, d'autres se chevauchent.
+	for rang: float in [0.35, 0.75, 1.1]:
+		var i := 0
+		while i < perches.size():
+			var portee := h.randi_range(1, 3)
+			var j := i + portee
+			if j >= perches.size():
+				break
+			var franchit_ouverture := false
+			for k in range(i, j + 1):
+				if (perches[k] as Array).is_empty():
+					franchit_ouverture = true
+			if not franchit_ouverture and h.randf() < 0.88:
+				var pa: Array = perches[i]
+				var pb: Array = perches[j]
+				var ya := rang + h.randf_range(-0.1, 0.1)
+				var yb := rang + h.randf_range(-0.1, 0.1)
+				var a: Vector3 = (pa[0] as Vector3).lerp(pa[1], ya / (pa[1] as Vector3).y)
+				var b: Vector3 = (pb[0] as Vector3).lerp(pb[1], yb / (pb[1] as Vector3).y)
+				var dehors := Vector3(a.x + b.x, 0, a.z + b.z).normalized() * 0.06
+				var deborde := (b - a).normalized() * h.randf_range(0.05, 0.35)
+				_tordu(c.st("bois"), a - deborde + dehors, b + deborde + dehors, h.randf_range(0.025, 0.04), 5,
+						gris * h.randf_range(0.65, 0.95), h, 0.04)
+			# Parfois la traverse suivante repart une perche avant (elles se chevauchent) ; on avance toujours.
+			i = j if h.randf() < 0.7 else maxi(j - 1, i + 1)
+	# Quelques perches en écharpe (posées en diagonale contre la clôture).
+	for k in h.randi_range(2, 4):
+		var i := h.randi_range(0, perches.size() - 3)
+		var pa: Array = perches[i]
+		var pb: Array = perches[i + 2]
+		if pa.is_empty() or pb.is_empty():
+			continue
+		_tordu(c.st("bois"), (pa[0] as Vector3) + Vector3(0, 0.15, 0), (pb[1] as Vector3) + Vector3(0, -0.2, 0),
+				0.035, 5, gris * 0.8, h, 0.05)
+	# Sol piétiné et boueux à l'intérieur, au bord fondu.
+	var sol := c.st("boue")
+	var centre := Vector3(0, 0.035, 0)
+	for k in n:
+		var a := contour[k] * 0.97 + Vector3(0, 0.035, 0)
+		var b := contour[(k + 1) % n] * 0.97 + Vector3(0, 0.035, 0)
+		var a2 := contour[k] * 1.12 + Vector3(0, 0.03, 0)
+		var b2 := contour[(k + 1) % n] * 1.12 + Vector3(0, 0.03, 0)
+		for p: Vector3 in [centre, a, b]:
+			sol.set_color(Color(0.92, 0.85, 0.8, 1.0))
+			sol.set_normal(Vector3.UP)
+			sol.set_uv(Vector2(p.x, p.z))
+			sol.add_vertex(p)
+		var opaque := Color(0.92, 0.85, 0.8, 1.0)
+		var transparent := Color(0.92, 0.85, 0.8, 0.0)
+		var anneau := [[a, opaque], [b, opaque], [b2, transparent], [a, opaque], [b2, transparent], [a2, transparent]]
+		for q: Array in anneau:
+			var p: Vector3 = q[0]
+			sol.set_color(q[1])
+			sol.set_normal(Vector3.UP)
+			sol.set_uv(Vector2(p.x, p.z))
+			sol.add_vertex(p)
+	# Litière : brins de paille éparpillés sur le sol.
+	for k in 70:
+		var p := Vector3(h.randf_range(-3.2, 3.2), 0.05, h.randf_range(-3.2, 3.2))
+		var dir := Vector3(cos(h.randf() * TAU), 0, sin(h.randf() * TAU)) * h.randf_range(0.15, 0.35)
+		var cote := Vector3(-dir.z, 0, dir.x).normalized() * 0.03
+		_quad(c.st("chaume"), p - dir - cote, p + dir - cote, p + dir + cote, p - dir + cote, Vector3.UP,
+				Color(0.8, 0.7, 0.52) * h.randf_range(0.7, 1.0))
+	var poteau_entree: Vector3 = Vector3(1.3, 0, 3.9)
+	for paire: Array in perches:
+		if not paire.is_empty() and (paire[0] as Vector3).z > 2.0 and (paire[0] as Vector3).x > 1.0:
+			poteau_entree = paire[1]
+			break
+	return {"maillage": c.assembler(), "banniere": poteau_entree + Vector3(0.45, 0.05, 0)}
 
 
 # --- Briques de construction (normales données explicitement) ---
