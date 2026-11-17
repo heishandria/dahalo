@@ -37,6 +37,7 @@ func _ready() -> void:
 		var n := get_node_or_null(String(VARIANTES[v]["noeud"])) as Node3D
 		if n:
 			n.visible = v == variante
+	_remplacer_modele()
 	_quantite_max = quantite
 	id = CommandBus.enregistrer(self)
 	add_to_group("ressources")
@@ -120,6 +121,28 @@ func _sur_epuisement() -> void:
 		_maj_visuel_repousse()
 	else:
 		queue_free()
+
+
+## Épineux et raketa : modèles de scenes/world/plantes.gd à la place des formes primitives de la scène
+## (le nœud parent est gardé : visibilité, rétrécissement à l'abattage et repousse continuent de marcher).
+func _remplacer_modele() -> void:
+	var parent: Node3D = null
+	var maillage: Mesh = null
+	if variante == "epineux":
+		parent = get_node_or_null("Epineux") as Node3D
+		maillage = Plantes.epineux(Plantes.variante_en(global_position))
+	elif variante == "raketa":
+		parent = get_node_or_null("Raketa") as Node3D
+		maillage = Plantes.raketa(Plantes.variante_en(global_position))
+	if parent == null:
+		return
+	for enfant in parent.get_children():
+		(enfant as Node3D).visible = false
+	var modele := MeshInstance3D.new()
+	modele.name = "Modele"
+	modele.mesh = maillage
+	modele.rotation.y = float(Plantes.variante_en(global_position * 2.0)) * 2.1
+	parent.add_child(modele)
 
 
 ## Collision « physique » de la source (les unités butent dessus) selon sa variante.

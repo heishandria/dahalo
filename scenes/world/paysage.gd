@@ -284,46 +284,25 @@ func _creer_decor() -> void:
 			arbres.append(Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3.ONE * e), p - Vector3(0, 0.2, 0)))
 		_ajouter_variantes("Arbres", arbres_pack, arbres)
 
-	# Épineux : touffes de tiges dressées, un peu écartées (silhouette du bush de l'Androy).
-	var tige := CylinderMesh.new()
-	tige.top_radius = 0.1
-	tige.bottom_radius = 0.2
-	tige.height = 1.0
-	tige.radial_segments = 5
-	tige.rings = 1
-	var tiges: Array[Transform3D] = []
-	for k in NOMBRE_TOUFFES_EPINEUX:
-		var centre := _point_hors_jeu(7.0, 120.0)
+	# Épineux (Alluaudia) et baobabs : modèles de scenes/world/plantes.gd, en MultiMesh par variante.
+	var epineux: Array[Mesh] = []
+	var baobabs: Array[Mesh] = []
+	for v in Plantes.VARIANTES:
+		epineux.append(Plantes.epineux(v))
+		baobabs.append(Plantes.baobab(v))
+	var places_epineux: Array[Transform3D] = []
+	for k in int(NOMBRE_TOUFFES_EPINEUX * maxf(f, 0.5)):
+		var p := _point_hors_jeu(7.0, 120.0)
 		# Côté proche de la caméra, des épineux bas : ils ne doivent pas masquer la zone de jeu.
-		var proche := smoothstep(-20.0, 60.0, centre.x + centre.z)
-		for t in _hasard.randi_range(3, 5):
-			var h := _hasard.randf_range(3.0, 6.5) * (1.0 - 0.6 * proche)
-			var axe := Vector3(_hasard.randf_range(-1, 1), 0, _hasard.randf_range(-1, 1)).normalized()
-			var base := Basis(axe, _hasard.randf_range(0.05, 0.3)).scaled(Vector3(1, h, 1))
-			var decalage := Vector3(_hasard.randf_range(-1.2, 1.2), 0, _hasard.randf_range(-1.2, 1.2))
-			var pied := centre + decalage
-			pied.y = hauteur(pied.x, pied.z)
-			tiges.append(Transform3D(base, pied + base.y * 0.5))
-	_ajouter_multimesh("Epineux", tige, tiges, COULEUR_TIGE, 0.15)
-
-	# Quelques baobabs, repères lointains.
-	var tronc := CylinderMesh.new()
-	tronc.top_radius = 0.6
-	tronc.bottom_radius = 1.2
-	tronc.height = 1.0
-	tronc.radial_segments = 8
-	var couronne := SphereMesh.new()
-	couronne.radial_segments = 8
-	couronne.rings = 4
-	var troncs: Array[Transform3D] = []
-	var couronnes: Array[Transform3D] = []
+		var proche := smoothstep(-20.0, 60.0, p.x + p.z)
+		var e := _hasard.randf_range(0.9, 1.3) * (1.0 - 0.55 * proche)
+		places_epineux.append(Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3.ONE * e), p - Vector3(0, 0.1, 0)))
+	_ajouter_variantes("Epineux", epineux, places_epineux)
+	var places_baobabs: Array[Transform3D] = []
 	for k in NOMBRE_BAOBABS:
 		var p := _point_hors_jeu(15.0, 110.0)
-		var h := _hasard.randf_range(6.0, 9.0)
-		troncs.append(Transform3D(Basis().scaled(Vector3(1, h, 1)), p + Vector3(0, h * 0.5, 0)))
-		couronnes.append(Transform3D(Basis().scaled(Vector3(4.5, 1.4, 4.5)), p + Vector3(0, h + 0.3, 0)))
-	_ajouter_multimesh("BaobabsTroncs", tronc, troncs, COULEUR_BAOBAB, 0.08)
-	_ajouter_multimesh("BaobabsCouronnes", couronne, couronnes, COULEUR_COURONNE, 0.1)
+		places_baobabs.append(Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3.ONE * _hasard.randf_range(0.9, 1.2)), p - Vector3(0, 0.2, 0)))
+	_ajouter_variantes("Baobabs", baobabs, places_baobabs)
 
 
 ## Point au sol du relief, à une distance du bord de la zone de jeu comprise entre d_min et d_max.

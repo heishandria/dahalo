@@ -146,6 +146,17 @@ si un modèle manque, formes générées par le code.
 - Les oiseaux sont **masqués au-dessus des zones inexplorées** (ils ne doivent rien révéler).
 - Aucun nom affiché en jeu (termes malgaches à vérifier avant de les introduire).
 
+## 4 septies. Plantes de l'Androy (`scenes/world/plantes.gd`, en attendant les modèles sur mesure)
+
+| Plante | Forme | Saisons |
+|---|---|---|
+| Baobab (type *Adansonia za*) | Tronc en bouteille gris, couronne de branches courtes, petites touffes de feuilles | **Perd ses feuilles en sécheresse** (branches nues) |
+| Épineux (type *Alluaudia*) | 3 à 6 tiges gris-vert dressées, couvertes de petites feuilles | Perd ses feuilles en sécheresse |
+| Raketa (figuier de Barbarie) | Raquettes en éventail, fruits rouges | Inchangé |
+
+- 3 variantes de chaque, tirées de la position ; utilisées en jeu (ressources, baobabs) et sur le relief.
+- Descriptions pour faire les modèles définitifs (Canva puis Tripo) : `docs/modeles_sur_mesure.md`.
+
 ## 5. Paysage autour de la zone de jeu (purement visuel)
 
 | Élément | Où | Détail |

@@ -71,7 +71,9 @@ couleurs ternes et poussiéreuses. Les personnages sont inventés, jamais copié
   4. ~~modèles CC0 pour le décor~~ : **Quaternius Stylized Nature MegaKit** (version Standard, déposée par
      l'auteur sur OpenGameArt) intégré : herbes, fleurs, buissons, cailloux, rochers, arbres morts et tordus
      (`assets/models/decor/LISEZMOI.md`). Comparatif des autres sources : page « Sources du décor Dahalo » ;
-  5. modèles sur mesure (baobab, épineux, raketa, cases, enclos) via Canva → Tripo.
+  5. modèles sur mesure (baobab, épineux, raketa, cases, enclos, palissade) via Canva → Tripo :
+     descriptions prêtes dans `docs/modeles_sur_mesure.md`. En attendant, plantes générées par le code
+     (`scenes/world/plantes.gd`).
 - **Direction artistique décidée (17/11)** : la richesse de la référence « maquette » (paliers, eau, végétation
   dense) mais en **sérieux, un peu réaliste** : textures photo, couleurs ternes et poussiéreuses. **PC d'abord**
   (Forward+), mobile et Web allégés. Les personnages devront suivre ce ton (plutôt l'image réaliste du villageois

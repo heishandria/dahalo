@@ -69,6 +69,7 @@ func _ready() -> void:
 	EventBus.cycle_change.connect(_on_cycle)
 
 	_regler_resolution()
+	EventBus.meteo_change.connect(func(secheresse: bool) -> void: Plantes.saison(self, secheresse))
 	_generer_carte(_graine())
 	# Navmesh cuit APRÈS la carte : il contourne bâtiments, points d'eau, baobabs et clôtures.
 	navigation.bake_navigation_mesh(false)
@@ -362,27 +363,10 @@ func creer_champ_mur(faction: int, pos: Vector3) -> Node3D:
 
 func _baobab(pos: Vector3) -> void:
 	var arbre := Node3D.new()
-	var tronc := MeshInstance3D.new()
-	var m_tronc := CylinderMesh.new()
-	m_tronc.top_radius = 0.7
-	m_tronc.bottom_radius = 1.2
-	m_tronc.height = 6.0
-	var mat_tronc := StandardMaterial3D.new()
-	mat_tronc.albedo_color = Color(0.55, 0.45, 0.38)
-	m_tronc.material = mat_tronc
-	tronc.mesh = m_tronc
-	tronc.position.y = 3.0
-	arbre.add_child(tronc)
-	var couronne := MeshInstance3D.new()
-	var m_couronne := SphereMesh.new()
-	m_couronne.radius = 2.0
-	m_couronne.height = 1.2
-	var mat_couronne := StandardMaterial3D.new()
-	mat_couronne.albedo_color = Color(0.32, 0.38, 0.2)
-	m_couronne.material = mat_couronne
-	couronne.mesh = m_couronne
-	couronne.position.y = 6.3
-	arbre.add_child(couronne)
+	var modele := MeshInstance3D.new()
+	modele.mesh = Plantes.baobab(Plantes.variante_en(pos))
+	modele.rotation.y = float(Plantes.variante_en(pos * 3.0)) * 2.1
+	arbre.add_child(modele)
 	var obstacle := StaticBody3D.new()
 	obstacle.collision_layer = 8   # contourné par le calcul de chemin
 	obstacle.collision_mask = 0
