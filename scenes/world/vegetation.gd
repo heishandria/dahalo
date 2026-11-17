@@ -191,6 +191,39 @@ func _point_au_sol() -> Vector3:
 	return p
 
 
+## Herbe en massifs : dense dans les plaques, quasi nulle entre elles ; pleine sur les berges et autour des mares.
+func densite_herbe(p: Vector3) -> float:
+	var d := Terrain.distance_riviere(p)
+	var demi := GameRules.RIVIERE_LARGEUR * 0.5
+	if d < demi - 0.5:
+		return 0.0
+	var densite := smoothstep(0.02, 0.32, _bruit.get_noise_2d(p.x, p.z))
+	if d < demi + 6.0:
+		densite = maxf(densite, 1.0 - smoothstep(demi + 3.0, demi + 6.0, d))
+	for m in _mares:
+		densite = maxf(densite, 1.0 - smoothstep(5.0, 8.0, Vector2(p.x, p.z).distance_to(m)))
+	return densite
+
+
+## Fourrés d'arbustes (bush du Sud) : quelques grandes plaques.
+func densite_fourre(p: Vector3) -> float:
+	if Terrain.dans_riviere(p):
+		return 0.0
+	return smoothstep(0.05, 0.45, _bruit.get_noise_2d(p.x * 0.6 + 400.0, p.z * 0.6))
+
+
+## Carte de densité pour le shader du sol (R = herbe, G = fourrés), une case de 2 m sur la zone de jeu.
+func texture_densite() -> ImageTexture:
+	var n := Terrain.N_RELIEF
+	var image := Image.create(n, n, false, Image.FORMAT_RG8)
+	for j in n:
+		for i in n:
+			var p := Vector3(-GameRules.DEMI_CARTE + (i + 0.5) * Terrain.CASE_RELIEF, 0.0,
+					-GameRules.DEMI_CARTE + (j + 0.5) * Terrain.CASE_RELIEF)
+			image.set_pixel(i, j, Color(densite_herbe(p), densite_fourre(p), 0.0))
+	return ImageTexture.create_from_image(image)
+
+
 func _rien() -> Transform3D:
 	return Transform3D(Basis(), Vector3.INF)
 
@@ -199,18 +232,9 @@ func _placer_herbe(echelle_min: float, echelle_max: float) -> Transform3D:
 	var p := _point_au_sol()
 	if p == Vector3.INF:
 		return _rien()
-	var d := Terrain.distance_riviere(p)
-	var demi := GameRules.RIVIERE_LARGEUR * 0.5
-	if d < demi - 0.5:
+	if Terrain.distance_riviere(p) < GameRules.RIVIERE_LARGEUR * 0.5 - 0.5:
 		return _rien()   # pas dans le sable du lit
-	# Densité : plaques d'herbe (bruit), bien plus fournies sur les berges.
-	var densite := 0.25 + 0.75 * smoothstep(-0.1, 0.4, _bruit.get_noise_2d(p.x, p.z))
-	if d < demi + 6.0:
-		densite = 1.0
-	for m in _mares:
-		if Vector2(p.x, p.z).distance_to(m) < 7.0:
-			densite = 1.0   # herbe plus verte et dense autour des mares
-	if _hasard.randf() > densite:
+	if _hasard.randf() > 0.03 + 0.97 * densite_herbe(p):
 		return _rien()
 	var e := _hasard.randf_range(echelle_min, echelle_max)
 	return Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e, e * _hasard.randf_range(0.85, 1.2), e)), p)
@@ -222,8 +246,7 @@ func _placer_buisson() -> Transform3D:
 	var p := _point_au_sol()
 	if p == Vector3.INF or Terrain.dans_riviere(p):
 		return _rien()
-	var fourre := smoothstep(0.05, 0.45, _bruit.get_noise_2d(p.x * 0.6 + 400.0, p.z * 0.6))
-	if _hasard.randf() > 0.12 + 0.88 * fourre:
+	if _hasard.randf() > 0.06 + 0.94 * densite_fourre(p):
 		return _rien()
 	var e := _hasard.randf_range(0.32, 0.6)
 	return Transform3D(Basis(Vector3.UP, _hasard.randf() * TAU).scaled(Vector3(e, e * 0.9, e)), p)

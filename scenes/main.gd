@@ -32,8 +32,10 @@ var _test_accelere := false
 var _prochain_rapport := 300.0
 
 # Nuit : clair de lune lisible (assez sombre pour sentir la nuit, assez clair pour jouer).
+const LUMIERE_JOUR := 1.75   # soleil franc : ombres et relief marqués
+const AMBIANCE_JOUR := 0.42  # ambiance basse le jour : contraste ombre / lumière
 const SOLEIL_NUIT := 0.45
-const AMBIANCE_NUIT := 0.5
+const AMBIANCE_NUIT := 0.35
 const CIEL_NUIT := 0.4
 const COULEUR_LUNE := Color(0.8, 0.83, 0.95)   # clair de lune presque neutre (moins bleu)
 # Lumière ambiante : couleur fixe (le bleu du ciel désaturait le sol) ; chaude le jour, bleutée la nuit.
@@ -74,6 +76,7 @@ func _ready() -> void:
 	brouillard.name = "Brouillard"
 	add_child(brouillard)
 	$Vegetation.construire(brouillard.texture_vision())   # après les entités : rien ne pousse dessous
+	$Paysage.brancher_vegetation($Vegetation.texture_densite())
 	$Paysage.brancher_vision(brouillard.texture_vision())
 
 
@@ -508,8 +511,8 @@ func _maj_lumiere() -> void:
 		lum = 0.0                                                         # nuit
 	elif t >= 1.0 - transition:
 		lum = (t - (1.0 - transition)) / transition                       # aube
-	soleil.light_energy = lerpf(SOLEIL_NUIT, 1.3, lum)
+	soleil.light_energy = lerpf(SOLEIL_NUIT, LUMIERE_JOUR, lum)
 	soleil.light_color = COULEUR_LUNE.lerp(Color(1.0, 0.92, 0.78), lum)
-	environnement.environment.ambient_light_energy = lerpf(AMBIANCE_NUIT, 0.7, lum)
+	environnement.environment.ambient_light_energy = lerpf(AMBIANCE_NUIT, AMBIANCE_JOUR, lum)
 	environnement.environment.ambient_light_color = AMBIANCE_NUIT_COULEUR.lerp(AMBIANCE_JOUR_COULEUR, lum)
 	environnement.environment.background_energy_multiplier = lerpf(CIEL_NUIT, 1.0, lum)

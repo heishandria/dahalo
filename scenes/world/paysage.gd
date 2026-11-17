@@ -382,6 +382,11 @@ func _ajouter_variantes(nom: String, maillages: Array[Mesh], transformations: Ar
 		add_child(instance)
 
 
+## Densité de végétation de la zone de jeu : le sol verdit sous les massifs (voir vegetation.gd).
+func brancher_vegetation(texture_densite: Texture2D) -> void:
+	_materiau_relief.set_shader_parameter("carte_vegetation", texture_densite)
+
+
 ## Texture du brouillard : les plateaux dépassent le voile posé au sol, le shader les assombrit lui-même.
 func brancher_vision(texture_vision: Texture2D) -> void:
 	_materiau_relief.set_shader_parameter("carte_vision", texture_vision)

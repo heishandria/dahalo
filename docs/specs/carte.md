@@ -44,7 +44,8 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
 - **Trous d'eau** dans le lit : points d'eau ordinaires (×0,3 en sécheresse), comme ceux qu'on creuse vraiment dans
   le sable des rivières de l'Androy.
 - Rendu : sable clair, berges plus herbeuses. **En saison normale, un filet d'eau coule au milieu du lit**
-  (~6 m de large, rides animées) ; **en sécheresse il se retire** et le lit est à sec (fondu de 6 s). L'eau est
+  (~6 m de large : eau limoneuse transparente au bord, reflet du ciel selon l'angle, reflets du soleil sur les rides,
+  liseré d'écume, sable mouillé autour) ; **en sécheresse il se retire** et le lit est à sec (fondu de 6 s). L'eau est
   purement visuelle : le ralentissement est le même en toute saison. Le lit se prolonge hors de la zone de jeu
   par une **vallée à fond plat** dans le relief.
 - Technique : `Terrain` garde la distance au lit sur une grille de 2 m couvrant ±280 m (zone de jeu + relief) ;
@@ -84,6 +85,10 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
 | Parois des plateaux, pentes du relief | Falaise stratifiée (Namaqualand) |
 | Dessus des plateaux | Sol sec et caillouteux |
 
+- **Sans répétition visible** : chaque texture est lue deux fois (tournée, décalée) et mélangée par plaques.
+- **Variations** : grandes plaques de 60 m plus sombres et rouges ou plus claires et ocre ; zones caillouteuses ;
+  **sol assombri et verdi sous les massifs de végétation** (carte de densité calculée par `vegetation.gd`, la même
+  qui place les touffes : herbe et sol vont ensemble) ; **sable mouillé et sombre** autour du filet d'eau.
 - Les masques (où va chaque texture) viennent du bruit et de la distance à la rivière ; textures de relief (normal
   maps) sur la latérite et la falaise. Étalonnage chaud et poussiéreux.
 - **Saisons** : fondu de 6 s via `EventBus.meteo_change` (herbe, lit, teinte d'ensemble).
@@ -91,8 +96,8 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
 
 ## 4 ter. Rendu (direction artistique décidée le 17/11 : « sérieux, un peu réaliste »)
 
-- **PC : Forward+** — occlusion ambiante (SSAO), brume de poussière légère, ombres douces (soleil à 1,5°), contraste
-  +5 %, saturation −10 %. **Mobile** : rendu Mobile ; **Web** : Compatibility (sans SSAO ; brume simple).
+- **PC : Forward+** — soleil chaud et franc, **rasant** (~35°, venant de la gauche de l'écran : ombres longues vers le
+  bas à droite), ambiance basse pour le contraste, occlusion ambiante (SSAO), brume très légère, contraste +12 %. **Mobile** : rendu Mobile ; **Web** : Compatibility (sans SSAO ; brume simple).
 - Lumière ambiante chaude le jour, bleutée la nuit.
 
 ## 4 quinquies. Points d'eau (visuel ; `scenes/world/mare.gd`)
@@ -111,7 +116,7 @@ si un modèle manque, formes générées par le code.
 
 | Élément | Nombre (PC / Web et mobile) | Détail |
 |---|---|---|
-| Herbes (4 variantes) | 9 000 / ~3 150 | Par plaques ; **bien plus denses sur les berges** ; aucune dans le sable du lit ; aussi sur le dessus des plateaux. **Dorées en sécheresse** (fondu de 6 s) ; elles **ondulent au vent** |
+| Herbes (4 variantes) | 9 000 / ~3 150 | **En massifs** denses, sol nu entre eux ; **bien plus denses sur les berges** ; aucune dans le sable du lit ; aussi sur le dessus des plateaux. **Dorées en sécheresse** (fondu de 6 s) ; elles **ondulent au vent** |
 | Fleurs (2 variantes) | 500 / 175 | **Disparaissent en sécheresse**, reviennent avec les pluies |
 | Buissons (2 variantes) | 1 100 / 385 | **Regroupés en fourrés** (bush du Sud), rares ailleurs ; hors du lit ; **restent vert terne en sécheresse** |
 | Cailloux (5 variantes) | 450 / 157 | |

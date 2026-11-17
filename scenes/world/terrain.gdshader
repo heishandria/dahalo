@@ -30,6 +30,10 @@ uniform float etendue = 280.0;
 uniform float distance_max = 32.0;
 uniform float largeur_riviere = 11.0;
 
+// Densité de végétation de la zone de jeu (R = herbe, G = fourrés), calculée par scenes/world/vegetation.gd :
+// le sol verdit et s'assombrit sous les massifs, il reste nu entre eux (plus d'effet « poivre et sel »).
+uniform sampler2D carte_vegetation : filter_linear, repeat_disable, hint_default_black;
+
 // Brouillard sur les plateaux : ils dépassent le voile posé au sol, ils sont donc assombris ici.
 uniform sampler2D carte_vision : filter_linear, hint_default_white;   // R = visible, G = exploré
 uniform float demi_carte = 120.0;
@@ -57,6 +61,13 @@ float bruit_fractal(vec2 p) {
 	return 0.5 * bruit(p) + 0.3 * bruit(p * 2.1 + 17.0) + 0.2 * bruit(p * 4.3 + 41.0);
 }
 
+// Texture sans répétition visible : deuxième lecture tournée et décalée, mélangée par plaques.
+vec3 sans_repetition(sampler2D t, vec2 uv) {
+	vec2 uv2 = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * uv * 0.93 + vec2(0.43, 0.17);
+	float m = smoothstep(0.3, 0.7, bruit(uv * 0.45 + 3.1));
+	return mix(texture(t, uv).rgb, texture(t, uv2).rgb, m);
+}
+
 // Normal map (OpenGL) -> normale dans le monde, pour un plan dont on donne les axes.
 vec3 relief(sampler2D carte, vec2 uv, vec3 tangente, vec3 bitangente, vec3 normale, float force) {
 	vec3 n = texture(carte, uv).rgb * 2.0 - 1.0;
@@ -82,22 +93,31 @@ void fragment() {
 	vec3 axe_x = vec3(1.0, 0.0, 0.0);
 	vec3 axe_z = vec3(0.0, 0.0, 1.0);
 
-	// Sol de base : latérite, variée par une terre rouge plus fine en grandes plaques.
-	vec3 laterite = mix(texture(tex_laterite, uv).rgb, texture(tex_laterite, uv_large).rgb, 0.35);
-	// Variation en grandes plaques : la même latérite, à une autre échelle, plus sombre et plus rouge.
-	vec3 variation = texture(tex_laterite, uv * 0.43 + vec2(0.21, 0.63)).rgb * vec3(0.88, 0.74, 0.68);
-	vec3 c = mix(laterite, variation, smoothstep(0.45, 0.7, grandes) * 0.6);
+	// Sol de base : latérite sans répétition visible.
+	vec3 laterite = mix(sans_repetition(tex_laterite, uv), texture(tex_laterite, uv_large).rgb, 0.3);
+	// Variations à grande échelle (60 m) : terre plus sombre et rouge, ou plus claire et ocre.
+	float macro = bruit_fractal(p / 60.0 + 11.0);
+	vec3 c = laterite * mix(vec3(0.8, 0.68, 0.62), vec3(1.1, 0.98, 0.82), smoothstep(0.3, 0.7, macro));
+	// Zones caillouteuses (gravier, pierres) en plaques moyennes.
+	float cailloux = smoothstep(0.6, 0.78, bruit_fractal(p / 18.0 + 27.0));
+	c = mix(c, sans_repetition(tex_dessus, uv * 0.9) * vec3(0.95, 0.85, 0.78), cailloux * 0.75);
 	vec3 n = relief(tex_laterite_relief, uv, axe_x, axe_z, haut, force_relief);
 
 	// Plaques de sable
 	float sable_plaques = smoothstep(0.62, 0.85, moyennes * 0.5 + grandes * 0.5) * 0.75;
-	vec3 sable = texture(tex_sable, uv * 0.8).rgb;
+	vec3 sable = sans_repetition(tex_sable, uv * 0.8);
 	c = mix(c, sable, sable_plaques);
 
 	// Herbe : verte et plus étendue en saison normale, fanée et clairsemée en sécheresse.
 	// Couverture : environ un tiers du sol en saison normale (le Sud n'est pas un désert), bien moins en sécheresse.
 	float herbe = smoothstep(0.43 + 0.17 * secheresse, 0.72, bruit_fractal(p / 12.0 + 5.3)) * (1.0 - 0.5 * secheresse);
-	vec3 teinte_herbe = mix(texture(tex_herbe_verte, uv * 1.2).rgb, texture(tex_herbe_seche, uv * 1.2).rgb, secheresse);
+	vec3 teinte_herbe = mix(sans_repetition(tex_herbe_verte, uv * 1.2), sans_repetition(tex_herbe_seche, uv * 1.2), secheresse);
+	// Zone de jeu : l'herbe du sol suit les massifs de végétation (mêmes plaques que les touffes).
+	bool dans_le_jeu = abs(p.x) < demi_carte && abs(p.y) < demi_carte;
+	vec2 vege = dans_le_jeu ? texture(carte_vegetation, (p + demi_carte) / (2.0 * demi_carte)).rg : vec2(0.0);
+	if (dans_le_jeu) {
+		herbe = max(herbe * 0.35, vege.r * (1.0 - 0.45 * secheresse));
+	}
 
 	// Lit de rivière et berges (plus herbeuses).
 	float d_riviere = texture(distances_riviere, (p + etendue) / (2.0 * etendue)).r * distance_max;
@@ -105,9 +125,15 @@ void fragment() {
 	float berge = 1.0 - smoothstep(demi, demi + 6.0, d_riviere);
 	herbe = max(herbe, berge * 0.7 * (1.0 - 0.5 * secheresse));
 	c = mix(c, teinte_herbe, herbe * 0.8);
+	// Sous les fourrés : sol plus sombre (ombre, litière), un peu plus vert.
+	c *= 1.0 - 0.32 * vege.g;
+	c = mix(c, teinte_herbe * 0.55, vege.g * 0.35);
 	float lit = 1.0 - smoothstep(demi - 1.0, demi + 0.8, d_riviere + (bruit(p * 1.7) - 0.5) * 1.2);
 	vec3 fond_lit = mix(sable, texture(tex_craquele, uv * 0.7).rgb, secheresse * smoothstep(0.0, demi, demi - d_riviere + 1.0));
 	c = mix(c, fond_lit, lit);
+	// Sable mouillé autour du filet d'eau (saison normale) : plus sombre, comme une berge détrempée.
+	float mouille = (1.0 - secheresse) * (1.0 - smoothstep(3.0, 5.2, d_riviere + (bruit(p * 0.9) - 0.5) * 1.4));
+	c *= 1.0 - 0.38 * mouille;
 	n = normalize(mix(n, relief(tex_laterite_relief, uv * 0.8, axe_x, axe_z, haut, force_relief * 0.6), lit));
 
 	// Parois : pentes raides des collines et du relief. Texture de falaise posée à la verticale, projetée
@@ -140,7 +166,6 @@ void fragment() {
 	c *= etalonnage;
 
 	// Brouillard sur les collines de la zone de jeu : elles dépassent le voile posé au sol (y = 0,2).
-	bool dans_le_jeu = abs(p.x) < demi_carte && abs(p.y) < demi_carte;
 	if (dans_le_jeu && position_monde.y > 0.18) {
 		vec4 v = texture(carte_vision, (p + demi_carte) / (2.0 * demi_carte));
 		float voile = mix(1.0, opacite_exploree, v.g);
