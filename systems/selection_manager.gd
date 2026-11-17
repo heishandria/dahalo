@@ -49,6 +49,8 @@ var _ecart_pincement := 0.0
 var _fantome: MeshInstance3D
 var _mat_fantome := StandardMaterial3D.new()
 var _point_palissade := Vector3.INF   # dernier point du tracé de palissade en cours
+var _apercu_palissade: Node3D          # segments fantômes entre le dernier point et le curseur
+const PAS_ANGLE_PALISSADE := 15.0      # la direction du tracé s'aimante par pas de 15° (lignes droites faciles)
 var _fantome_pose := false      # tactile : un aperçu est affiché, un 2e toucher au même endroit confirme
 
 
@@ -98,6 +100,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			var sol := _raycast(mm.position, MASQUE_SOL)
 			if not sol.is_empty():
 				_placer_fantome(sol.position)
+				if mode_construction == "palissade":
+					_maj_apercu_palissade(sol.position)
 		if _appui:
 			_actuel = mm.position
 			if _debut.distance_to(_actuel) > SEUIL_CADRE:
@@ -160,6 +164,7 @@ func definir_mode_construction(type_batiment: String) -> void:
 	mode_construction_change.emit(mode_construction)
 	_fantome_pose = false
 	_point_palissade = Vector3.INF
+	_maj_apercu_palissade(Vector3.INF)
 	_maj_forme_fantome()
 	if type_batiment != "":
 		var nom: String = GameRules.NOMS_BATIMENTS.get(type_batiment, type_batiment)
@@ -199,7 +204,7 @@ func _placer_fantome(pos: Vector3) -> bool:
 	if _fantome == null or mode_construction == "" or CommandBus.monde == null:
 		return false
 	var valide: bool = CommandBus.monde.raison_emplacement_invalide(GameRules.PLAYER, mode_construction, pos) == ""
-	_fantome.global_position = Vector3(pos.x, 0.3, pos.z)
+	_fantome.position = Vector3(pos.x, 0.3, pos.z)   # parent = racine de la scène, à l'origine
 	_fantome.rotation.y = 0.0
 	_mat_fantome.albedo_color = Color(0.3, 1.0, 0.4, 0.45) if valide else Color(1.0, 0.25, 0.2, 0.45)
 	_fantome.visible = true
@@ -321,7 +326,7 @@ func _toucher_simple(pos: Vector2) -> void:
 			return
 		# Tactile : 1er toucher = aperçu ; 2e toucher près de l'aperçu = construire (palissade : direct).
 		var proche: bool = _fantome_pose and _fantome != null \
-				and _fantome.global_position.distance_to(Vector3(sol.position.x, 0.3, sol.position.z)) < 3.0
+				and _fantome.position.distance_to(Vector3(sol.position.x, 0.3, sol.position.z)) < 3.0
 		if mode_construction == "palissade" or proche:
 			_poser_batiment(pos)
 		else:
@@ -456,27 +461,79 @@ func _poser_batiment(pos: Vector2) -> void:
 
 
 ## Tracé de palissade : le 1er point pose un piquet, chaque point suivant relie le précédent
-## par des segments jointifs (4 m chacun, répartis sans trou).
+## par des segments jointifs de 4 m. La direction s'aimante par pas de 15° (lignes droites, angles droits).
 func _tracer_palissade(point: Vector3) -> void:
 	point.y = 0.0
-	_placer_fantome(point)
 	if _point_palissade == Vector3.INF:
+		_placer_fantome(point)
 		_point_palissade = point
 		EventBus.message.emit("Premier piquet posé : touchez le point suivant.")
 		return
-	var trace := point - _point_palissade
-	var longueur := trace.length()
-	if longueur < 1.0:
+	var segments := _segments_palissade(_point_palissade, point)
+	if segments.is_empty():
 		return
-	var direction := trace / longueur
-	var longueur_segment: float = GameRules.EMPRISES["palissade"].x
-	var nombre := int(ceil(longueur / longueur_segment))
-	var pas := longueur / nombre
-	var rotation_y := atan2(-direction.z, direction.x)
-	for i in nombre:
+	for s in segments:
 		CommandBus.emettre({"type": "construire", "faction": GameRules.PLAYER, "type_batiment": "palissade",
-				"position": _point_palissade + direction * pas * (i + 0.5), "rotation_y": rotation_y})
-	_point_palissade = point
+				"position": s[0], "rotation_y": s[1]})
+	_point_palissade = segments[-1][2]
+	_placer_fantome(_point_palissade)
+	_maj_apercu_palissade(Vector3.INF)
+
+
+## Segments [position, rotation_y, fin du tracé] de depart vers arrivee (direction aimantée, longueur
+## arrondie à un nombre entier de segments de 4 m : la ligne finit exactement sur un piquet).
+func _segments_palissade(depart: Vector3, arrivee: Vector3) -> Array:
+	var trace := arrivee - depart
+	trace.y = 0.0
+	var longueur := trace.length()
+	var longueur_segment: float = GameRules.EMPRISES["palissade"].x
+	var nombre := roundi(longueur / longueur_segment)
+	if nombre < 1:
+		return []
+	var pas_angle := deg_to_rad(PAS_ANGLE_PALISSADE)
+	var angle := snappedf(atan2(trace.z, trace.x), pas_angle)
+	var direction := Vector3(cos(angle), 0.0, sin(angle))
+	var rotation_y := atan2(-direction.z, direction.x)
+	var fin := depart + direction * longueur_segment * nombre
+	var segments: Array = []
+	for i in nombre:
+		segments.append([depart + direction * longueur_segment * (i + 0.5), rotation_y, fin])
+	return segments
+
+
+## Aperçu (souris) : segments fantômes entre le dernier piquet et le curseur, verts si on peut les poser,
+## rouges sinon (point d'eau, arbre, bâtiment…). Vector3.INF : masquer.
+func _maj_apercu_palissade(curseur: Vector3) -> void:
+	if _apercu_palissade == null:
+		_apercu_palissade = Node3D.new()
+		get_tree().current_scene.add_child(_apercu_palissade)
+	var segments: Array = []
+	if curseur != Vector3.INF and _point_palissade != Vector3.INF and mode_construction == "palissade":
+		segments = _segments_palissade(_point_palissade, curseur)
+	while _apercu_palissade.get_child_count() < segments.size():
+		var boite := BoxMesh.new()
+		boite.size = Vector3(GameRules.EMPRISES["palissade"].x - 0.15, 1.2, 0.5)
+		var instance := MeshInstance3D.new()
+		instance.mesh = boite
+		var mat := StandardMaterial3D.new()
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.no_depth_test = true
+		instance.material_override = mat
+		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_apercu_palissade.add_child(instance)
+	for k in _apercu_palissade.get_child_count():
+		var instance := _apercu_palissade.get_child(k) as MeshInstance3D
+		instance.visible = k < segments.size()
+		if not instance.visible:
+			continue
+		var position: Vector3 = segments[k][0]
+		instance.position = Vector3(position.x, 0.6, position.z)
+		instance.rotation.y = segments[k][1]
+		var valide: bool = CommandBus.monde == null \
+				or CommandBus.monde.raison_emplacement_invalide(GameRules.PLAYER, "palissade", position) == ""
+		(instance.material_override as StandardMaterial3D).albedo_color = \
+				Color(0.3, 1.0, 0.4, 0.4) if valide else Color(1.0, 0.25, 0.2, 0.5)
 
 
 # --- Ciblage : les unités et zébus passent avant les bâtiments ---

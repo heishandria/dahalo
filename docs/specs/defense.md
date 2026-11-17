@@ -23,9 +23,14 @@
 | Vision | Comme un bâtiment (12 m, 7,2 m la nuit) : elle sert aussi de poste de guet |
 
 - **Tracé de point en point** : bouton « Palissade », toucher un premier point (un piquet apparaît), puis
-  les points suivants. Chaque toucher relie le point précédent par des **segments jointifs** (autant de
-  segments de 4 m qu'il faut, répartis sans trou, 15 bois chacun). « Aucun », Échap ou clic droit termine.
-  Un segment qui tomberait sur un bâtiment ou une ressource n'est pas posé (ni payé).
+  les points suivants. Chaque toucher relie le dernier piquet par des **segments jointifs de 4 m** (15 bois chacun).
+  « Aucun », Échap ou clic droit termine.
+  - **Direction aimantée par pas de 15°** : lignes parfaitement droites, angles droits et diagonales faciles.
+  - **Longueur arrondie** à un nombre entier de segments : la ligne finit exactement sur un piquet, d'où part la
+    suivante (pas de jour entre deux tronçons).
+  - **Aperçu à la souris** avant de cliquer : segments fantômes **verts** (posables) ou **rouges** (emplacement
+    occupé : point d'eau, arbre, bâtiment, colline…). Un segment rouge n'est ni posé ni payé (brèche).
+  - Visuel : haie continue et crête d'épines le long de la ligne ; segments légèrement chevauchants.
 - **Sabotage automatique** : un **guerrier** adverse arrêté par la palissade l'attaque de lui-même, puis
   **reprend son ordre** (pillage, capture, déplacement) une fois le segment détruit. Un Dahalo seul met
   **12,5 s** par segment (150 PV, 12 dégâts/s) ; trois Dahalo, ~4 s. Villageois et Pisteurs adverses restent bloqués.
