@@ -12,7 +12,7 @@ const NOMBRE_ROCHERS := 170
 const NOMBRE_FOURRES := 260
 const NOMBRE_TOUFFES_EPINEUX := 140   # touffes de 3 à 5 tiges (épineux de type Alluaudia)
 const NOMBRE_BAOBABS := 10
-const NOMBRE_ARBRES := 70   # arbres morts et tordus du pack, sur le relief lointain
+const NOMBRE_ARBRES := 40   # arbres morts et tordus du pack, sur le relief lointain
 
 const COULEUR_ROCHER := Color(0.6, 0.5, 0.4)
 const COULEUR_FOURRE := Color(0.36, 0.38, 0.22)
@@ -63,6 +63,7 @@ func construire() -> void:
 	_materiau_relief.shader = preload("res://scenes/world/terrain.gdshader")
 	_materiau_relief.set_shader_parameter("distances_riviere", Terrain.texture_distances())
 	_materiau_relief.set_shader_parameter("etendue", Terrain.ETENDUE)
+	_materiau_relief.set_shader_parameter("tex_bruit", _texture_bruit(graine))
 	for parametre in TEXTURES_TERRAIN:
 		_materiau_relief.set_shader_parameter(parametre, load(DOSSIER_TEXTURES + String(TEXTURES_TERRAIN[parametre])))
 	EventBus.meteo_change.connect(_on_meteo)
@@ -269,8 +270,8 @@ func _creer_decor() -> void:
 		_ajouter_variantes("Fourres", buissons_pack, fourres)
 
 	# Arbres morts et arbres tordus (pack CC0), côté lointain seulement : de près, ils cacheraient le jeu.
-	var arbres_pack := BibliothequeDecor.maillages(["DeadTree_1", "DeadTree_2", "DeadTree_3", "DeadTree_4", "DeadTree_5",
-			"TwistedTree_1", "TwistedTree_2", "TwistedTree_3"])
+	# Arbres morts seulement : les arbres tordus (10 000 triangles et feuillage découpé) coûtaient trop cher.
+	var arbres_pack := BibliothequeDecor.maillages(["DeadTree_1", "DeadTree_2", "DeadTree_3"])
 	if not arbres_pack.is_empty():
 		var arbres: Array[Transform3D] = []
 		var essais := 0
@@ -380,6 +381,19 @@ func _ajouter_variantes(nom: String, maillages: Array[Mesh], transformations: Ar
 		instance.name = "%s%d" % [nom, k]
 		instance.multimesh = multi
 		add_child(instance)
+
+
+## Texture de bruit répétable (fractal, 256 px, ~5 cellules) lue par le shader du terrain à plusieurs échelles.
+## Générée par le moteur (rapide), une fois au chargement.
+func _texture_bruit(graine: int) -> ImageTexture:
+	var bruit := FastNoiseLite.new()
+	bruit.seed = graine + 21
+	bruit.noise_type = FastNoiseLite.TYPE_VALUE_CUBIC
+	bruit.frequency = 0.02
+	bruit.fractal_octaves = 3
+	var image := bruit.get_seamless_image(256, 256)
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)
 
 
 ## Densité de végétation de la zone de jeu : le sol verdit sous les massifs (voir vegetation.gd).

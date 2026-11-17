@@ -80,7 +80,7 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
 |---|---|
 | Sol de base | Latérite rouge caillouteuse, variée en grandes plaques |
 | Plaques de sable, lit de rivière | Sable graveleux |
-| Herbe (plaques, berges) | Herbe clairsemée verte sur ~1/3 du sol en saison normale ; **fanée et plus rare en sécheresse** |
+| Herbe (plaques, berges) | Herbe verte sur environ la moitié du sol en saison normale (massifs, berges) ; **fanée et plus rare en sécheresse** |
 | Lit de rivière en sécheresse | **Boue craquelée** |
 | Parois des plateaux, pentes du relief | Falaise stratifiée (Namaqualand) |
 | Dessus des plateaux | Sol sec et caillouteux |
@@ -92,7 +92,12 @@ Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et
 - Les masques (où va chaque texture) viennent du bruit et de la distance à la rivière ; textures de relief (normal
   maps) sur la latérite et la falaise. Étalonnage chaud et poussiéreux.
 - **Saisons** : fondu de 6 s via `EventBus.meteo_change` (herbe, lit, teinte d'ensemble).
-- Le rendu Web limite un shader à 16 textures, moteur compris : le shader du terrain en utilise 11.
+- Le rendu Web limite un shader à 16 textures, moteur compris (3) : le shader du terrain en utilise 13.
+- **Performance** : le bruit est lu dans une texture précalculée au chargement (pas recalculé par pixel) ; chaque
+  couche (lit de rivière, falaise, sommet des collines, cailloux) n'est calculée que là où elle sert. Sur écran
+  Retina en Forward+, la 3D est rendue à 67 % puis agrandie (FSR). Mesuré sur M1 Pro, plein écran : ~20 ips avant
+  ces optimisations, 60 ips après (limite de l'écran). Le premier lancement après une modification des shaders
+  est lent (compilation des shaders), les suivants non.
 
 ## 4 ter. Rendu (direction artistique décidée le 17/11 : « sérieux, un peu réaliste »)
 

@@ -36,14 +36,16 @@ func construire(texture_vision: Texture2D) -> void:
 		if n is NoeudRessource and n.variante == "point_eau" and not Terrain.dans_riviere(n.global_position):
 			_mares.append(Vector2(n.global_position.x, n.global_position.z))
 	# Herbes : surtout les courtes (plus légères), échelle ramenée à ~0,6 m.
-	_creer("Herbe", ["Grass_Common_Short", "Grass_Wispy_Short", "Grass_Common_Short", "Grass_Wispy_Short",
-			"Grass_Common_Tall", "Grass_Wispy_Tall"], [_maillage_touffe()], int(NOMBRE_HERBE * f),
-			{"suit_saison": 1.0, "vent": 1.0, "teinte_secours": Color(0.36, 0.46, 0.17)}, exclusions,
+	# Surtout la touffe courte (155 triangles) : les autres sont 2 à 4 fois plus lourdes.
+	_creer("Herbe", ["Grass_Common_Short", "Grass_Common_Short", "Grass_Common_Short", "Grass_Wispy_Short",
+			"Grass_Common_Tall"], [_maillage_touffe()], int(NOMBRE_HERBE * f),
+			{"suit_saison": 1.0, "vent": 1.0, "teinte_secours": Color(0.36, 0.46, 0.17), "verdure": Color(0.85, 1.12, 0.7)}, exclusions,
 			_placer_herbe.bind(0.38, 0.55))
 	_creer("Fleurs", ["Flower_3_Group", "Flower_4_Group"], [], int(NOMBRE_FLEURS * f),
 			{"suit_saison": 0.5, "vent": 1.0, "disparait": 1.0}, exclusions, _placer_herbe.bind(0.28, 0.4))
 	_creer("Buissons", ["Bush_Common", "Bush_Common", "Bush_Common_Flowers"], [_maillage_buisson()],
-			int(NOMBRE_BUISSONS * f), {"suit_saison": 0.35, "vent": 0.3, "teinte_secours": Color(0.38, 0.42, 0.22)},
+			int(NOMBRE_BUISSONS * f), {"suit_saison": 0.35, "vent": 0.3, "teinte_secours": Color(0.38, 0.42, 0.22),
+			"verdure": Color(0.9, 1.1, 0.8)},
 			exclusions, _placer_buisson)
 	_creer("Cailloux", ["Pebble_Round_1", "Pebble_Round_2", "Pebble_Round_3", "Pebble_Square_1", "Pebble_Square_2"],
 			[_maillage_caillou()], int(NOMBRE_CAILLOUX * f),
@@ -138,7 +140,9 @@ func _avec_materiaux(source: Mesh, du_pack: bool, reglages: Dictionary) -> Mesh:
 		if du_pack and origine != null:
 			if origine.albedo_texture != null:
 				materiau.set_shader_parameter("texture_albedo", origine.albedo_texture)
-			materiau.set_shader_parameter("teinte", origine.albedo_color)   # l'herbe du pack est teintée par son matériau
+			# L'herbe du pack est teintée par son matériau ; un peu plus de vert (le Sud reverdit en saison normale).
+			var verdure: Color = reglages.get("verdure", Color.WHITE)
+			materiau.set_shader_parameter("teinte", origine.albedo_color * verdure)
 			if origine.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR:
 				materiau.set_shader_parameter("seuil_alpha", origine.alpha_scissor_threshold)
 		else:
@@ -197,7 +201,7 @@ func densite_herbe(p: Vector3) -> float:
 	var demi := GameRules.RIVIERE_LARGEUR * 0.5
 	if d < demi - 0.5:
 		return 0.0
-	var densite := smoothstep(0.02, 0.32, _bruit.get_noise_2d(p.x, p.z))
+	var densite := smoothstep(-0.12, 0.22, _bruit.get_noise_2d(p.x, p.z))
 	if d < demi + 6.0:
 		densite = maxf(densite, 1.0 - smoothstep(demi + 3.0, demi + 6.0, d))
 	for m in _mares:
@@ -209,7 +213,7 @@ func densite_herbe(p: Vector3) -> float:
 func densite_fourre(p: Vector3) -> float:
 	if Terrain.dans_riviere(p):
 		return 0.0
-	return smoothstep(0.05, 0.45, _bruit.get_noise_2d(p.x * 0.6 + 400.0, p.z * 0.6))
+	return smoothstep(-0.05, 0.35, _bruit.get_noise_2d(p.x * 0.6 + 400.0, p.z * 0.6))
 
 
 ## Carte de densité pour le shader du sol (R = herbe, G = fourrés), une case de 2 m sur la zone de jeu.

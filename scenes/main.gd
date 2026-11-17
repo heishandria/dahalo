@@ -68,6 +68,7 @@ func _ready() -> void:
 			add_child(captures)
 	EventBus.cycle_change.connect(_on_cycle)
 
+	_regler_resolution()
 	_generer_carte(_graine())
 	# Navmesh cuit APRÈS la carte : il contourne bâtiments, points d'eau, baobabs et clôtures.
 	navigation.bake_navigation_mesh(false)
@@ -260,6 +261,16 @@ func possede(faction: int, type_batiment: String) -> bool:
 		if b.faction == faction:
 			return true
 	return false
+
+
+## Écrans haute densité (Retina) en Forward+ : la 3D est calculée à 67 % de la résolution puis agrandie
+## (FSR), l'interface reste nette. Sans cela, le shader du sol tourne sur plus de 6 millions de pixels.
+func _regler_resolution() -> void:
+	if RenderingServer.get_current_rendering_method() != "forward_plus":
+		return
+	if DisplayServer.screen_get_scale() >= 1.5:
+		get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR
+		get_viewport().scaling_3d_scale = 0.67
 
 
 # --- Carte aléatoire (spec : docs/specs/carte.md) ---
