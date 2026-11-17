@@ -30,7 +30,7 @@ func _ready() -> void:
 func _remplacer_modele(banniere: MeshInstance3D) -> void:
 	if not type_batiment in ["case_centrale", "case_hommes", "camp_bois", "tsena"]:
 		return
-	var modele := Maisons.modele(type_batiment)
+	var modele := Maisons.modele(type_batiment, Plantes.variante_en(global_position))
 	if modele.is_empty():
 		return
 	for nom in ["Murs", "Toit", "Mat"]:
@@ -52,7 +52,6 @@ func _remplacer_modele(banniere: MeshInstance3D) -> void:
 		mat.mesh = cylindre
 		mat.position = banniere.position + Vector3(-0.45, -0.25, 0)
 		add_child(mat)
-		banniere.position.x -= 0.0
 
 
 ## Dépôt de ressources : la Case centrale prend tout, le camp de bûcherons seulement le bois.

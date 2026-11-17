@@ -169,6 +169,11 @@ D'après des photos de cases du Sud fournies le 17/11 : petites cases rectangula
 | Camp de bûcherons | Abri ouvert de chaume sur quatre poteaux, **tas de bûches**, billot, branches |
 | Tsena | Abri ouvert couvert de **tôle rouillée**, deux étals sur tréteaux avec paniers, sacs |
 
+- **Fait main, rien n'est d'équerre** : angles décalés, murs de hauteurs inégales, rondins et poteaux tordus et
+  penchés (longueurs, diamètres et jours variables), panneaux tressés bombés, toit affaissé au milieu et bosselé,
+  chaume d'épaisseur inégale, bord bas ondulé, mèches de longueurs différentes, porte de planches inégales de
+  travers, tôles de récupération mal alignées et rouillées différemment, tenues par des pierres.
+- **3 variantes par bâtiment**, tirées de la position : deux cases voisines ne sont jamais identiques.
 - Textures photo Poly Haven (CC0) en projection triplanaire, éclaircies (bois délavé) ;
   `assets/textures/batiments/LISEZMOI.md`. Collisions inchangées ; fanion du clan sur un petit mât au pignon.
 - Pas encore refaits : enclos, palissade, champs, puits.
