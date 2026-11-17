@@ -30,3 +30,8 @@ extends Resource
 @export var requiert := ""           # bâtiment nécessaire pour former l'unité (ex. "tsena" pour les fusils)
 @export_group("Visuel")
 @export var couleur := Color(0.85, 0.72, 0.55)
+## Modèle 3D animé (.glb) ; sans modèle, l'unité reste une capsule colorée.
+## Animations attendues (sur place, nom finissant par _loop pour la boucle) : …marche…, …repos….
+@export var modele: PackedScene
+@export var vitesse_marche_animation := 0.87   # vitesse (m/s) pour laquelle la marche du modèle est calée
+@export var acceleration_animation_max := 2.4  # au-delà, la marche ne s'accélère plus (sinon elle s'agite)

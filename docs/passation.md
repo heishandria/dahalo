@@ -30,6 +30,18 @@ Lire aussi `CLAUDE.md` (règles d'architecture) et `docs/specs/` (règles codée
   Les résultats de l'IA varient beaucoup d'une partie à l'autre (11 à 38 zébus à 30 min ; certaines parties,
   aucune capture avant 15 min) : comparer plusieurs parties avant de conclure.
 
+## Personnages 3D : état (17/11)
+
+- **Villageoise intégrée** (`assets/models/personnages/villageoise.glb`) pour le rôle villageois : modèle fait par
+  Copilot dans Blender (`dahalo-personnages/villageoise/`), corrigé par Claude (`villageoise_v2_claude.*` et
+  `scripts_claude/`) : vraie marche calculée (foulée, talon, déroulé), boucles, ~7 400 triangles.
+- Branchement : `UnitData.modele` (.tres) ; `unite.gd` remplace la capsule, tourne le modèle de 180° (il regarde
+  vers +Z), joue …marche… (vitesse calée sur la vitesse réelle, plafonnée à ×2,4) ou …repos…, et pose un disque
+  à la couleur du clan sous les pieds. Attention : à l'import, Godot retire le suffixe `_loop` des animations.
+- À décider : vitesse des villageois (5 m/s) contre marche calée pour 0,87 m/s → baisser la vitesse ou ajouter
+  une course. Texture à refaire en vues multiples (dos et côtés flous, éclairage figé) : voir la conversation du 17/11.
+- Manquent : animations de travail (bois, eau, champ, porter), mort ; autres rôles.
+
 ## Pipeline des personnages 3D (décidé)
 
 1. **Canva** : image du personnage en **A-pose**, de face, mains vides, fond blanc ou transparent,

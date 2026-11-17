@@ -89,6 +89,8 @@ func _ready() -> void:
 	_maj_barre_vie()
 	if data.arme == "fusil":
 		_ajouter_fusil()
+	if data.modele != null:
+		_creer_modele()
 
 
 
@@ -294,13 +296,80 @@ func _suivre_sol() -> void:
 	var h := Terrain.hauteur_sol(global_position)
 	if absf(h - _hauteur_visuelle) < 0.01:
 		return
-	for n in [corps, tete, anneau, barre_vie]:
+	for n in [corps, tete, anneau, barre_vie, _modele, _marque]:
+		if n == null:
+			continue
 		n.position.y += h - _hauteur_visuelle
 	_hauteur_visuelle = h
 
 
+# --- Modèle 3D animé (si data.modele) ---
+
+var _modele: Node3D
+var _animations: AnimationPlayer
+var _marque: MeshInstance3D      # disque à la couleur du clan sous les pieds (la capsule colorée disparaît)
+var _anim_marche := ""
+var _anim_repos := ""
+
+
+func _creer_modele() -> void:
+	_modele = data.modele.instantiate() as Node3D
+	_modele.name = "Modele"
+	_modele.rotation.y = PI   # le modèle regarde vers +Z, l'unité avance vers -Z
+	add_child(_modele)
+	corps.visible = false
+	tete.visible = false
+	_animations = _modele.find_children("*", "AnimationPlayer", true, false).front() as AnimationPlayer
+	if _animations != null:
+		# À l'import, Godot retire le suffixe « _loop » (et active la boucle) : on cherche le mot seulement.
+		for nom in _animations.get_animation_list():
+			if "marche" in nom:
+				_anim_marche = nom
+			elif "repos" in nom:
+				_anim_repos = nom
+		# Décalage aléatoire : deux villageois côte à côte ne marchent pas au pas.
+		_jouer(_anim_repos, 1.0)
+		_animations.seek(randf() * 2.0, true)
+	_marque = MeshInstance3D.new()
+	var disque := CylinderMesh.new()
+	disque.top_radius = 0.3
+	disque.bottom_radius = 0.3
+	disque.height = 0.02
+	disque.radial_segments = 20
+	_marque.mesh = disque
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = GameRules.couleur_faction(faction)
+	mat.albedo_color.a = 0.5
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_marque.material_override = mat
+	_marque.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_marque.position.y = 0.03
+	add_child(_marque)
+
+
+func _jouer(nom: String, vitesse: float) -> void:
+	if _animations == null or nom == "":
+		return
+	if _animations.current_animation != nom:
+		_animations.play(nom, 0.2)
+	_animations.speed_scale = vitesse
+
+
+## Marche calée sur la vitesse réelle (avec un plafond), repos sinon.
+func _animer() -> void:
+	if _animations == null or mort:
+		return
+	var v := Vector2(velocity.x, velocity.z).length()
+	if v > 0.3:
+		_jouer(_anim_marche, clampf(v / data.vitesse_marche_animation, 0.6, data.acceleration_animation_max))
+	else:
+		_jouer(_anim_repos, 1.0)
+
+
 func _physics_process(delta: float) -> void:
 	_suivre_sol()
+	_animer()
 	_recharge = maxf(0.0, _recharge - delta)
 	match etat:
 		Etat.INACTIF:
@@ -686,6 +755,10 @@ func _mourir() -> void:
 	var mat_corps := corps.material_override as StandardMaterial3D
 	if mat_corps:
 		mat_corps.albedo_color = data.couleur.darkened(0.5)
+	if _animations != null:
+		_animations.pause()   # la chute est faite par la rotation de l'unité
+	if _marque != null:
+		_marque.visible = false
 	if faction == GameRules.PLAYER:
 		EventBus.message.emit("%s est tombé au combat." % data.nom)
 	# Chute au sol, puis le corps s'efface après quelques secondes (sans effet sanglant).
