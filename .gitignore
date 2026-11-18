@@ -12,3 +12,8 @@ Thumbs.db
 
 # Exports
 build/
+
+# Journaux et sauvegardes des scripts Blender (.claude/skills/blender-python-pipeline)
+journaux_blender/
+sauvegardes/
+__pycache__/

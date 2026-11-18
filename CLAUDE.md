@@ -43,3 +43,10 @@ Rester respectueux de la culture malgache et des pratiques autour du zébu.
 Le zébu n'est jamais tué dans le jeu : il est capturé, escorté, repris ou sécurisé.
 Les unités peuvent mourir au combat (chute, puis disparition), sans effet sanglant.
 Vérifier les termes malgaches avant de les introduire dans le jeu.
+
+## Art
+
+Tout travail artistique (dessin, personnage, animal, environnement, animation, modèle Blender, texture, image)
+passe par le skill `game-art-router` (`.claude/skills/`), la bible `docs/art/bible-artistique.md` et les faits
+sourcés de `docs/art/madagascar-references.md`. Blender se pilote sans MCP, par scripts en ligne de commande
+(`.claude/skills/blender-python-pipeline/`). Guide : `docs/art/README.md`.

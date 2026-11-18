@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "toujours_avant": ["game-art-router"],
+  "toujours_apres": ["visual-quality-review"],
+  "taches": [
+    {
+      "id": "personnage",
+      "sujet": true,
+      "libelle": "Personnage humain (design, dessin, planche)",
+      "mots_cles": ["personnage", "character", "villageois", "villageoise", "guerrier", "dahalo", "pisteur", "femme", "homme", "enfant", "visage", "portrait", "costume", "humain", "human", "heros", "hero", "npc", "pnj", "silhouette"],
+      "skills": ["character-design", "human-anatomy-and-character", "drawing-fundamentals", "gesture-and-figure-drawing", "visual-reference-research"],
+      "workflow": "docs/art/workflows/personnage-concept-turnaround.md",
+      "outil": "Explorations : générateur d'images ou SVG ; planche fiable : vues rendues depuis un modèle ou un blockout 3D."
+    },
+    {
+      "id": "animal",
+      "sujet": true,
+      "libelle": "Animal ou créature",
+      "mots_cles": ["animal", "creature", "zebu", "omby", "vache", "boeuf", "bovin", "cattle", "cow", "chien", "dog", "oiseau", "bird", "heron", "corbeau", "lemurien", "lemur", "tortue", "tortoise", "chevre", "goat", "quadrupede", "quadruped", "betail"],
+      "skills": ["animal-and-creature-design", "drawing-fundamentals", "visual-reference-research"],
+      "workflow": "docs/art/workflows/personnage-concept-turnaround.md",
+      "outil": "Références photo multi-angles d'abord ; modèle 3D ou dessin construit ensuite."
+    },
+    {
+      "id": "environnement",
+      "sujet": true,
+      "libelle": "Environnement, architecture, village, paysage, level art",
+      "mots_cles": ["environnement", "environment", "village", "case", "maison", "house", "batiment", "building", "architecture", "paysage", "landscape", "decor", "terrain", "vegetation", "foret", "forest", "arbre", "tree", "baobab", "epineux", "enclos", "puits", "tombeau", "level", "niveau", "carte", "map", "riviere", "mare"],
+      "skills": ["environment-and-architecture", "perspective-and-spatial-design", "composition-and-visual-storytelling", "colour-light-and-materials", "visual-reference-research"],
+      "workflow": "docs/art/workflows/environnement.md",
+      "outil": "Thumbnails de composition ; blockout 3D à l'échelle du jeu ; vérification à la caméra de jeu."
+    },
+    {
+      "id": "illustration",
+      "libelle": "Illustration, key art, peinture numérique",
+      "mots_cles": ["illustration", "illustrer", "key art", "affiche", "poster", "jaquette", "ecran titre", "splash", "peinture", "painting", "paint", "concept art", "ambiance", "mood", "scene", "tableau"],
+      "skills": ["composition-and-visual-storytelling", "colour-light-and-materials", "digital-painting-and-rendering", "drawing-fundamentals"],
+      "workflow": "docs/art/workflows/generation-image.md",
+      "outil": "Générateur d'images (si disponible) ou brief pour un outil externe ; retouches par script."
+    },
+    {
+      "id": "dessin_trait",
+      "libelle": "Dessin au trait, line art, SVG, pictogramme",
+      "mots_cles": ["dessin", "dessiner", "draw", "drawing", "croquis", "sketch", "trait", "line art", "lineart", "encrage", "inking", "svg", "vectoriel", "vector", "icone", "icon", "pictogramme", "logo", "schema"],
+      "skills": ["drawing-fundamentals", "line-art-and-inking", "perspective-and-spatial-design"],
+      "workflow": "",
+      "outil": "SVG écrit ou généré par script, rendu en PNG pour vérification."
+    },
+    {
+      "id": "planche",
+      "libelle": "Planche de production, turnaround, model sheet",
+      "mots_cles": ["planche", "sheet", "turnaround", "model sheet", "fiche", "vues", "face profil dos", "orthographique", "orthographic", "expressions", "expression sheet", "callout"],
+      "skills": ["turnaround-and-production-sheets", "character-design", "human-anatomy-and-character"],
+      "workflow": "docs/art/workflows/personnage-concept-turnaround.md",
+      "outil": "Rendus orthographiques Blender (rendu_verification.py) puis annotations ; jamais une seule génération multi-vues non vérifiée."
+    },
+    {
+      "id": "generation_image",
+      "libelle": "Générer ou modifier une image avec un modèle d'IA",
+      "mots_cles": ["generer", "generate", "generation", "prompt", "midjourney", "dall-e", "stable diffusion", "flux", "canva", "image ia", "ai image", "inpainting", "retouche", "retoucher", "modifier l'image", "edit image", "variation", "upscale"],
+      "skills": ["image-generation-direction", "art-direction"],
+      "workflow": "docs/art/workflows/generation-image.md",
+      "outil": "Générateur disponible dans la session, sinon prompt prêt à coller ; contrôle visuel systématique."
+    },
+    {
+      "id": "modele_3d",
+      "libelle": "Modèle 3D (Blender) pour le jeu",
+      "mots_cles": ["3d", "blender", "modele", "model", "modeliser", "modelling", "modeling", "mesh", "maillage", "sculpt", "sculpter", "retopo", "retopologie", "low poly", "lowpoly", "glb", "gltf", "fbx", "tripo", "meshy", "asset 3d"],
+      "skills": ["3d-modeling-and-topology", "uv-and-texturing", "blender-python-pipeline", "game-3d-optimization-and-export", "game-asset-handoff"],
+      "workflow": "docs/art/workflows/modele-3d-blender.md",
+      "outil": "Blender en ligne de commande avec scripts Python ; rendus de vérification ; export glTF ; contrôle en moteur."
+    },
+    {
+      "id": "texture",
+      "libelle": "UV, texture, matériau",
+      "mots_cles": ["uv", "texture", "texturing", "materiau", "material", "pbr", "normal map", "baking", "bake", "texel", "shader", "robe", "pelage", "fur"],
+      "skills": ["uv-and-texturing", "colour-light-and-materials"],
+      "workflow": "docs/art/workflows/modele-3d-blender.md",
+      "outil": "Textures libres (CC0) ou peintes/bakées dans Blender ; vérification sous l'éclairage du jeu."
+    },
+    {
+      "id": "rig",
+      "libelle": "Rigging et skinning",
+      "mots_cles": ["rig", "rigging", "squelette", "skeleton", "armature", "os", "bones", "skinning", "skin", "poids", "weights", "weight paint", "ik", "cinematique inverse"],
+      "skills": ["rigging-and-skinning", "blender-python-pipeline"],
+      "workflow": "docs/art/workflows/animation-cycle.md",
+      "outil": "Blender Python ; poses extrêmes rendues pour contrôler les déformations."
+    },
+    {
+      "id": "animation",
+      "libelle": "Animation (cycles, poses, actions)",
+      "mots_cles": ["animation", "animer", "animate", "anime", "cycle", "boucle", "loop", "marche", "walk", "course", "courir", "run", "trot", "galop", "gallop", "saut", "jump", "pose", "attaque", "attack", "mort", "death", "idle", "repos", "brouter", "puiser", "se coucher", "locomotion"],
+      "skills": ["animation-fundamentals", "locomotion-animation", "rigging-and-skinning", "blender-python-pipeline"],
+      "workflow": "docs/art/workflows/animation-cycle.md",
+      "outil": "Actions Blender générées ou retouchées par script ; planches d'images ; calage de vitesse en moteur."
+    },
+    {
+      "id": "direction_artistique",
+      "libelle": "Direction artistique, bible, cohérence de style",
+      "mots_cles": ["direction artistique", "art direction", "bible", "style", "coherence", "consistency", "charte", "palette", "identite visuelle", "style guide", "moodboard"],
+      "skills": ["art-direction", "visual-reference-research", "colour-light-and-materials"],
+      "workflow": "docs/art/workflows/audit-coherence-style.md",
+      "outil": "Documents + planche de calibration (un personnage, un objet, un élément de décor)."
+    },
+    {
+      "id": "revue",
+      "libelle": "Critique, revue, correction",
+      "mots_cles": ["critique", "revue", "review", "corriger", "correction", "defaut", "probleme", "verifier", "valider", "feedback", "avis"],
+      "skills": ["visual-quality-review"],
+      "workflow": "",
+      "outil": "Regarder le rendu réel ; rapport par sévérité."
+    },
+    {
+      "id": "export_moteur",
+      "libelle": "Export et intégration moteur (Godot, Unity…)",
+      "mots_cles": ["export", "exporter", "integrer", "integration", "godot", "unity", "unreal", "import", "lod", "optimiser", "optimisation", "optimize", "performance", "budget", "triangles", "compression", "mipmap"],
+      "skills": ["game-3d-optimization-and-export", "game-asset-handoff"],
+      "workflow": "docs/art/workflows/modele-3d-blender.md",
+      "outil": "audit_glb.py + import dans le moteur + capture en jeu."
+    }
+  ]
+}
