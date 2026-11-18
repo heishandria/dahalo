@@ -9,7 +9,11 @@ Commandes :
   python3 comfyui.py convertir WORKFLOW.json SORTIE_API.json
       Convertit un workflow au format de l'interface en format API (à partir de /object_info du serveur).
   python3 comfyui.py executer WORKFLOW.json --sortie DOSSIER [--image FICHIER] [--noeud-image ID]
-          [--param ID.entree=valeur]… [--delai 3600]
+          [--param ID.entree=valeur]… [--delai 7200] [--interrompre]
+      Au-delà du délai, le script cesse d'attendre mais LAISSE le calcul tourner (sauf --interrompre) ;
+      l'identifiant est noté dans DOSSIER/journal.json pour « recuperer ».
+  python3 comfyui.py recuperer PROMPT_ID --sortie DOSSIER
+      Télécharge les sorties d'un calcul terminé (lancé plus tôt, ou dont on a cessé d'attendre).
       Convertit si besoin, envoie l'image d'entrée, applique les réglages, lance, suit l'avancement, télécharge
       les sorties (images, modèles 3D) dans DOSSIER et écrit DOSSIER/journal.json.
 
@@ -151,7 +155,54 @@ def appliquer_param(prompt, param):
 
 # --- Exécution ------------------------------------------------------------------------------------------
 
-def executer(workflow_chemin, sortie, image=None, noeud_image=None, params=(), delai=3600):
+def telecharger_sorties(historique, sortie, journal):
+    """Statut, erreurs et fichiers de sortie (images, modèles 3D) d'un calcul terminé."""
+    st = historique.get("status", {})
+    journal["statut"] = st.get("status_str")
+    for m in st.get("messages", []):
+        if m[0] in ("execution_error", "execution_interrupted"):
+            journal["messages"].append(m)
+    for noeud, sorties in historique.get("outputs", {}).items():
+        for genre, fichiers in sorties.items():
+            for fi in fichiers if isinstance(fichiers, list) else []:
+                if not isinstance(fi, dict) or "filename" not in fi:
+                    continue
+                if fi.get("type") == "temp" and genre == "images":
+                    continue                    # aperçus temporaires : ignorés
+                q = urllib.parse.urlencode({"filename": fi["filename"], "subfolder": fi.get("subfolder", ""),
+                                            "type": fi.get("type", "output")})
+                contenu = requete("/view?" + q, delai=300)
+                dest = os.path.join(sortie, "%s_%s" % (noeud, os.path.basename(fi["filename"])))
+                with open(dest, "wb") as f:
+                    f.write(contenu if isinstance(contenu, bytes) else json.dumps(contenu).encode())
+                journal["sorties"].append(dest)
+
+
+def ecrire_journal(sortie, journal, duree):
+    with open(os.path.join(sortie, "journal.json"), "w", encoding="utf-8") as f:
+        json.dump(journal, f, ensure_ascii=False, indent=1)
+    print("Statut : %s en %.0f s ; %d fichier(s)" % (journal["statut"], duree, len(journal["sorties"])))
+    for s in journal["sorties"]:
+        print("  " + s)
+    for m in journal["messages"]:
+        print("ERREUR %s" % json.dumps(m[1], ensure_ascii=False)[:1500])
+
+
+def recuperer(pid, sortie):
+    os.makedirs(sortie, exist_ok=True)
+    journal = {"prompt_id": pid, "statut": None, "sorties": [], "messages": []}
+    h = requete("/history/" + pid)
+    if pid not in h:
+        q = requete("/queue")
+        en_file = any(x[1] == pid for x in q.get("queue_running", []) + q.get("queue_pending", []))
+        journal["statut"] = "toujours en cours" if en_file else "inconnu (serveur redémarré ?)"
+    else:
+        telecharger_sorties(h[pid], sortie, journal)
+    ecrire_journal(sortie, journal, 0)
+    return journal
+
+
+def executer(workflow_chemin, sortie, image=None, noeud_image=None, params=(), delai=7200, interrompre=False):
     os.makedirs(sortie, exist_ok=True)
     info = requete("/object_info", delai=120)
     with open(workflow_chemin, encoding="utf-8") as f:
@@ -199,35 +250,14 @@ def executer(workflow_chemin, sortie, image=None, noeud_image=None, params=(), d
     journal = {"prompt_id": pid, "workflow": workflow_chemin, "image": image, "params": list(params),
                "duree_s": round(duree, 1), "statut": None, "sorties": [], "messages": []}
     if historique is None:
-        journal["statut"] = "délai dépassé"
-        requete("/interrupt", {})
+        if interrompre:
+            journal["statut"] = "délai dépassé (calcul interrompu)"
+            requete("/interrupt", {})
+        else:
+            journal["statut"] = "délai dépassé (calcul laissé en cours : « recuperer %s »)" % pid
     else:
-        st = historique.get("status", {})
-        journal["statut"] = st.get("status_str")
-        for m in st.get("messages", []):
-            if m[0] in ("execution_error", "execution_interrupted"):
-                journal["messages"].append(m)
-        for noeud, sorties in historique.get("outputs", {}).items():
-            for genre, fichiers in sorties.items():
-                for fi in fichiers if isinstance(fichiers, list) else []:
-                    if not isinstance(fi, dict) or "filename" not in fi:
-                        continue
-                    if fi.get("type") == "temp" and genre == "images":
-                        continue                    # aperçus temporaires : ignorés
-                    q = urllib.parse.urlencode({"filename": fi["filename"], "subfolder": fi.get("subfolder", ""),
-                                                "type": fi.get("type", "output")})
-                    contenu = requete("/view?" + q, delai=300)
-                    dest = os.path.join(sortie, "%s_%s" % (noeud, os.path.basename(fi["filename"])))
-                    with open(dest, "wb") as f:
-                        f.write(contenu if isinstance(contenu, bytes) else json.dumps(contenu).encode())
-                    journal["sorties"].append(dest)
-    with open(os.path.join(sortie, "journal.json"), "w", encoding="utf-8") as f:
-        json.dump(journal, f, ensure_ascii=False, indent=1)
-    print("Statut : %s en %.0f s ; %d fichier(s)" % (journal["statut"], duree, len(journal["sorties"])))
-    for s in journal["sorties"]:
-        print("  " + s)
-    for m in journal["messages"]:
-        print("ERREUR %s" % json.dumps(m[1], ensure_ascii=False)[:1500])
+        telecharger_sorties(historique, sortie, journal)
+    ecrire_journal(sortie, journal, duree)
     return journal
 
 
@@ -289,9 +319,12 @@ def main():
             with open(a[2], "w", encoding="utf-8") as f:
                 json.dump(p, f, ensure_ascii=False, indent=1)
             print("OK %d nœuds → %s" % (len(p), a[2]))
+        elif a[0] == "recuperer":
+            j = recuperer(a[1], opt("--sortie", "sorties_comfyui"))
+            sys.exit(0 if j["statut"] == "success" else 1)
         elif a[0] == "executer":
             j = executer(a[1], opt("--sortie", "sorties_comfyui"), opt("--image"), opt("--noeud-image"),
-                         opt("--param", multiple=True), int(opt("--delai", "3600")))
+                         opt("--param", multiple=True), int(opt("--delai", "7200")), "--interrompre" in a)
             sys.exit(0 if j["statut"] == "success" else 1)
         else:
             print(__doc__)
