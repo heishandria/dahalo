@@ -58,7 +58,7 @@ aucun modèle texte→image).
 | Post-traitement Blender des sorties ComfyUI, rendus de vérification de ces résultats, export | **Claude** | `blender-python-pipeline/scripts/nettoyer_maillage_ia.py`, `rendu_verification.py`, `exporter_gltf.py` |
 | Image d'entrée 3D d'un asset existant, hors génération ComfyUI | **Astra** | `blender-python-pipeline/scripts/rendre_image_entree.py`, `docs/art/essais/entrees/` |
 | Brouillon de signalement MPS, sans publication | **Astra** | `docs/art/essais/signalement_bogue_mps.md` |
-| Reconstruction expérimentale depuis nuage de sommets, sur copie du GLB fourni | **Astra** (exception ciblée au post-traitement ComfyUI de Claude) | `blender-python-pipeline/scripts/reconstruire_depuis_sommets.py`, résultats temporaires hors source |
+| Reconstruction expérimentale depuis nuage de sommets, sur copie du GLB fourni | **Astra** (exception ciblée au post-traitement ComfyUI de Claude) | `blender-python-pipeline/scripts/reconstruire_depuis_sommets.py`, `docs/art/essais/reconstructions/` |
 | Qualité du système de skills : routage, sélecteur, validateur, tests | **Astra** | `game-art-router/routage.json`, `game-art-router/scripts/*`, `blender-python-pipeline/scripts/audit_glb.py`, `test_audit_glb.py` |
 | Rapport et catalogue de ressources | **Astra** | `docs/art/rapport-integration.md`, `docs/art/references/RESOURCES.md` |
 | Vérification des faits culturels (liste « à vérifier ») | **Astra**, proposé | `docs/art/madagascar-references.md` (sources obligatoires, rien d'inventé) |
@@ -88,3 +88,4 @@ aucun modèle texte→image).
 | 18/11, 12 h 13 | Astra | **Terminé** — rendre une image d'entrée du seau, séparément de tout workflow ComfyUI | `blender-python-pipeline/scripts/rendre_image_entree.py`, `docs/art/essais/entrees/seau_3q.png` |
 | 18/11, 12 h 13 | Astra | **Terminé** — rédiger le brouillon non publié du signalement MPS | `docs/art/essais/signalement_bogue_mps.md` |
 | 18/11, 12 h 30 | Astra | **Reporté** — le GLB présent n'a ni attribut `COLOR_0` ni couleur par sommet ; il ne permet pas de valider le transfert de couleurs demandé. Source inspectée en lecture seule, aucun script/copie créés. | `docs/art/essais/bruts/902_brut_forme_00001_.glb` |
+| 18/11 (reprise) | Astra | **Terminé** — reconstruction depuis le `901` sur copie, contrôle du rendu/export ; brouillon mis à jour avec PyTorch 2.12.1. La reconstruction est expérimentale, non prête pour le jeu. | `.claude/skills/blender-python-pipeline/scripts/reconstruire_depuis_sommets.py`, `docs/art/essais/reconstructions/901_reconstruction_secours_v01.glb`, `.png`, `LISEZMOI.md`, `docs/art/essais/signalement_bogue_mps.md` |

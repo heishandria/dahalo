@@ -22,7 +22,7 @@ les clés dans le même test.
 - ComfyUI 0.45.6 (`45eb6e6f954a532760b2226873a8c1a131043abd`)
 - Apple Silicon, backend MPS, macOS 26.3
 - Mémoire unifiée du poste : 16 Gio
-- Version de PyTorch : **à relever avant publication**
+- Version de PyTorch : **2.12.1**
 - Modèle sélectionné par défaut dans le workflow : Pixal3D
 
 Ces observations proviennent d'une seule configuration locale ; elles ne suffisent pas à établir que toutes
@@ -36,9 +36,9 @@ les versions de PyTorch ou tous les appareils Apple Silicon sont affectés.
    clés d'environ 1,7 million d'éléments et effectuer les recherches utilisées par la table.
 3. Comparer les résultats et le nombre de clés retrouvées au même calcul effectué sur CPU.
 
-**Limite de reproduction :** le script autonome minimal, sa graine et les valeurs exactes de comparaison ne
-sont pas encore inclus dans ce signalement. Le script local de comparaison MPS/CPU est en préparation par
-l'autre agent ; il faudra en extraire un exemple réduit et publiable avant de soumettre le rapport.
+**Limite de reproduction :** le script autonome minimal et sa graine ne sont pas encore inclus dans ce
+brouillon. Fable fournira ce script avec son compte rendu ; il faudra alors y reporter les valeurs exactes
+de comparaison et confirmer les versions avant toute soumission.
 
 ## Résultat attendu
 
@@ -73,7 +73,7 @@ Fournir un test autonome qui :
 1. construit un tenseur déterministe de clés `int64` (dont une taille proche de 1,7 million) ;
 2. compare `values` **et** `indices` de `torch.sort` sur CPU et MPS, après transfert des résultats sur CPU ;
 3. vérifie les recherches de `TorchHashMap` et rapporte les comptes exacts ;
-4. indique les versions exactes de macOS, PyTorch et ComfyUI, ainsi que le modèle de puce.
+4. indique les versions exactes de macOS, PyTorch (2.12.1) et ComfyUI, ainsi que le modèle de puce.
 
 Une fois ce test minimal établi, vérifier le correctif sur MPS et CPU, puis relancer le workflow et comparer
 les comptes de sommets/faces avant et après le décodage. Ne pas conclure que les erreurs de remesh ou de
