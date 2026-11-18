@@ -68,6 +68,10 @@ Exemples (chemins relatifs au dossier `scripts/`) :
 - Après un passage en mode édition d'une armature, les références aux os (`arm.data.bones["X"]`) obtenues avant
   sont **invalides** (données reconstruites) : lire tout ce dont on a besoin (matrices, axes) **avant**, ou
   relire `arm.data.bones` après.
+- Animation par script : après avoir remis la pose à zéro (`location`, `rotation_quaternion`), appeler
+  `view_layer.update()` **avant** de poser des os par `pose_bone.matrix` ; sinon la première image lit encore la
+  pose de l'action précédente (à-coup à chaque tour de boucle). Calculer la phase par `(image % N) / N` pour que la
+  dernière image soit exactement la première.
 - Une erreur Python ne fait pas échouer Blender sans `--python-exit-code 1` (le lanceur l'ajoute).
 - Modificateurs non appliqués : appliqués à l'export glTF, mais pas dans les comptes de `mesh.loop_triangles`.
 - Unités : 1 unité = 1 m ; transformations appliquées avant export.

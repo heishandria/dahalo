@@ -72,6 +72,13 @@ Lire aussi `CLAUDE.md` (règles d'architecture) et `docs/specs/` (règles codée
   à 80–100° quand elle tient le seau, la houe, la hache ou l'épi, 15° ailleurs ; seau remonté de 3 cm (l'anse
   tombe dans les doigts) → `villageoise_v8_prises.glb` = modèle du jeu (28 os). Pas de doigts séparés : à faire
   si un gros plan l'exige.
+- **Locomotion reprise (18/11, v9)** : `scripts_claude/locomotion.py` recrée sur le v8 la marche et les 3 courses.
+  En jeu (5 m/s) on voit surtout la course : l'ancienne, calée à 3 m/s, était jouée ×1,7 (≈ 330 pas/min) et
+  accroupie (bassin −11 cm au contact, genou d'appui 42–50°). Nouvelle course : cycle 0,66 s, appui 25 % avec phase
+  de vol, contact sous le corps, bassin haut, buste penché, bras par IK (coudes en arrière, poings fermés), bras
+  libre écarté avec le seau plein ; calage 3,96 m/s (`vitesse_course_animation`) → lecture ×1,26. Marche : pied
+  rasant (5 cm au lieu de 11). Corrigé aussi un à-coup à l'image 1 des boucles (pose de l'action précédente lue
+  avant mise à jour) → `villageoise_v9_locomotion.glb` = modèle du jeu.
 - Manquent : porter une charge (bois, panier), mort ; autres rôles.
 - **Zébu 3D** (`assets/models/animaux/zebu.glb`) : vache CC0 de Quaternius transformée par script Blender (bosse,
   fanon, cornes en lyre, oreilles tombantes, pis retiré), animations repos / marche / course, robe tirée au sort

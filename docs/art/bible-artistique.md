@@ -74,7 +74,7 @@ Modèle générique : `.claude/skills/art-direction/modele-bible.md`.
 |---|---|---|
 | Moteur | Godot 4.7 ; GLB depuis Blender ; 1 unité = 1 m ; modèles regardant +Z (tournés de 180° par le jeu) | décidé |
 | Textures | VRAM compressée + mipmaps obligatoires ; ≤ 16 textures par shader (Web) ; bâtiments 1024 px | décidé (18/11) |
-| Animations | Sur place ; suffixe `_loop` pour les boucles ; vitesse de calage notée (marche 0,87, course 3,0, seau 0,36 m/s) | décidé |
+| Animations | Sur place ; suffixe `_loop` pour les boucles ; vitesse de calage notée (marche 0,87, course 3,96, seau 0,36 m/s) | décidé |
 | Accessoires | Objets séparés et nommés (`Seau`, `Seau_anse`, `Seau_eau`) montrés/cachés par le jeu | décidé |
 | Web | 3D calculée sur ≤ 1,6 Mpx, ombres en 2 découpes, densité de décor réduite | décidé (18/11) |
 | Pipelines | Canva → Tripo → GLB (`docs/modeles_sur_mesure.md`) ; scripts Blender du projet (`assets/models/animaux/*.py`, `~/dahalo-personnages/villageoise/scripts_claude/`) ; outils génériques (`.claude/skills/blender-python-pipeline/scripts/`) | décidé |

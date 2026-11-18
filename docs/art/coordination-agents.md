@@ -83,6 +83,7 @@ aucun modèle texte→image).
 | Depuis | Agent | Tâche | Fichiers |
 |---|---|---|---|
 | 18/11, 12 h 15 | Claude → Fable | **Terminé** — correctif MPS de ComfyUI (tri, unique, scatter_reduce, solve/det) ; 25/25 tests ; complété par Claude au dépliage UV (`uv_unwrap/segment.py`, `mesh.py`, `pack.py`) | `~/ComfyUI-Installs/Heishandria/ComfyUI/comfy/…`, `tests_correctif_mps.py` |
+| 18/11, 17 h 30 | Claude | **Terminé** — villageoise v9 : marche et courses refaites (cadence naturelle, phase de vol, bras par IK), calage course 3,96 m/s | `scripts_claude/locomotion.py`, `assets/models/personnages/villageoise.glb`, `data/unit_data.gd` |
 | 18/11, 17 h 00 | Claude | **Terminé** — villageoise v8 : prise des objets (os de doigts « moufle », main fermée sur le seau, la houe, la hache, l'épi ; seau remonté de 3 cm) | `scripts_claude/prises_mains.py`, `assets/models/personnages/villageoise.glb` |
 | 18/11, 16 h 10 | Claude | **Terminé** — villageoise v7 : coupe du bois (hache, animation générée par script, branchée en jeu) | `scripts_claude/couper_bois.py`, `assets/models/personnages/villageoise.glb`, `scenes/units/unite.gd`, skill `blender-python-pipeline` (piège des références d'os) |
 | 18/11, 16 h 00 | Claude | **Terminé** — villageoise v6 : travail des champs d'Astra (`champ_astra_v05/`, lu sans modification) intégré au v5 et branché en jeu (biner / récolter) | `scripts_claude/integrer_champ.py`, `assets/models/personnages/villageoise.glb`, `scenes/units/unite.gd`, `rendu_verification.py` (option `--cacher`) |
