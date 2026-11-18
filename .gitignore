@@ -17,3 +17,6 @@ build/
 journaux_blender/
 sauvegardes/
 __pycache__/
+
+# Maillages bruts de génération image→3D (lourds, non versionnés)
+docs/art/essais/bruts/
