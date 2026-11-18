@@ -38,14 +38,18 @@ Lire aussi `CLAUDE.md` (règles d'architecture) et `docs/specs/` (règles codée
 - Branchement : `UnitData.modele` (.tres) ; `unite.gd` remplace la capsule, tourne le modèle de 180° (il regarde
   vers +Z), joue …marche… (vitesse calée sur la vitesse réelle, plafonnée à ×2,4) ou …repos…, et pose un disque
   à la couleur du clan sous les pieds. Attention : à l'import, Godot retire le suffixe `_loop` des animations.
-- À décider : vitesse des villageois (5 m/s) contre marche calée pour 0,87 m/s → baisser la vitesse ou ajouter
-  une course. Texture à refaire en vues multiples (dos et côtés flous, éclairage figé) : voir la conversation du 17/11.
+- Vitesse des villageois (5 m/s) contre marche calée pour 0,87 m/s : réglé par la course (18/11). Texture à refaire en vues multiples (dos et côtés flous, éclairage figé) : voir la conversation du 17/11.
 - **Corvée d'eau (18/11)** : animations de Copilot (`villageoise_seau_eau_v01.blend` : marche seau vide / plein,
   puiser, poser le seau) réunies avec la marche et le repos v2 par `scripts_claude/integrer_seau.py` →
   `villageoise_v3_seau.glb` (= `villageoise.glb` du jeu, 6 animations, ~8 200 triangles avec le seau). Seau, anse
   et eau sont des objets séparés (`Seau`, `Seau_anse`, `Seau_eau`) que `unite.gd` montre ou cache. Marche au seau
   calée sur 0,36 m/s (`UnitData.vitesse_marche_seau_animation`) : avec 5 m/s de déplacement, les pieds glissent
   (plafond ×2,4). « Poser le seau » n'est pas encore utilisé (le dépôt est instantané).
+- **Course (18/11)** : `scripts_claude/course.py` (même méthode que `marche.py`) ajoute au modèle v3 trois courses
+  calées sur 3,0 m/s (cycle 0,6 s, phase de vol, buste penché) : sans seau, seau vide, seau plein (bras libre
+  écarté) → `villageoise_v4_course.glb` = `villageoise.glb` du jeu, 9 animations. Au-delà de 2,2 m/s
+  (`UnitData.seuil_course`), la villageoise court ; à 5 m/s l'animation tourne à ×1,67 : plus de glissade.
+  Le gardien du pâturage (1,4 m/s) marche.
 - Manquent : animations de travail (bois, champ, porter), mort ; autres rôles.
 - **Zébu 3D** (`assets/models/animaux/zebu.glb`) : vache CC0 de Quaternius transformée par script Blender (bosse,
   fanon, cornes en lyre, oreilles tombantes, pis retiré), animations repos / marche / course, robe tirée au sort

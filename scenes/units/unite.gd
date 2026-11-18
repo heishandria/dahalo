@@ -374,6 +374,9 @@ var _anim_repos := ""
 var _anim_seau_vide := ""
 var _anim_seau_plein := ""
 var _anim_puiser := ""
+var _anim_course := ""
+var _anim_course_seau_vide := ""
+var _anim_course_seau_plein := ""
 var _seau: Array[Node3D] = []      # seau et anse
 var _eau_seau: Node3D = null
 var _seau_visible := true
@@ -399,6 +402,12 @@ func _creer_modele() -> void:
 					_anim_seau_plein = nom
 				"Villageoise_puiser":
 					_anim_puiser = nom
+				"Villageoise_course":
+					_anim_course = nom
+				"Villageoise_course_seau_vide":
+					_anim_course_seau_vide = nom
+				"Villageoise_course_seau_plein":
+					_anim_course_seau_plein = nom
 				_:
 					if "marche" in court:
 						_anim_marche = nom
@@ -440,25 +449,32 @@ func _jouer(nom: String, vitesse: float) -> void:
 	_animations.speed_scale = vitesse
 
 
-## Marche calée sur la vitesse réelle (avec un plafond), repos sinon. Corvée d'eau : le seau à la main (vide à
-## l'aller, plein au retour), puiser à la source.
+## Marche ou course calées sur la vitesse réelle (avec un plafond), repos sinon. Corvée d'eau : le seau à la main
+## (vide à l'aller, plein au retour), puiser à la source.
 func _animer() -> void:
 	if _animations == null or mort:
 		return
 	var v := Vector2(velocity.x, velocity.z).length()
 	var corvee := _corvee_d_eau() and _anim_seau_vide != ""
 	var plein := charge > 0.0 and type_charge == "eau"
+	var court := v > data.seuil_course and _anim_course != ""
+	var allure_course := clampf(v / data.vitesse_course_animation, 0.6, data.acceleration_animation_max)
 	if corvee and etat == Etat.RECOLTE:
 		_montrer_seau(true, plein)
 		_jouer(_anim_puiser, 1.0)
 	elif corvee and v > 0.3:
 		_montrer_seau(true, plein)
-		_jouer(_anim_seau_plein if plein else _anim_seau_vide,
-				clampf(v / data.vitesse_marche_seau_animation, 0.6, data.acceleration_animation_max))
+		if court:
+			_jouer(_anim_course_seau_plein if plein else _anim_course_seau_vide, allure_course)
+		else:
+			_jouer(_anim_seau_plein if plein else _anim_seau_vide,
+					clampf(v / data.vitesse_marche_seau_animation, 0.6, data.acceleration_animation_max))
 	else:
 		# À l'arrêt hors de la source, le repos ne tient pas le seau : il est caché.
 		_montrer_seau(false, false)
-		if v > 0.3:
+		if court:
+			_jouer(_anim_course, allure_course)
+		elif v > 0.3:
 			_jouer(_anim_marche, clampf(v / data.vitesse_marche_animation, 0.6, data.acceleration_animation_max))
 		else:
 			_jouer(_anim_repos, 1.0)
