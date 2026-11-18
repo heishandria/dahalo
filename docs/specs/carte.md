@@ -24,7 +24,7 @@ l'IA est l'image de celle du joueur. Les deux clans ont donc exactement les mêm
 | Kit de chaque base | — | Case centrale, enclos, 2 champs mûrs, 3 villageois, 1 Dahalo, 1 Pisteur, **bosquet de 10 épineux**, **point d'eau**, 2 raketa ; même disposition dans le repère de chaque base (« avant » = vers le centre) |
 | Lit de rivière à sec | 1 | Traverse toute la carte **entre les deux bases** (perpendiculaire à leur axe), en méandres tirés au hasard ; passe par le centre |
 | Trous d'eau | 1 paire | Creusés dans le sable du lit, entre 20 et 60 m du centre |
-| Troupeaux sauvages | 3 | 8 zébus au centre (dans le lit) + une paire de 6, à plus de 45 m des bases |
+| Troupeaux sauvages | 3 | 8 zébus au centre (dans le lit) + une paire de 6, à plus de 45 m des bases, hors des collines infranchissables (> 0,9 m) : les pentes douces sont permises |
 | Collines rocheuses érodées | ~10 % de la carte | Voir §3 bis |
 | Bosquets d'épineux neutres | 7 paires | 8 à 14 arbres, à plus de 30 m des bases, hors du lit |
 | Raketa | 3 paires | À plus de 22 m des bases, hors du lit |
@@ -32,7 +32,8 @@ l'IA est l'image de celle du joueur. Les deux clans ont donc exactement les mêm
 | Points de migration | 5 | Le centre + 2 paires, à plus de 45 m des bases (voir `economie.md` §9) |
 | Zones de test | 3 paires | Laissées vides pour les duels du test de fumée (CI) |
 
-Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et évitent les collines.
+Les emplacements ne se chevauchent pas (3 m de marge), restent à 8 m du bord et évitent les collines (relief de plus de
+0,15 m ; pour les troupeaux, seulement les collines infranchissables). Un troupeau non placé est signalé (avertissement).
 
 ## 3. Lit de rivière à sec (type Menarandra)
 

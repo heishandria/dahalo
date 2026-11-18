@@ -86,10 +86,13 @@ func generer(graine: int) -> Dictionary:
 
 	# Plateaux : après les bases, la rivière et les réservations, avant tout le reste (qui les évite).
 	carte["plateaux"] = _plateaux(graine)
-	var p_troupeau := _placer_paire(6.0, 45.0, 6.0)
+	# Les zébus paissent aussi sur les pentes douces : seules les collines infranchissables sont évitées.
+	var p_troupeau := _placer_paire(6.0, 45.0, 6.0, GameRules.COLLINES_INFRANCHISSABLE)
 	if p_troupeau != Vector2.INF:
 		carte["troupeaux"].append([_v3(p_troupeau), int(depart[1])])
 		carte["troupeaux"].append([_v3(-p_troupeau), int(depart[1])])
+	else:
+		push_warning("Carte : paire de troupeaux sauvages non placée (graine %d)" % graine)
 
 	# Bosquets d'épineux neutres.
 	for k in GameRules.CARTE_PAIRES_FORETS:
@@ -352,14 +355,14 @@ func _valeur(p: Vector2) -> float:
 	return lerpf(haut, bas, fz - j)
 
 
-func _sur_plateau(p: Vector2, rayon: float) -> bool:
+func _sur_plateau(p: Vector2, rayon: float, hauteur_max: float = 0.15) -> bool:
 	if _hauteurs.is_empty():
 		return false
-	if _hauteur_en(p) > 0.15:
+	if _hauteur_en(p) > hauteur_max:
 		return true
 	for k in 8:
 		var a := TAU * k / 8.0
-		if _hauteur_en(p + Vector2(cos(a), sin(a)) * (rayon + 1.5)) > 0.15:
+		if _hauteur_en(p + Vector2(cos(a), sin(a)) * (rayon + 1.5)) > hauteur_max:
 			return true
 	return false
 
@@ -447,7 +450,8 @@ func _bosquet(centre: Vector2, nombre: int, rayon: float) -> Array:
 
 
 ## Trouve p tel que p et -p soient libres ; les réserve. Vector2.INF si rien trouvé.
-func _placer_paire(rayon: float, distance_bases: float, distance_riviere: float) -> Vector2:
+func _placer_paire(rayon: float, distance_bases: float, distance_riviere: float,
+		hauteur_max: float = 0.15) -> Vector2:
 	for essai in ESSAIS:
 		var p := _point_au_hasard(rayon + MARGE_BORD)
 		if p.length() < rayon + 4.0:
@@ -456,7 +460,7 @@ func _placer_paire(rayon: float, distance_bases: float, distance_riviere: float)
 			continue
 		if Terrain.distance_trace(p, _riviere) < GameRules.RIVIERE_LARGEUR * 0.5 + distance_riviere + rayon:
 			continue
-		if _sur_plateau(p, rayon) or _sur_plateau(-p, rayon):
+		if _sur_plateau(p, rayon, hauteur_max) or _sur_plateau(-p, rayon, hauteur_max):
 			continue
 		if _libre(p, rayon):
 			_occuper_paire(p, rayon)
