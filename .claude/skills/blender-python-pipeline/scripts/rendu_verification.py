@@ -3,7 +3,7 @@
 #
 #   blender_lancer.sh modele.blend rendu_verification.py -- --sortie DOSSIER
 #       [--vues face,profil,dos,trois_quarts,dessus] [--action NOM]… [--images 6] [--taille 384]
-#       [--squelette NOM] [--fond 0.25]
+#       [--squelette NOM] [--fond 0.25] [--cacher OBJET,OBJET…]
 #
 # Repère : avant du modèle = -Y (convention Blender), haut = +Z. « face » regarde le modèle de face.
 # Sortie : DOSSIER/planche_vues.png, DOSSIER/planche_<action>.png (+ images séparées).
@@ -27,6 +27,9 @@ N_IMAGES = int(option("--images", "6"))
 TAILLE = int(option("--taille", "384"))
 FOND = float(option("--fond", "0.25"))
 os.makedirs(SORTIE, exist_ok=True)
+for nom in (option("--cacher", "") or "").split(","):
+    if nom and nom in bpy.data.objects:
+        bpy.data.objects[nom].hide_render = True     # accessoires hors sujet (ex. seau non animé)
 
 sc = bpy.context.scene
 sc.render.engine = 'BLENDER_WORKBENCH'

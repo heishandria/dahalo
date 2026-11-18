@@ -55,7 +55,14 @@ Lire aussi `CLAUDE.md` (règles d'architecture) et `docs/specs/` (règles codée
   corps (A-poses identiques à quelques mm), copie décimée à 9 000 triangles avec nouvelles UV, **couleur recuite**
   du modèle IA (1024 px), **poids transférés** de l'ancien corps (aucun sommet orphelin), squelette et 9 animations
   inchangés → `villageoise_v5_ia.glb` = `villageoise.glb` du jeu. Vérifié par planches (course, puiser) et en jeu.
-- Manquent : animations de travail (bois, champ, porter), mort ; autres rôles.
+- **Travail des champs (18/11)** : animations et accessoires faits par **Astra** (`champ_astra_v05/`, construits sur
+  l'ancien corps) intégrés au v5 par `scripts_claude/integrer_champ.py` (fichier d'Astra en lecture seule) : os
+  `Houe` et `Recolte`, houe et épi, `Villageoise_biner_loop`, `Villageoise_recolter` (jouée en aller-retour),
+  `Villageoise_ranger_houe`, `Villageoise_deposer_panier` ; cadence recalée de 24 à 30 i/s (durées conservées) ;
+  panier (35 900 triangles, décor) et objets de présentation écartés → `villageoise_v6_champ.glb` = modèle du jeu.
+  En jeu (`unite.gd`) : champ en pousse → biner (houe) ; champ mûr → récolter (houe plantée + épi) ; accessoires
+  cachés ailleurs. Non utilisés : ranger la houe, déposer dans le panier.
+- Manquent : animations de travail (bois, porter), mort ; autres rôles.
 - **Zébu 3D** (`assets/models/animaux/zebu.glb`) : vache CC0 de Quaternius transformée par script Blender (bosse,
   fanon, cornes en lyre, oreilles tombantes, pis retiré), animations repos / marche / course, robe tirée au sort
   parmi 6 robes malgaches. Encore sans texture de pelage (aspect lisse) : à affiner.

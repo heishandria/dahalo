@@ -381,6 +381,12 @@ var _seau: Array[Node3D] = []      # seau et anse
 var _eau_seau: Node3D = null
 var _seau_visible := true
 var _eau_visible := true
+# Travail des champs (animations d'Astra) : biner avec la houe (champ qui pousse), récolter à la main (champ mûr).
+var _anim_biner := ""
+var _anim_recolter := ""
+var _houe: Node3D = null
+var _epi: Node3D = null
+var _outils_champ := "?"           # accessoires montrés : "", "houe", "houe_epi" ("?" : pas encore réglé)
 
 
 func _creer_modele() -> void:
@@ -408,6 +414,12 @@ func _creer_modele() -> void:
 					_anim_course_seau_vide = nom
 				"Villageoise_course_seau_plein":
 					_anim_course_seau_plein = nom
+				"Villageoise_biner":
+					_anim_biner = nom
+				"Villageoise_recolter":
+					_anim_recolter = nom
+					# Début et fin différents : jouée en aller-retour pour ne pas sauter à chaque boucle.
+					_animations.get_animation(nom).loop_mode = Animation.LOOP_PINGPONG
 				_:
 					if "marche" in court:
 						_anim_marche = nom
@@ -423,6 +435,9 @@ func _creer_modele() -> void:
 		else:
 			_seau.append(n)
 	_montrer_seau(false, false)
+	_houe = _modele.find_child("Houe", true, false) as Node3D
+	_epi = _modele.find_child("Epi_recolte", true, false) as Node3D
+	_montrer_outils_champ("")
 	_marque = MeshInstance3D.new()
 	var disque := CylinderMesh.new()
 	disque.top_radius = 0.3
@@ -459,6 +474,18 @@ func _animer() -> void:
 	var plein := charge > 0.0 and type_charge == "eau"
 	var court := v > data.seuil_course and _anim_course != ""
 	var allure_course := clampf(v / data.vitesse_course_animation, 0.6, data.acceleration_animation_max)
+	var au_champ := etat == Etat.RECOLTE and v <= 0.3 and _anim_biner != "" and _valide(cible_ressource) \
+			and _est_champ(cible_ressource)
+	if au_champ:
+		_montrer_seau(false, false)
+		if cible_ressource.attendre_recolte():
+			_montrer_outils_champ("houe")
+			_jouer(_anim_biner, 1.0)
+		else:
+			_montrer_outils_champ("houe_epi")
+			_jouer(_anim_recolter, 1.0)
+		return
+	_montrer_outils_champ("")
 	if corvee and etat == Etat.RECOLTE:
 		_montrer_seau(true, plein)
 		_jouer(_anim_puiser, 1.0)
@@ -486,6 +513,17 @@ func _corvee_d_eau() -> bool:
 		return type_charge == "eau"
 	return etat in [Etat.VERS_RESSOURCE, Etat.RECOLTE] and _valide(cible_ressource) \
 			and cible_ressource.type_ressource == "eau"
+
+
+## Houe (biner, et plantée à côté pendant la récolte) et épi (récolte) : cachés hors du travail aux champs.
+func _montrer_outils_champ(outils: String) -> void:
+	if outils == _outils_champ:
+		return
+	_outils_champ = outils
+	if _houe:
+		_houe.visible = outils != ""
+	if _epi:
+		_epi.visible = outils == "houe_epi"
 
 
 func _montrer_seau(seau: bool, eau: bool) -> void:
