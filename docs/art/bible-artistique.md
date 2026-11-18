@@ -89,7 +89,8 @@ objets sacrés comme butin ; couleurs vives sans fonction.
 ## 9. Exemples approuvés
 
 - Zébu 3D (`assets/models/animaux/zebu.glb`) — approuvé en jeu le 17/11.
-- Villageoise v4 avec seau et course (`assets/models/personnages/villageoise.glb`) — en jeu le 18/11.
+- Villageoise v5, corps généré par IA (TRELLIS.2 / ComfyUI) depuis la photo de référence, passé par le kit
+  (recuisson de la couleur, poids transférés du rig v4, 9 000 triangles, texture 1024) — en jeu le 18/11.
 - Enclos (d'après la photo fournie le 17/11) — `scenes/buildings/maisons.gd`.
 - Illustration de référence : **à produire** (planche de calibration : villageoise + seau + case + baobab).
 
@@ -102,3 +103,4 @@ objets sacrés comme butin ; couleurs vives sans fonction.
 | 18/11/2026 | Textures 3D compressées + mipmaps ; résolution 3D adaptée sur Web |
 | 18/11/2026 | Corvée d'eau au seau (animations Copilot) ; course de la villageoise |
 | 18/11/2026 | Bible créée ; règles culturelles (lieux sacrés, sources obligatoires) |
+| 18/11/2026 | Villageoise v5 : corps image→3D (TRELLIS.2) sur le squelette et les animations existants |

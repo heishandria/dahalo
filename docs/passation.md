@@ -50,6 +50,11 @@ Lire aussi `CLAUDE.md` (règles d'architecture) et `docs/specs/` (règles codée
   écarté) → `villageoise_v4_course.glb` = `villageoise.glb` du jeu, 9 animations. Au-delà de 2,2 m/s
   (`UnitData.seuil_course`), la villageoise court ; à 5 m/s l'animation tourne à ×1,67 : plus de glissade.
   Le gardien du pâturage (1,4 m/s) marche.
+- **Villageoise v5 (18/11)** : corps généré par TRELLIS.2 (ComfyUI local, correctif MPS) depuis la photo de
+  référence, intégré par `scripts_claude/integrer_ia.py` sur le v4 : mise à l'échelle et centrage sur l'ancien
+  corps (A-poses identiques à quelques mm), copie décimée à 9 000 triangles avec nouvelles UV, **couleur recuite**
+  du modèle IA (1024 px), **poids transférés** de l'ancien corps (aucun sommet orphelin), squelette et 9 animations
+  inchangés → `villageoise_v5_ia.glb` = `villageoise.glb` du jeu. Vérifié par planches (course, puiser) et en jeu.
 - Manquent : animations de travail (bois, champ, porter), mort ; autres rôles.
 - **Zébu 3D** (`assets/models/animaux/zebu.glb`) : vache CC0 de Quaternius transformée par script Blender (bosse,
   fanon, cornes en lyre, oreilles tombantes, pis retiré), animations repos / marche / course, robe tirée au sort

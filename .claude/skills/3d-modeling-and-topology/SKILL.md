@@ -44,6 +44,13 @@ Local et sans MCP : ComfyUI + TRELLIS.2 / Pixal3D, lancé par
 (régler le nombre de faces et la taille de texture au budget du jeu). Image d'entrée : un seul objet entier,
 fond uni, lumière douce, vue de 3/4 ; la face cachée est **inventée** par le modèle.
 
+**Ne pas décimer le modèle texturé lui-même** (la décimation fusionne des sommets à cheval sur les coutures UV :
+texture en taches) : décimer une copie, lui refaire des UV, puis **recuire** la couleur depuis le modèle IA intact
+(voir `../uv-and-texturing/SKILL.md`, baking). Pour un personnage, **transférer les poids d'un corps déjà riggé**
+dans la même pose (Data Transfer, face la plus proche) plutôt que les poids automatiques, qui laissent des
+morceaux détachés sans poids (fragments figés) ou attachés au mauvais membre (étirements).
+Exemple complet : `~/dahalo-personnages/villageoise/scripts_claude/integrer_ia.py`.
+
 Toujours : vérifier échelle et orientation, supprimer les faces cachées et le sol fusionné, refaire les normales,
 décimer au budget, contrôler la texture (lumière cuite à retirer), refaire les zones fausses (mains, pieds,
 dos inventé), retopologiser si rig.

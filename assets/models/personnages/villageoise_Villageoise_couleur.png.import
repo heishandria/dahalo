@@ -2,21 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://6x73mxomh271"
-path.s3tc="res://.godot/imported/villageoise_Villageoise_couleur_retouches_2048.png-7da4fecb54afeca628ee145aa56e249e.s3tc.ctex"
-path.etc2="res://.godot/imported/villageoise_Villageoise_couleur_retouches_2048.png-7da4fecb54afeca628ee145aa56e249e.etc2.ctex"
+uid="uid://cambk0dtspxen"
+path.s3tc="res://.godot/imported/villageoise_Villageoise_couleur.png-ffc00aa9625bbc3116316e32e442d81e.s3tc.ctex"
+path.etc2="res://.godot/imported/villageoise_Villageoise_couleur.png-ffc00aa9625bbc3116316e32e442d81e.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "4c63d52e69e778dac069b8c782aba2ef"
+"md5": "8013d7e907138b327d88000e2110dc04"
 }
 
 [deps]
 
-source_file="res://assets/models/personnages/villageoise_Villageoise_couleur_retouches_2048.png"
-dest_files=["res://.godot/imported/villageoise_Villageoise_couleur_retouches_2048.png-7da4fecb54afeca628ee145aa56e249e.s3tc.ctex", "res://.godot/imported/villageoise_Villageoise_couleur_retouches_2048.png-7da4fecb54afeca628ee145aa56e249e.etc2.ctex"]
+source_file="res://assets/models/personnages/villageoise_Villageoise_couleur.png"
+dest_files=["res://.godot/imported/villageoise_Villageoise_couleur.png-ffc00aa9625bbc3116316e32e442d81e.s3tc.ctex", "res://.godot/imported/villageoise_Villageoise_couleur.png-ffc00aa9625bbc3116316e32e442d81e.etc2.ctex"]
 
 [params]
 
@@ -42,4 +42,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=0
+detect_3d/compress_to=1

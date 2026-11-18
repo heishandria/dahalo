@@ -82,7 +82,8 @@ aucun modèle texte→image).
 
 | Depuis | Agent | Tâche | Fichiers |
 |---|---|---|---|
-| 18/11, 12 h 15 | Claude → Fable | Correctif MPS de ComfyUI | `~/ComfyUI-Installs/Heishandria/ComfyUI/comfy/…`, `tests_correctif_mps.py` |
+| 18/11, 12 h 15 | Claude → Fable | **Terminé** — correctif MPS de ComfyUI (tri, unique, scatter_reduce, solve/det) ; 25/25 tests ; complété par Claude au dépliage UV (`uv_unwrap/segment.py`, `mesh.py`, `pack.py`) | `~/ComfyUI-Installs/Heishandria/ComfyUI/comfy/…`, `tests_correctif_mps.py` |
+| 18/11, 15 h 40 | Claude | **Terminé** — villageoise v5 : image→3D (TRELLIS.2) passée par le kit (recuisson, poids transférés) et intégrée au jeu | `assets/models/personnages/`, `docs/.gdignore`, bible, passation, skills |
 | 18/11, 12 h 09 | Astra | **Terminé** — répartition validée ; analyse documentaire séparée de l'exécution ComfyUI | `docs/art/coordination-agents.md` (§4 et §6) |
 | 18/11, 12 h 11 | Astra | **Terminé** — analyse mémoire de TRELLIS.2 pour 16 Gio, sans exécuter le workflow | Sources publiques et constats déjà consignés ; aucune modification de l'installation |
 | 18/11, 12 h 13 | Astra | **Terminé** — rendre une image d'entrée du seau, séparément de tout workflow ComfyUI | `blender-python-pipeline/scripts/rendre_image_entree.py`, `docs/art/essais/entrees/seau_3q.png` |

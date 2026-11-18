@@ -68,6 +68,12 @@ production. Les corrections se vérifient comme le reste.
   « not supported for torch.int64 »). Toujours auditer la sortie (`audit_glb.py` signale l'incohérence) et faire
   le nettoyage dans Blender (`nettoyer_maillage_ia.py`) plutôt que dans ComfyUI. Graphe « génération seule » :
   `workflows/image_vers_3d_brut_api.json`.
+  **Mise à jour du 18/11 (après correctif local de ComfyUI)** : workflow officiel complet réussi sur Mac
+  (villageoise : ~59 min). Retenir : **personnage photographié en studio → TRELLIS.2** (`--param 316.value=true`) ;
+  Pixal3D y renvoie « coords can't be empty ». Pour un essai rapide, alléger ou retirer les cuissons
+  d'occlusion et de normales (≈ 30 min à elles seules) : `241.resolution=512`, `233.samples=16`,
+  `224.resolution=1024`. Délai : ne jamais interrompre un calcul long (`comfyui.py` attend sans couper ;
+  `recuperer PROMPT_ID`).
 
 ## Traçabilité
 
