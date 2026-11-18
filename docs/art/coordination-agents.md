@@ -46,15 +46,19 @@ aucun modèle texte→image).
   décimation, script de test MPS contre CPU (`~/ComfyUI-Installs/Heishandria/tests_correctif_mps.py`).
   **Ne pas toucher à `~/ComfyUI-Installs/` ni redémarrer le serveur pendant ce temps.**
 - **Ensuite (Claude)** : redémarrage de ComfyUI avec l'utilisateur, nouvelle génération complète, audit,
-  nettoyage Blender, rendus, compte rendu ; rédaction d'un signalement du bogue pour les développeurs de
-  ComfyUI (publication par l'utilisateur seulement).
+  nettoyage Blender, rendus et compte rendu. **Astra** prépare séparément un brouillon non publié du
+  signalement à partir des constats ci-dessus ; Claude pourra le compléter avec les résultats après correctif.
 
 ## 4. Répartition proposée (à valider par l'utilisateur)
 
 | Domaine | Responsable | Fichiers |
 |---|---|---|
 | ComfyUI : correctif local, test de bout en bout, `comfyui.py`, graphe image→3D | **Claude** (et Fable pour le correctif) | `~/ComfyUI-Installs/…`, `.claude/skills/image-generation-direction/scripts/`, `…/workflows/` |
-| Nettoyage des maillages générés, rendus de vérification, export | **Claude** | `blender-python-pipeline/scripts/nettoyer_maillage_ia.py`, `rendu_verification.py`, `exporter_gltf.py` |
+| Analyse documentaire de mémoire et compatibilité Apple Silicon | **Astra**, en lecture seule ; ne pas toucher à l'installation locale pendant la tâche Claude/Fable | Sources publiques et constats déjà consignés ; aucune génération, aucun redémarrage |
+| Post-traitement Blender des sorties ComfyUI, rendus de vérification de ces résultats, export | **Claude** | `blender-python-pipeline/scripts/nettoyer_maillage_ia.py`, `rendu_verification.py`, `exporter_gltf.py` |
+| Image d'entrée 3D d'un asset existant, hors génération ComfyUI | **Astra** | `blender-python-pipeline/scripts/rendre_image_entree.py`, `docs/art/essais/entrees/` |
+| Brouillon de signalement MPS, sans publication | **Astra** | `docs/art/essais/signalement_bogue_mps.md` |
+| Reconstruction expérimentale depuis nuage de sommets, sur copie du GLB fourni | **Astra** (exception ciblée au post-traitement ComfyUI de Claude) | `blender-python-pipeline/scripts/reconstruire_depuis_sommets.py`, résultats temporaires hors source |
 | Qualité du système de skills : routage, sélecteur, validateur, tests | **Astra** | `game-art-router/routage.json`, `game-art-router/scripts/*`, `blender-python-pipeline/scripts/audit_glb.py`, `test_audit_glb.py` |
 | Rapport et catalogue de ressources | **Astra** | `docs/art/rapport-integration.md`, `docs/art/references/RESOURCES.md` |
 | Vérification des faits culturels (liste « à vérifier ») | **Astra**, proposé | `docs/art/madagascar-references.md` (sources obligatoires, rien d'inventé) |
@@ -79,4 +83,8 @@ aucun modèle texte→image).
 | Depuis | Agent | Tâche | Fichiers |
 |---|---|---|---|
 | 18/11, 12 h 15 | Claude → Fable | Correctif MPS de ComfyUI | `~/ComfyUI-Installs/Heishandria/ComfyUI/comfy/…`, `tests_correctif_mps.py` |
-| — | Astra | (à compléter) | |
+| 18/11, 12 h 09 | Astra | **Terminé** — répartition validée ; analyse documentaire séparée de l'exécution ComfyUI | `docs/art/coordination-agents.md` (§4 et §6) |
+| 18/11, 12 h 11 | Astra | **Terminé** — analyse mémoire de TRELLIS.2 pour 16 Gio, sans exécuter le workflow | Sources publiques et constats déjà consignés ; aucune modification de l'installation |
+| 18/11, 12 h 13 | Astra | **Terminé** — rendre une image d'entrée du seau, séparément de tout workflow ComfyUI | `blender-python-pipeline/scripts/rendre_image_entree.py`, `docs/art/essais/entrees/seau_3q.png` |
+| 18/11, 12 h 13 | Astra | **Terminé** — rédiger le brouillon non publié du signalement MPS | `docs/art/essais/signalement_bogue_mps.md` |
+| 18/11, 12 h 30 | Astra | **Reporté** — le GLB présent n'a ni attribut `COLOR_0` ni couleur par sommet ; il ne permet pas de valider le transfert de couleurs demandé. Source inspectée en lecture seule, aucun script/copie créés. | `docs/art/essais/bruts/902_brut_forme_00001_.glb` |
