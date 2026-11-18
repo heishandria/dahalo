@@ -131,8 +131,9 @@ def auditer(chemin, max_tri=None, max_tex=None, max_mat=None):
         sommets = 0
         for p in m.get("primitives", []):
             ref = (p.get("attributes") or {}).get("POSITION") if isinstance(p, dict) else None
-            if type(ref) is int and 0 <= ref < len(acc) and isinstance(acc[ref], dict):
-                sommets += acc[ref].get("count") or 0
+            if type(ref) is int and 0 <= ref < len(acc) and isinstance(acc[ref], dict) \
+                    and type(acc[ref].get("count")) is int and acc[ref]["count"] > 0:
+                sommets += acc[ref]["count"]
         r["maillages"].append({"noeud": n.get("name"), "triangles": tri, "sommets": sommets, "skin": "skin" in n})
         r["triangles"] += tri
         # Un maillage ordinaire a ~0,5 à 3 sommets par triangle ; bien plus = faces manquantes (fichier abîmé,
