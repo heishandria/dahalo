@@ -45,6 +45,30 @@ présenté comme authentique), artefacts de bord, style conforme à la bible. Ut
 Retouche ciblée (masque/inpainting) si disponible, sinon paint-over, vectoriel ou 3D pour les détails de
 production. Les corrections se vérifient comme le reste.
 
+## ComfyUI local (sans MCP)
+
+`scripts/comfyui.py` pilote un serveur ComfyUI par son API HTTP (bibliothèque standard, aucun MCP) :
+
+    python3 scripts/comfyui.py etat                         # serveur, matériel, modèles installés
+    python3 scripts/comfyui.py modeles-workflow --filtre 3d # modèles de workflow fournis avec ComfyUI
+    python3 scripts/comfyui.py executer WORKFLOW.json --image entree.png --sortie DOSSIER \
+        --param ID.entree=valeur …
+
+- Accepte les workflows au **format de l'interface** (convertis via `/object_info` : réglages dans l'ordre,
+  graines « fixed/randomize » sautées, menus dynamiques `nom.sous_reglage`) ou au format API.
+- Envoie l'image, lance, suit la file, télécharge les sorties (images, `.glb`), écrit `journal.json`
+  et `prompt_api.json` (pour rejouer). Code de sortie non nul en cas d'échec.
+- **Vérifier d'abord `etat`** : on ne peut générer que ce que les modèles installés permettent. Une installation
+  sans *checkpoint* ni encodeur de texte ne fait pas de texte→image (seulement image→3D, détourage, etc.).
+- Les identifiants de nœuds (`--param 186.target_face_count=20000`) se lisent dans `prompt_api.json`.
+- Licences : celle de **chaque modèle** s'applique aux usages (voir la liste des ressources du projet).
+- **Limite constatée sur Mac (Apple MPS), ComfyUI 0.45.6, 18/11/2026** : avec TRELLIS.2 / Pixal3D, la génération
+  passe (forme et couleurs), mais le maillage décodé n'a qu'une faible part de ses faces (ex. 1,7 M sommets pour
+  14 632 triangles : silhouette en fragments) ; `RemeshMesh` et `DecimateMesh` échouent (index hors limites,
+  « not supported for torch.int64 »). Toujours auditer la sortie (`audit_glb.py` signale l'incohérence) et faire
+  le nettoyage dans Blender (`nettoyer_maillage_ia.py`) plutôt que dans ComfyUI. Graphe « génération seule » :
+  `workflows/image_vers_3d_brut_api.json`.
+
 ## Traçabilité
 
 Conserver : prompt, outil et version, graine si dispo, références utilisées, image retenue, corrections.

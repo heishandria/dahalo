@@ -87,7 +87,19 @@ Références culturelles de Madagascar : voir `../madagascar-references.md`.
 | [The Met Open Access](https://www.metmuseum.org/about-the-met/policies-and-documents/open-access) | CC0 pour les œuvres du domaine public | ◐ |
 | [Musée du quai Branly — collections](https://www.quaibranly.fr/fr/explorer-les-collections) | Consultation ; droits réservés | ✓ |
 
-## 8. Génération d'images (outils locaux, si on en installe un)
+## 8. Génération d'images et image→3D (outils locaux)
+
+**Installé sur le poste (18/11/2026)** : ComfyUI 0.45.6 (`~/ComfyUI-Installs/Heishandria/ComfyUI`, serveur
+`http://127.0.0.1:8188`, Apple MPS), piloté par `.claude/skills/image-generation-direction/scripts/comfyui.py`.
+Modèles présents (image→3D seulement, **aucun modèle texte→image**) — licences lues sur Hugging Face :
+
+| Modèle | Rôle | Licence |
+|---|---|---|
+| [TRELLIS.2](https://huggingface.co/Comfy-Org/TRELLIS.2) (Microsoft) | Image → forme + texture 3D | MIT |
+| [Pixal3D](https://huggingface.co/Comfy-Org/Pixal3D) | Image → 3D (variante) | MIT |
+| [MoGe](https://huggingface.co/Comfy-Org/MoGe) | Estimation de géométrie et de champ de vision | MIT |
+| [BiRefNet](https://huggingface.co/Comfy-Org/BiRefNet) | Détourage | MIT |
+| DINOv3 ViT-L (Meta, dans le dépôt Pixal3D) | Encodeur d'image | **Licence propre à Meta** ([fiche](https://huggingface.co/facebook/dinov3-vitl16-pretrain-lvd1689m)) : à lire avant usage commercial |
 
 | Ressource | Licence | ✓ |
 |---|---|---|

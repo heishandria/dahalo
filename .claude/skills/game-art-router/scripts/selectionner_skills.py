@@ -7,7 +7,7 @@ Usage :
 
 Fonctionne pour tout agent (Claude Code, Codex, Copilot…) : aucune dépendance, aucun réseau, aucun MCP.
 Principe : chaque type de tâche a des mots-clés ; on garde les types dont le score atteint au moins la moitié
-du meilleur (ou 2), et toujours les « sujets » reconnus (personnage, animal, environnement) ; on fusionne leurs
+du meilleur (ou 2), et toujours les « sujets » et actions de travail explicites reconnus ; on fusionne leurs
 skills dans l'ordre, en ajoutant le routeur avant et la revue après.
 """
 import json
@@ -57,7 +57,9 @@ def selectionner(demande_brute, routage=None):
         meilleur = resultats[0][0]
         # Un sujet (personnage, animal, environnement) est toujours retenu : la technique (3D, animation…)
         # ne doit pas faire oublier l'anatomie ou l'architecture de ce qu'on représente.
-        retenues = [r for r in resultats if r[0] * 2 >= meilleur or r[0] >= 2 or r[1].get("sujet")]
+        # Une action de travail explicite reste nécessaire même dans un brief technique très détaillé.
+        retenues = [r for r in resultats if r[0] * 2 >= meilleur or r[0] >= 2
+                    or r[1].get("sujet") or r[1].get("action")]
         # On lit d'abord le sujet (ce qu'on représente), ensuite la technique.
         retenues.sort(key=lambda r: (not r[1].get("sujet"), -r[0]))
     skills = list(routage["toujours_avant"])

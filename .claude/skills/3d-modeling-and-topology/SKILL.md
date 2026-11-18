@@ -39,6 +39,11 @@ Le budget dépend surtout du **nombre à l'écran** et de la plateforme (Web/mob
 
 ## Modèles issus d'image→3D
 
+Local et sans MCP : ComfyUI + TRELLIS.2 / Pixal3D, lancé par
+`../image-generation-direction/scripts/comfyui.py executer <modèle de workflow 3d_…> --image objet.png …`
+(régler le nombre de faces et la taille de texture au budget du jeu). Image d'entrée : un seul objet entier,
+fond uni, lumière douce, vue de 3/4 ; la face cachée est **inventée** par le modèle.
+
 Toujours : vérifier échelle et orientation, supprimer les faces cachées et le sol fusionné, refaire les normales,
 décimer au budget, contrôler la texture (lumière cuite à retirer), refaire les zones fausses (mains, pieds,
 dos inventé), retopologiser si rig.

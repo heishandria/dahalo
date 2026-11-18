@@ -20,6 +20,10 @@ commande.
 | `docs/art/rapport-integration.md` | Ce qui a été fait, testé, et les lacunes | — |
 | `AGENTS.md` (racine) | Point d'entrée pour les agents qui ne lisent pas `CLAUDE.md` | — |
 
+`game-art-ai-kit.zip` est l'archive du kit d'origine, **pas une copie de l'installation actuelle** :
+son inventaire contient 17 skills et 4 workflows, contre 25 skills et 6 workflows dans le dépôt.
+Elle reste inchangée ; pour réutiliser les améliorations, copier les dossiers installés ci-dessus.
+
 ## Comment ça s'active
 
 1. **Claude Code** charge automatiquement un skill quand la demande correspond à sa `description` (en français
@@ -47,13 +51,25 @@ par passes, **rendre et regarder** le résultat, corriger, puis faire une passat
 | Dessin vectoriel (SVG), schémas, planches annotées | Oui (code + rendu PNG pour vérification) |
 | Modèles, rigs, animations Blender, rendus de vérification, export GLB | Oui (Blender 5.3 installé, scripts testés) |
 | Intégration et capture en jeu (Godot) | Oui |
-| Génération d'images par IA | **Seulement si un générateur est branché à la session** ; sinon l'agent rédige le prompt pour Canva/Midjourney/etc. |
+| Image → modèle 3D texturé | **Outillage disponible, chaîne complète non validée** : ComfyUI + TRELLIS.2 / Pixal3D installés selon l'inventaire du 18/11/2026 ; client `comfyui.py` présent. Aucune preuve de génération de bout en bout consignée dans ce kit |
+| Génération d'images par IA (texte→image) | **Indisponible dans cette installation au 18/11/2026** : aucun modèle texte→image selon l'inventaire ; en attendant, l'agent rédige le prompt pour un outil externe |
 | Retouche d'image (recadrage, assemblage, annotations) | Oui par script (Pillow) ; retouche « inpainting » seulement avec un outil dédié |
+
+Statut ComfyUI fondé sur [`references/RESOURCES.md` §8](references/RESOURCES.md) et la présence du client,
+pas sur une nouvelle exécution du serveur. Avant production : vérifier `comfyui.py etat`, exécuter un
+workflow compatible, conserver son résultat/journal puis inspecter le modèle dans Blender.
+Le [rapport d'intégration](rapport-integration.md) distingue les essais historiques de cette disponibilité.
 
 ## Maintenance
 
 - Valider après toute modification : `python3 .claude/skills/game-art-router/scripts/valider_skills.py`
-  puis `python3 .claude/skills/game-art-router/scripts/test_selection.py`.
+  puis `python3 .claude/skills/game-art-router/scripts/test_selection.py`
+  et `python3 -B .claude/skills/blender-python-pipeline/scripts/test_audit_glb.py`.
+- Audit GLB/glTF : modes TRIANGLES (4), TRIANGLE_STRIP (5), TRIANGLE_FAN (6), avec ou sans indices.
+  Le compte inclut les triangles dégénérés et chaque instance de maillage dans les nœuds, comme budget
+  conservateur ; ce n'est pas un validateur glTF complet et les buffers géométriques ne sont pas décodés.
+  Mode non pris en charge ou compte invalide : alerte et `comptage_complet: false` (total partiel).
+  `--strict` échoue alors avec le code 1 ; fichier illisible/structure invalide : code 2.
 - Nouveau skill : dossier `kebab-case` + `SKILL.md` avec `name` (= dossier) et `description` (déclencheurs FR/EN),
   sections méthode et **critères de validation** ; l'ajouter à une tâche de `routage.json`.
 - Nouvelle décision artistique : bible (tableau + journal). Nouveau fait culturel : `madagascar-references.md`

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests du sélecteur de skills : chaque demande doit faire apparaître au moins les skills attendus.
+"""Tests du sélecteur : skills essentiels, sorties complètes du travail et faux positifs.
 
 Usage : python3 test_selection.py     (code de sortie 1 si un cas échoue)
 """
@@ -35,7 +35,74 @@ CAS = [
      ["uv-and-texturing", "game-3d-optimization-and-export"]),
     ("Définis la direction artistique et la palette du jeu", ["art-direction"]),
     ("Corrige le skinning du coude, le bras se déforme", ["rigging-and-skinning"]),
+    ("Transforme cette photo de seau en modèle 3D avec ComfyUI (image vers 3D)",
+     ["3d-modeling-and-topology", "game-3d-optimization-and-export"]),
 ]
+
+PERSONNAGE = [
+    "character-design", "human-anatomy-and-character", "drawing-fundamentals",
+    "gesture-and-figure-drawing", "visual-reference-research",
+]
+ENVIRONNEMENT = [
+    "environment-and-architecture", "perspective-and-spatial-design",
+    "composition-and-visual-storytelling", "colour-light-and-materials", "visual-reference-research",
+]
+TRAVAIL = [
+    "gesture-and-figure-drawing", "animation-fundamentals", "rigging-and-skinning",
+    "blender-python-pipeline", "visual-reference-research", "game-3d-optimization-and-export",
+    "game-asset-handoff",
+]
+WORKFLOWS = {
+    "personnage": "docs/art/workflows/personnage-concept-turnaround.md",
+    "environnement": "docs/art/workflows/environnement.md",
+    "action_travail": "docs/art/workflows/animation-cycle.md",
+}
+CAS_COMPLETS = [
+    ("Une villageoise travaille au champ, binage, récolte et dépôt dans un panier",
+     ["environnement", "personnage", "action_travail"], ENVIRONNEMENT + PERSONNAGE + TRAVAIL),
+    ("Un villageois coupe un arbre avec sa hache",
+     ["personnage", "environnement", "action_travail"], PERSONNAGE + ENVIRONNEMENT + TRAVAIL),
+    ("Prépare le binage de la paysanne",
+     ["personnage", "action_travail"], PERSONNAGE + TRAVAIL),
+    ("Une agricultrice récolte puis dépose les épis dans son panier",
+     ["personnage", "action_travail"], PERSONNAGE + TRAVAIL),
+    ("Un bûcheron doit couper l’arbre",
+     ["personnage", "environnement", "action_travail"], PERSONNAGE + ENVIRONNEMENT + TRAVAIL),
+    ("Une bûcheronne coupe des arbres",
+     ["personnage", "environnement", "action_travail"], PERSONNAGE + ENVIRONNEMENT + TRAVAIL),
+    ("Une villageoise travaille aux champs",
+     ["environnement", "personnage", "action_travail"], ENVIRONNEMENT + PERSONNAGE + TRAVAIL),
+    ("Prépare une action de travail pour le personnage",
+     ["personnage", "action_travail"], PERSONNAGE + TRAVAIL),
+    ("La paysanne doit semer",
+     ["personnage", "action_travail"], PERSONNAGE + TRAVAIL),
+    ("Peux-tu dessiner un panier ?", ["dessin_trait"],
+     ["drawing-fundamentals", "line-art-and-inking", "perspective-and-spatial-design"]),
+    ("Le champ de vision", [], []),
+    ("Améliore le travail du dépôt", [], []),
+    ("Une coupe et un panier", [], []),
+    ("Un arbre", ["environnement"], ENVIRONNEMENT),
+]
+
+
+def verifier_sortie(demande, taches, skills):
+    resultat = selectionner(demande)
+    attendus = list(dict.fromkeys(["game-art-router"] + skills + ["visual-quality-review"]))
+    assert resultat["demande"] == demande
+    assert [t["id"] for t in resultat["taches"]] == taches, resultat["taches"]
+    assert resultat["skills"] == attendus, resultat["skills"]
+    assert resultat["chemins"] == [
+        os.path.join(".claude", "skills", s, "SKILL.md") for s in attendus
+    ]
+    assert resultat["aucune_tache_reconnue"] == (not taches)
+    assert resultat["workflows"] == [WORKFLOWS[t] for t in taches if t in WORKFLOWS]
+    assert len(resultat["outils"]) == len(taches)
+    assert all(resultat["outils"])
+    if "action_travail" in taches:
+        outil = resultat["outils"][taches.index("action_travail")]
+        assert "Blender en ligne de commande" in outil and "contacts main-outil" in outil
+        assert "export" in outil and "moteur" in outil
+    assert all(t["score"] > 0 and t["mots_trouves"] for t in resultat["taches"])
 
 
 def main():
@@ -50,7 +117,24 @@ def main():
         print("%s %-70s → %s" % (statut, demande[:70], ", ".join(r["skills"][1:-1])))
         if manquants:
             print("      manquants : " + ", ".join(manquants))
-    print("%d/%d cas réussis" % (len(CAS) - echecs, len(CAS)))
+    for demande, taches, skills in CAS_COMPLETS:
+        try:
+            verifier_sortie(demande, taches, skills)
+            print("OK sortie complète : " + demande)
+        except AssertionError as erreur:
+            echecs += 1
+            print("ÉCHEC sortie complète : %s → %s" % (demande, erreur))
+    # Un seul déclencheur d'action doit résister à une forte densité de termes techniques.
+    demande = "Une paysanne : binage en modèle 3D Blender, mesh low poly glb gltf, UV texture PBR"
+    resultat = selectionner(demande)
+    if not set(PERSONNAGE + TRAVAIL).issubset(resultat["skills"]) or \
+            "action_travail" not in [t["id"] for t in resultat["taches"]]:
+        echecs += 1
+        print("ÉCHEC action éclipsée par la technique : " + demande)
+    else:
+        print("OK action conservée dans un brief technique")
+    total = len(CAS) + len(CAS_COMPLETS) + 1
+    print("%d/%d cas réussis" % (total - echecs, total))
     sys.exit(1 if echecs else 0)
 
 
