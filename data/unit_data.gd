@@ -35,3 +35,4 @@ extends Resource
 @export var modele: PackedScene
 @export var vitesse_marche_animation := 0.87   # vitesse (m/s) pour laquelle la marche du modèle est calée
 @export var acceleration_animation_max := 2.4  # au-delà, la marche ne s'accélère plus (sinon elle s'agite)
+@export var vitesse_marche_seau_animation := 0.36  # marche avec le seau (petits pas chargés), si le modèle l'a

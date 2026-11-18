@@ -8,6 +8,7 @@ extends CharacterBody3D
 enum Etat { INACTIF, DEPLACEMENT, VERS_RESSOURCE, RECOLTE, RETOUR_DEPOT, CAPTURE, PILLAGE, ATTAQUE, MORT, GARDE }
 
 const DIST_RECOLTE := 2.2
+const DIST_PUISER := 0.9         # eau : jusqu'au bord, pour que le seau plonge dans l'eau
 const DIST_DEPOT := 3.5
 const DIST_CAPTURE := 2.0
 const INTERVALLE_GUET := 0.5     # fréquence de recherche d'ennemis quand l'unité est inactive
@@ -369,6 +370,14 @@ var _animations: AnimationPlayer
 var _marque: MeshInstance3D      # disque à la couleur du clan sous les pieds (la capsule colorée disparaît)
 var _anim_marche := ""
 var _anim_repos := ""
+# Corvée d'eau (villageoise) : marche avec le seau vide ou plein, puiser ; seau et eau montrés ou cachés.
+var _anim_seau_vide := ""
+var _anim_seau_plein := ""
+var _anim_puiser := ""
+var _seau: Array[Node3D] = []      # seau et anse
+var _eau_seau: Node3D = null
+var _seau_visible := true
+var _eau_visible := true
 
 
 func _creer_modele() -> void:
@@ -382,13 +391,29 @@ func _creer_modele() -> void:
 	if _animations != null:
 		# À l'import, Godot retire le suffixe « _loop » (et active la boucle) : on cherche le mot seulement.
 		for nom in _animations.get_animation_list():
-			if "marche" in nom:
-				_anim_marche = nom
-			elif "repos" in nom:
-				_anim_repos = nom
+			var court: String = nom.get_slice("/", nom.get_slice_count("/") - 1)
+			match court:
+				"Villageoise_seau_vide":
+					_anim_seau_vide = nom
+				"Villageoise_seau_plein":
+					_anim_seau_plein = nom
+				"Villageoise_puiser":
+					_anim_puiser = nom
+				_:
+					if "marche" in court:
+						_anim_marche = nom
+					elif "repos" in court:
+						_anim_repos = nom
 		# Décalage aléatoire : deux villageois côte à côte ne marchent pas au pas.
 		_jouer(_anim_repos, 1.0)
 		_animations.seek(randf() * 2.0, true)
+	# Seau de la corvée d'eau (s'il est dans le modèle) : caché tant qu'on ne va pas puiser.
+	for n in _modele.find_children("Seau*", "MeshInstance3D", true, false):
+		if n.name == "Seau_eau":
+			_eau_seau = n
+		else:
+			_seau.append(n)
+	_montrer_seau(false, false)
 	_marque = MeshInstance3D.new()
 	var disque := CylinderMesh.new()
 	disque.top_radius = 0.3
@@ -415,15 +440,47 @@ func _jouer(nom: String, vitesse: float) -> void:
 	_animations.speed_scale = vitesse
 
 
-## Marche calée sur la vitesse réelle (avec un plafond), repos sinon.
+## Marche calée sur la vitesse réelle (avec un plafond), repos sinon. Corvée d'eau : le seau à la main (vide à
+## l'aller, plein au retour), puiser à la source.
 func _animer() -> void:
 	if _animations == null or mort:
 		return
 	var v := Vector2(velocity.x, velocity.z).length()
-	if v > 0.3:
-		_jouer(_anim_marche, clampf(v / data.vitesse_marche_animation, 0.6, data.acceleration_animation_max))
+	var corvee := _corvee_d_eau() and _anim_seau_vide != ""
+	var plein := charge > 0.0 and type_charge == "eau"
+	if corvee and etat == Etat.RECOLTE:
+		_montrer_seau(true, plein)
+		_jouer(_anim_puiser, 1.0)
+	elif corvee and v > 0.3:
+		_montrer_seau(true, plein)
+		_jouer(_anim_seau_plein if plein else _anim_seau_vide,
+				clampf(v / data.vitesse_marche_seau_animation, 0.6, data.acceleration_animation_max))
 	else:
-		_jouer(_anim_repos, 1.0)
+		# À l'arrêt hors de la source, le repos ne tient pas le seau : il est caché.
+		_montrer_seau(false, false)
+		if v > 0.3:
+			_jouer(_anim_marche, clampf(v / data.vitesse_marche_animation, 0.6, data.acceleration_animation_max))
+		else:
+			_jouer(_anim_repos, 1.0)
+
+
+## Va puiser de l'eau, puise, ou rapporte de l'eau.
+func _corvee_d_eau() -> bool:
+	if charge > 0.0:
+		return type_charge == "eau"
+	return etat in [Etat.VERS_RESSOURCE, Etat.RECOLTE] and _valide(cible_ressource) \
+			and cible_ressource.type_ressource == "eau"
+
+
+func _montrer_seau(seau: bool, eau: bool) -> void:
+	if seau != _seau_visible:
+		_seau_visible = seau
+		for n in _seau:
+			n.visible = seau
+	eau = eau and seau
+	if eau != _eau_visible and _eau_seau != null:
+		_eau_visible = eau
+		_eau_seau.visible = eau
 
 
 func _physics_process(delta: float) -> void:
@@ -487,7 +544,8 @@ func _physics_process(delta: float) -> void:
 			if not _valide(cible_ressource):
 				_stop()
 				return
-			var arrive := _proche(cible_ressource, DIST_RECOLTE) or _arrivee_au_plus_pres(cible_ressource, DIST_RECOLTE)
+			var portee := DIST_PUISER if cible_ressource.type_ressource == "eau" else DIST_RECOLTE
+			var arrive := _proche(cible_ressource, portee) or _arrivee_au_plus_pres(cible_ressource, portee)
 			if _poste != Vector3.INF and _est_champ(cible_ressource):
 				# Champ : on va jusqu'à son poste, au milieu des plants.
 				arrive = global_position.distance_to(_poste) < 0.6 \
@@ -496,6 +554,12 @@ func _physics_process(delta: float) -> void:
 				etat = Etat.RECOLTE
 				_timer_recolte = 0.0
 				velocity = Vector3.ZERO
+				if cible_ressource.type_ressource == "eau":
+					# Puiser : face au point d'eau (le seau plonge devant elle).
+					var vers: Vector3 = cible_ressource.global_position - global_position
+					vers.y = 0.0
+					if vers.length() > 0.1:
+						look_at(global_position + vers.normalized(), Vector3.UP)
 				return
 			if agent.is_navigation_finished():
 				# Source hors d'atteinte (arbre au cœur d'un bosquet) : la plus proche du même type, sinon arrêt.

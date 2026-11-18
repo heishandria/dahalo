@@ -40,7 +40,13 @@ Lire aussi `CLAUDE.md` (règles d'architecture) et `docs/specs/` (règles codée
   à la couleur du clan sous les pieds. Attention : à l'import, Godot retire le suffixe `_loop` des animations.
 - À décider : vitesse des villageois (5 m/s) contre marche calée pour 0,87 m/s → baisser la vitesse ou ajouter
   une course. Texture à refaire en vues multiples (dos et côtés flous, éclairage figé) : voir la conversation du 17/11.
-- Manquent : animations de travail (bois, eau, champ, porter), mort ; autres rôles.
+- **Corvée d'eau (18/11)** : animations de Copilot (`villageoise_seau_eau_v01.blend` : marche seau vide / plein,
+  puiser, poser le seau) réunies avec la marche et le repos v2 par `scripts_claude/integrer_seau.py` →
+  `villageoise_v3_seau.glb` (= `villageoise.glb` du jeu, 6 animations, ~8 200 triangles avec le seau). Seau, anse
+  et eau sont des objets séparés (`Seau`, `Seau_anse`, `Seau_eau`) que `unite.gd` montre ou cache. Marche au seau
+  calée sur 0,36 m/s (`UnitData.vitesse_marche_seau_animation`) : avec 5 m/s de déplacement, les pieds glissent
+  (plafond ×2,4). « Poser le seau » n'est pas encore utilisé (le dépôt est instantané).
+- Manquent : animations de travail (bois, champ, porter), mort ; autres rôles.
 - **Zébu 3D** (`assets/models/animaux/zebu.glb`) : vache CC0 de Quaternius transformée par script Blender (bosse,
   fanon, cornes en lyre, oreilles tombantes, pis retiré), animations repos / marche / course, robe tirée au sort
   parmi 6 robes malgaches. Encore sans texture de pelage (aspect lisse) : à affiner.

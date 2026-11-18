@@ -53,6 +53,12 @@ Prélevé en continu, uniquement pour les zébus **sécurisés en enclos** (pas 
 
 Les sources naturelles sont accessibles à tous les clans ; champs et puits seulement à leur propriétaire.
 
+**Corvée d'eau (visuel, 18/11)** : la villageoise part avec un seau vide à la main, s'approche jusqu'au bord du
+point d'eau ou du puits (0,9 m du bord de la source au lieu de 2,2 m pour les autres récoltes), se tourne vers
+l'eau et puise en boucle pendant la récolte ; elle rentre avec le seau plein (eau visible). Rythme de récolte
+inchangé ; le trajet est seulement un peu plus long (~1,3 m par trajet). Le seau est caché à l'arrêt hors de la
+source (l'animation de repos ne le tient pas). `unite.gd` : `_corvee_d_eau`, `_montrer_seau`.
+
 ## 4. Champs (façon fermes d'Age of Empires)
 
 1. **Le joueur pose le champ** (bouton « Champ », 60 bois). Il est semé, mais **ne pousse pas tout seul**.
