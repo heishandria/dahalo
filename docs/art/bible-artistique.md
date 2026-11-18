@@ -105,3 +105,4 @@ objets sacrés comme butin ; couleurs vives sans fonction.
 | 18/11/2026 | Bible créée ; règles culturelles (lieux sacrés, sources obligatoires) |
 | 18/11/2026 | Villageoise v5 : corps image→3D (TRELLIS.2) sur le squelette et les animations existants |
 | 18/11/2026 | Villageoise v6 : travail des champs d'Astra (biner à la houe, récolter le maïs) |
+| 18/11/2026 | Villageoise v7 : coupe du bois à la petite hache (**choix artistique** : outil courant de l'Androy à sourcer — hache ou coupe-coupe) |

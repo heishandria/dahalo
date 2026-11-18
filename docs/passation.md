@@ -62,7 +62,17 @@ Lire aussi `CLAUDE.md` (règles d'architecture) et `docs/specs/` (règles codée
   panier (35 900 triangles, décor) et objets de présentation écartés → `villageoise_v6_champ.glb` = modèle du jeu.
   En jeu (`unite.gd`) : champ en pousse → biner (houe) ; champ mûr → récolter (houe plantée + épi) ; accessoires
   cachés ailleurs. Non utilisés : ranger la houe, déposer dans le panier.
-- Manquent : animations de travail (bois, porter), mort ; autres rôles.
+- **Coupe du bois (18/11)** : `scripts_claude/couper_bois.py` ajoute au v6 une petite hache (os `Outil`, enfant de
+  `Main_D` ; manche + fer, 40 triangles) et `Villageoise_couper_bois_loop` (1,2 s : armer au-dessus de la tête,
+  frappe en arc vers un tronc à hauteur de taille, rebond, remontée ; bras droit par IK, pieds plantés)
+  → `villageoise_v7_bois.glb` = modèle du jeu. En jeu : récolte de bois → s'approche (`DIST_COUPE`), se tourne
+  vers l'arbre, coupe en boucle, hache visible ; cachée ailleurs.
+- **Prise des objets (18/11)** : `scripts_claude/prises_mains.py` ajoute au v7 un os de doigts par main
+  (`Doigts_D`, `Doigts_G`, rig « moufle » : toutes les phalanges ensemble, pouce resté sur la main) ; main fermée
+  à 80–100° quand elle tient le seau, la houe, la hache ou l'épi, 15° ailleurs ; seau remonté de 3 cm (l'anse
+  tombe dans les doigts) → `villageoise_v8_prises.glb` = modèle du jeu (28 os). Pas de doigts séparés : à faire
+  si un gros plan l'exige.
+- Manquent : porter une charge (bois, panier), mort ; autres rôles.
 - **Zébu 3D** (`assets/models/animaux/zebu.glb`) : vache CC0 de Quaternius transformée par script Blender (bosse,
   fanon, cornes en lyre, oreilles tombantes, pis retiré), animations repos / marche / course, robe tirée au sort
   parmi 6 robes malgaches. Encore sans texture de pelage (aspect lisse) : à affiner.

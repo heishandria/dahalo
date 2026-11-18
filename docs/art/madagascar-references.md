@@ -56,6 +56,8 @@ Collections : [musée du quai Branly — explorer les collections](https://www.q
 - [ ] Vêtements et coiffures actuels dans l'Androy (femmes, hommes, bouviers) ; couleurs courantes des lamba.
 - [ ] Modes de portage de l'eau (tête, seau, bidon) et récipients courants.
 - [ ] Usage du raketa comme fourrage et comme aliment.
+- [ ] Outils du quotidien : coupe du bois (hache, coupe-coupe ?), travail des champs (houe, *angady* ?) — termes et
+      formes à vérifier avant tout affichage ; le jeu montre aujourd'hui une petite hache et une houe (choix artistiques).
 - [ ] Organisation du pâturage et des parcs à zébus ; forme des parcs.
 - [ ] Orthographe et sens de *omby*, *raketa*, *tsena*, *lamba* ; noms locaux des plantes (ex. *fantsiolotra*
       pour *Alluaudia* — à confirmer avant usage).

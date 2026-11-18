@@ -9,6 +9,7 @@ enum Etat { INACTIF, DEPLACEMENT, VERS_RESSOURCE, RECOLTE, RETOUR_DEPOT, CAPTURE
 
 const DIST_RECOLTE := 2.2
 const DIST_PUISER := 0.9         # eau : jusqu'au bord, pour que le seau plonge dans l'eau
+const DIST_COUPE := 0.5          # bois : au pied de l'arbre, pour que la hache atteigne le tronc
 const DIST_DEPOT := 3.5
 const DIST_CAPTURE := 2.0
 const INTERVALLE_GUET := 0.5     # fréquence de recherche d'ennemis quand l'unité est inactive
@@ -386,6 +387,9 @@ var _anim_biner := ""
 var _anim_recolter := ""
 var _houe: Node3D = null
 var _epi: Node3D = null
+var _anim_couper := ""            # couper du bois (hache)
+var _hache: Node3D = null
+var _hache_visible := true
 var _outils_champ := "?"           # accessoires montrés : "", "houe", "houe_epi" ("?" : pas encore réglé)
 
 
@@ -416,6 +420,8 @@ func _creer_modele() -> void:
 					_anim_course_seau_plein = nom
 				"Villageoise_biner":
 					_anim_biner = nom
+				"Villageoise_couper_bois":
+					_anim_couper = nom
 				"Villageoise_recolter":
 					_anim_recolter = nom
 					# Début et fin différents : jouée en aller-retour pour ne pas sauter à chaque boucle.
@@ -437,6 +443,8 @@ func _creer_modele() -> void:
 	_montrer_seau(false, false)
 	_houe = _modele.find_child("Houe", true, false) as Node3D
 	_epi = _modele.find_child("Epi_recolte", true, false) as Node3D
+	_hache = _modele.find_child("Hache", true, false) as Node3D
+	_montrer_hache(false)
 	_montrer_outils_champ("")
 	_marque = MeshInstance3D.new()
 	var disque := CylinderMesh.new()
@@ -476,6 +484,14 @@ func _animer() -> void:
 	var allure_course := clampf(v / data.vitesse_course_animation, 0.6, data.acceleration_animation_max)
 	var au_champ := etat == Etat.RECOLTE and v <= 0.3 and _anim_biner != "" and _valide(cible_ressource) \
 			and _est_champ(cible_ressource)
+	var coupe: bool = etat == Etat.RECOLTE and v <= 0.3 and _anim_couper != "" and _valide(cible_ressource) \
+			and cible_ressource.type_ressource == "bois" and not _est_champ(cible_ressource)
+	_montrer_hache(coupe)
+	if coupe:
+		_montrer_seau(false, false)
+		_montrer_outils_champ("")
+		_jouer(_anim_couper, 1.0)
+		return
 	if au_champ:
 		_montrer_seau(false, false)
 		if cible_ressource.attendre_recolte():
@@ -513,6 +529,12 @@ func _corvee_d_eau() -> bool:
 		return type_charge == "eau"
 	return etat in [Etat.VERS_RESSOURCE, Etat.RECOLTE] and _valide(cible_ressource) \
 			and cible_ressource.type_ressource == "eau"
+
+
+func _montrer_hache(visible_hache: bool) -> void:
+	if _hache and visible_hache != _hache_visible:
+		_hache_visible = visible_hache
+		_hache.visible = visible_hache
 
 
 ## Houe (biner, et plantée à côté pendant la récolte) et épi (récolte) : cachés hors du travail aux champs.
@@ -598,7 +620,11 @@ func _physics_process(delta: float) -> void:
 			if not _valide(cible_ressource):
 				_stop()
 				return
-			var portee := DIST_PUISER if cible_ressource.type_ressource == "eau" else DIST_RECOLTE
+			var portee := DIST_RECOLTE
+			if cible_ressource.type_ressource == "eau":
+				portee = DIST_PUISER
+			elif cible_ressource.type_ressource == "bois" and _anim_couper != "":
+				portee = DIST_COUPE
 			var arrive := _proche(cible_ressource, portee) or _arrivee_au_plus_pres(cible_ressource, portee)
 			if _poste != Vector3.INF and _est_champ(cible_ressource):
 				# Champ : on va jusqu'à son poste, au milieu des plants.
@@ -608,7 +634,7 @@ func _physics_process(delta: float) -> void:
 				etat = Etat.RECOLTE
 				_timer_recolte = 0.0
 				velocity = Vector3.ZERO
-				if cible_ressource.type_ressource == "eau":
+				if cible_ressource.type_ressource in ["eau", "bois"]:
 					# Puiser : face au point d'eau (le seau plonge devant elle).
 					var vers: Vector3 = cible_ressource.global_position - global_position
 					vers.y = 0.0

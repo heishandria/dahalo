@@ -65,6 +65,9 @@ Exemples (chemins relatifs au dossier `scripts/`) :
   (`courbes()`) ; assigner `animation_data.action_slot`.
 - Contraintes IK non exportées : `export_force_sampling=True` ou IK calculée par script.
 - `mode_set` échoue sans objet actif : `view_layer.objects.active = obj` d'abord.
+- Après un passage en mode édition d'une armature, les références aux os (`arm.data.bones["X"]`) obtenues avant
+  sont **invalides** (données reconstruites) : lire tout ce dont on a besoin (matrices, axes) **avant**, ou
+  relire `arm.data.bones` après.
 - Une erreur Python ne fait pas échouer Blender sans `--python-exit-code 1` (le lanceur l'ajoute).
 - Modificateurs non appliqués : appliqués à l'export glTF, mais pas dans les comptes de `mesh.loop_triangles`.
 - Unités : 1 unité = 1 m ; transformations appliquées avant export.
