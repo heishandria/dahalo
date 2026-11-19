@@ -10,10 +10,12 @@
 #
 #   Blender -b CIBLE.blend --python recibler_bibliotheque.py -- SOURCE.glb|.fbx SORTIE.blend [--glb SORTIE.glb] \
 #       --prefixe Villageoise --actions Walk_Loop=marche_loop,Idle_Loop=repos_loop,Death01=mort [--remplacer]
+# --arme-deux-mains Fusil : l'os de l'arme est replacé à chaque image, poignée dans la main droite, canon vers la
+# main gauche, dessus vers le haut (animations « rifle » de Mixamo).
 # « *=nom » prend la seule action du fichier (Mixamo). Sans --remplacer, les actions créées s'appellent
 # <prefixe>_ual_<nom> (comparaison avec les actions existantes).
 import bpy, os, sys
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ik_deux_os import assigner, courbes, vitesse_calage  # noqa: E402
@@ -45,6 +47,7 @@ def option(nom, defaut=None):
 
 
 PREFIXE = option("--prefixe")
+ARME = option("--arme-deux-mains")
 REMPLACER = "--remplacer" in args
 ACTIONS = [p.split("=") for p in option("--actions").split(",")]
 
@@ -65,7 +68,13 @@ for o in importes:
 
 ps, pc = source.pose.bones, cible.pose.bones
 bs, bc = source.data.bones, cible.data.bones
-CORRESPONDANCE = MIXAMO if "mixamorig:Hips" in bs else UNREAL
+# Mixamo : préfixe variable selon le personnage choisi sur le site (mixamorig:, mixamorig2:…).
+hanches = next((b.name for b in bs if b.name.endswith(":Hips")), None)
+if hanches:
+    prefixe_mixamo = hanches[:-len("Hips")]
+    CORRESPONDANCE = {c: prefixe_mixamo + s.split(":", 1)[1] for c, s in MIXAMO.items()}
+else:
+    CORRESPONDANCE = UNREAL
 reliees = {c: s for c, s in CORRESPONDANCE.items() if c in bc and s in bs}
 ws, wc = source.matrix_world, cible.matrix_world
 
@@ -120,7 +129,16 @@ for nom_source, nom_court in ACTIONS:
                 base = parent_pose @ rest_p.inverted() @ rest_b      # os qui suit son parent sans bouger lui-même
             else:
                 base = rest_b.copy()
-            if n in reliees:
+            if n == ARME and "Main_D" in pose_monde and "Main_G" in pose_monde:
+                paume = {c: pose_monde["Main_" + c].translation + pose_monde["Main_" + c].to_3x3().col[1] * 0.07
+                         for c in ("D", "G")}
+                canon = (paume["G"] - paume["D"]).normalized()
+                haut = Vector((0, 0, 1)) - canon * canon.z
+                haut = haut.normalized() if haut.length > 0.2 else Vector((0, -1, 0))
+                x = canon.cross(haut).normalized()
+                m = Matrix((x, canon, x.cross(canon))).transposed().to_4x4()
+                m.translation = paume["D"]
+            elif n in reliees:
                 s = reliees[n]
                 rot_src = (ws @ ps[s].matrix).to_3x3()
                 delta = rot_src @ repos(source, bs[s]).to_3x3().inverted()
@@ -137,7 +155,7 @@ for nom_source, nom_court in ACTIONS:
                 local = (rest_p.inverted() @ rest_b).inverted() @ pose_monde[b.parent.name].inverted() @ m
             else:
                 local = rest_b.inverted() @ m
-            pb.location = local.translation if n in ("Bassin", "Racine") else (0, 0, 0)
+            pb.location = local.translation if n in ("Bassin", "Racine", ARME) else (0, 0, 0)
             pb.rotation_quaternion = local.to_quaternion()
             pb.keyframe_insert("location", frame=f - debut + 1)
             pb.keyframe_insert("rotation_quaternion", frame=f - debut + 1)
