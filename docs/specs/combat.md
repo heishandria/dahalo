@@ -49,8 +49,10 @@ Les guerriers peuvent aussi **saboter les palissades** ennemies (voir `defense.m
 
 - **Ordre d'attaque** : unités sélectionnées puis clic droit (ou toucher) sur une unité ennemie.
   L'unité s'approche à portée, se tourne vers la cible et frappe à chaque fin de recharge.
-- **Animation du Tireur** : le modèle du chef dahalo joue `Chef_tirer` à chaque attaque à distance ; les
-  animations de repos, marche et course sont reconnues par leur suffixe (`_repos`, `_marche`, `_course`).
+- **Animation du Tireur** : le modèle du chef dahalo joue `Chef_tirer` à chaque attaque à distance et
+  `Chef_viser` (en joue) à l'arrêt entre deux tirs ; les animations de repos, marche et course sont reconnues par
+  leur suffixe (`_repos`, `_marche`, `_course`, `_viser`). Marche, course et visée viennent de Mixamo (calage
+  1,332 et 3,998 m/s) ; repos (port d'arme), tir et mort sont faits par script.
 - **Engagement automatique** : un guerrier **inactif** attaque le premier ennemi **visible** qui entre dans son
   champ de vision (Dahalo 14 m, Lanceur 14 m, Tireur 18 m ; ×0,6 la nuit), vérifié toutes les 0,5 s.
   Une attaque s'interrompt si la cible sort du champ de vision (voir `vision.md`).

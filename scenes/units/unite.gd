@@ -373,6 +373,7 @@ var _anim_marche := ""
 var _anim_repos := ""
 var _anim_tir := ""
 var _anim_mort := ""
+var _anim_viser := ""
 # Corvée d'eau (villageoise) : marche avec le seau vide ou plein, puiser ; seau et eau montrés ou cachés.
 var _anim_seau_vide := ""
 var _anim_seau_plein := ""
@@ -435,6 +436,8 @@ func _creer_modele() -> void:
 						_anim_repos = nom
 					elif court.ends_with("_tirer"):
 						_anim_tir = nom
+					elif court.ends_with("_viser"):
+						_anim_viser = nom
 					elif court.ends_with("_mort"):
 						_anim_mort = nom
 						_animations.get_animation(nom).loop_mode = Animation.LOOP_NONE
@@ -528,6 +531,8 @@ func _animer() -> void:
 			_jouer(_anim_course, allure_course)
 		elif v > 0.3:
 			_jouer(_anim_marche, clampf(v / data.vitesse_marche_animation, 0.6, data.acceleration_animation_max))
+		elif _anim_viser != "" and _ennemi_valide(cible_attaque):
+			_jouer(_anim_viser, 1.0)   # en joue entre deux tirs
 		else:
 			_jouer(_anim_repos, 1.0)
 

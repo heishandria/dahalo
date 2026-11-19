@@ -87,22 +87,29 @@ def interpolation_lineaire(action):
             k.interpolation = 'LINEAR'
 
 
-def vitesse_calage(arm, action, os_pieds, ips=None):
-    """Vitesse (m/s) du pied d'appui (le plus bas) d'un cycle sur place : médiane sur le cycle.
+def vitesse_calage(arm, action, os_pieds, ips=None, tolerance=0.025):
+    """Vitesse (m/s) du pied au sol d'un cycle sur place : médiane, sur les seules images où un pied touche le sol
+    (point le plus bas, cheville ou orteils, à moins de `tolerance` du plus bas du cycle). Les phases de vol de la
+    course sont ainsi exclues (avant : le pied « le plus bas » en l'air faussait la course d'un facteur 2 à 3).
     C'est la valeur que le jeu doit utiliser pour régler la vitesse de lecture."""
     import statistics
     sc = bpy.context.scene
     ips = ips or sc.render.fps
     assigner(arm, action)
     debut, fin = int(action.frame_range[0]), int(action.frame_range[1])
-    positions = {p: [] for p in os_pieds}
+    points = {p: [] for p in os_pieds}
     for f in range(debut, fin + 1):
         sc.frame_set(f)
         for p in os_pieds:
-            positions[p].append((arm.matrix_world @ arm.pose.bones[p].head).copy())
+            pb = arm.pose.bones[p]
+            points[p].append(min((arm.matrix_world @ pb.head).copy(), (arm.matrix_world @ pb.tail).copy(),
+                                 key=lambda v: v.z))
+    plus_bas = min(v.z for p in os_pieds for v in points[p])
     vitesses = []
     for i in range(fin - debut):
-        bas = min(os_pieds, key=lambda p: positions[p][i].z)
-        d = positions[bas][i + 1] - positions[bas][i]
+        p = min(os_pieds, key=lambda q: points[q][i].z)
+        if points[p][i].z > plus_bas + tolerance or points[p][i + 1].z > plus_bas + tolerance:
+            continue                                   # aucun pied au sol (vol) ou pied qui décolle
+        d = points[p][i + 1] - points[p][i]
         vitesses.append(math.hypot(d.x, d.y) * ips)
     return statistics.median(vitesses) if vitesses else 0.0

@@ -102,6 +102,7 @@ s'arrête de lui-même aux contrôles avec `--jusqu-a controle_texture`, regarde
 | `accessoire` | `fusil_chef.py`, … | accessoire.blend | si arme ou outil |
 | `retouche` | `retoucher_texture.py` | retouche.blend | toujours (tons passés, poussière, taille) |
 | `anim` | `anim_<nom>.py` | anim.blend/.glb | toujours |
+| `bibliotheque` | `recibler_bibliotheque.py` (config `bibliotheque` : source, nom, arme) | final.blend/.glb | **par défaut pour les mouvements génériques** (marche, course, visée, coups…) |
 | `controle_anim` | `rendu_verification.py --rts --action …` + `audit_glb.py` | planches RTS par action, audit | **toujours : regarder** |
 | `video` | `video_<nom>.py` | vidéo | toujours |
 | `promouvoir` | (interne) | copie dans `assets/`, ancienne sauvegardée, empreintes comparées | seulement `--etape promouvoir` |
@@ -128,10 +129,14 @@ nouvelle texture d'accessoire n'apparaît pas en jeu), puis partie accélérée 
 7. **Tête séparée** pour un humain : générée seule puis `greffer_tete.py` (visage bien plus net).
 8. **Accessoire = os dédié** nommé comme l'objet (`Fusil`, `Sagaie`), parent `Racine`, déformant ; les mains s'y
    posent par IK ; matériaux à texture (atlas), pas de couleur unie seule (illisible ou blanchâtre en jeu).
-9. **Mort** : chaque personnage a une action `<Nom>_mort` non bouclée, faite par `mort.py` (appelé depuis le
+9. **Bibliothèques d'abord** : marche, course, visée, coups, accroupi, lancer… viennent de Quaternius UAL (CC0) ou
+   de Mixamo (`~/dahalo-personnages/bibliotheques/`), reciblés ; le script d'animation ne fait que les gestes propres
+   au jeu. Vitesse de calage : `vitesse_calage` ne compte que les images où un pied touche le sol (la course était
+   sous-estimée d'un facteur 2 à 3 avant le 19/11).
+10. **Mort** : chaque personnage a une action `<Nom>_mort` non bouclée, faite par `mort.py` (appelé depuis le
    script d'animation, ou en étape autonome sur le dernier `.blend`). Regarder la **dernière image** : corps à plat,
    pas appuyé sur un bras, pas de jambe en l'air. Sans effet sanglant (bible §4).
-10. **Une version promue = un seul fichier source** : la config pointe vers les fichiers réellement promus ;
+11. **Une version promue = un seul fichier source** : la config pointe vers les fichiers réellement promus ;
    ne jamais copier un GLB dans le jeu à la main (écart du chef v4 : GLB du jeu antérieur au fusil texturé).
 
 ## Critères de validation

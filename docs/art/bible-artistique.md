@@ -119,3 +119,4 @@ objets sacrés comme butin ; couleurs vives sans fonction.
 | 19/11/2026 | Kit : config_personnage.json, pipeline_personnage.py, rendu_verification.py --rts (caméra du jeu), retoucher_texture.py |
 | 19/11/2026 | Règles ajoutées : texture 1024 px par défaut, photos de référence A-pose, test RTS avant texture |
 | 19/11/2026 | Animations de mort (chef, villageoise) par un script commun du kit (`mort.py`) |
+| 19/11/2026 | Bibliothèques d'animations libres (Quaternius UAL CC0, Mixamo) reciblées par défaut ; chef v6 : marche, course et visée Mixamo |

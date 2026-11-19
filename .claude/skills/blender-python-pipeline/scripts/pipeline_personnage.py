@@ -20,6 +20,8 @@ Options :
     accessoire        os et objet d'accessoire (fusil, sagaie…)
     retouche          direction artistique de la texture (désaturation, poussière, taille)
     anim              animations + export GLB
+    bibliotheque      animations reprises d'une bibliothèque (config["bibliotheque"]) qui remplacent ou complètent
+                      celles du script d'animation (Quaternius UAL, Mixamo) → fichiers final_blend / final_glb
     controle_anim     RTS par animation (repos d'abord) + audit du GLB → À REGARDER
     video             vidéo de contrôle
     promouvoir        copie le GLB dans le jeu (empreintes comparées) — seulement avec --etape promouvoir
@@ -29,7 +31,7 @@ L'état est écrit dans .etat_pipeline.json. Un échec arrête la chaîne : corr
 import hashlib, json, os, shutil, subprocess, sys, time
 
 ETAPES = ["greffe", "texture", "controle_texture", "rig", "corpulence", "accessoire", "retouche", "anim",
-          "controle_anim", "video", "promouvoir"]
+          "bibliotheque", "controle_anim", "video", "promouvoir"]
 KIT = os.path.dirname(os.path.abspath(__file__))
 BLENDER = os.environ.get("BLENDER", "/Applications/Blender.app/Contents/MacOS/Blender")
 FICHIER_ETAT = ".etat_pipeline.json"
@@ -49,6 +51,9 @@ def empreinte(p):
 
 c = json.load(open("config_personnage.json"))
 f, s, g = c["fichiers"], c["scripts"], c["geometrie"]
+BIB = c.get("bibliotheque", [])
+FINAL_BLEND = f.get("final_blend") if BIB else f["anim_blend"]
+FINAL_GLB = f.get("final_glb") if BIB else f["anim_glb"]
 photos = {k: chemin(v) for k, v in c["photos_reference"].items() if not k.startswith("_")}
 actives = c["etapes"]
 etat = json.load(open(FICHIER_ETAT)) if os.path.exists(FICHIER_ETAT) else {}
@@ -104,18 +109,33 @@ def commandes(e):
                         "--controle", os.path.join(f["rendus"], "retouche"))]
     if e == "anim":
         return [blender(dernier_blend_avant("anim"), s["anim"], f["anim_glb"], f["anim_blend"])]
+    if e == "bibliotheque":
+        # Une source par passage ; les passages s'enchaînent, le dernier écrit final_blend et final_glb.
+        cmds, entree = [], f["anim_blend"]
+        for k, b in enumerate(BIB):
+            dernier = k == len(BIB) - 1
+            sortie = FINAL_BLEND if dernier else FINAL_BLEND.replace(".blend", "_etape%d.blend" % k)
+            a = [chemin(b["source"]), sortie, "--prefixe", c["prefixe_actions"],
+                 "--actions", "%s=%s" % (b.get("action", "*"), b["nom"]), "--remplacer"]
+            if b.get("arme"):
+                a += ["--arme-deux-mains", b["arme"]]
+            if dernier:
+                a += ["--glb", FINAL_GLB]
+            cmds.append(blender(entree, os.path.join(KIT, "recibler_bibliotheque.py"), *a))
+            entree = sortie
+        return cmds
     if e == "controle_anim":
         d = os.path.join(f["rendus"], "controle_anim")
         actions = []
         for nom in c["animation"]["actions"]:
             actions += ["--action", nom]
-        return [blender(f["anim_blend"], os.path.join(KIT, "rendu_verification.py"), "--sortie", d,
+        return [blender(FINAL_BLEND, os.path.join(KIT, "rendu_verification.py"), "--sortie", d,
                         "--vues", "face,trois_quarts", "--rts", *actions),
-                ["python3", os.path.join(KIT, "audit_glb.py"), f["anim_glb"],
+                ["python3", os.path.join(KIT, "audit_glb.py"), FINAL_GLB,
                  "--max-triangles", str(c["budget"]["triangles"]), "--max-texture", str(c["budget"]["texture"])]]
     if e == "video":
         a = c["animation"]
-        return [blender(f["anim_blend"], s["video"], f["video_mp4"], chemin(c["video"]["reference"]),
+        return [blender(FINAL_BLEND, s["video"], f["video_mp4"], chemin(c["video"]["reference"]),
                         "--marche", a["vitesse_marche"], "--course", a["vitesse_course"])]
     raise ValueError(e)
 
@@ -130,7 +150,7 @@ def dernier_blend_avant(e):
 
 
 def promouvoir():
-    source, cible = f["anim_glb"], chemin(c["jeu"]["glb"])
+    source, cible = FINAL_GLB, chemin(c["jeu"]["glb"])
     if os.path.exists(cible):
         sauvegarde = os.path.join("sauvegardes", "%s_%s.glb" % (os.path.basename(cible)[:-4], time.strftime("%Y%m%d-%H%M%S")))
         os.makedirs("sauvegardes", exist_ok=True)
@@ -150,7 +170,7 @@ for e in ETAPES:
     else:
         if e == "promouvoir":
             continue                                   # touche au jeu : seulement sur demande explicite
-        if e in actives and not actives[e]:
+        if (e in actives and not actives[e]) or (e == "bibliotheque" and not BIB):
             continue
         if depuis and ETAPES.index(e) < ETAPES.index(depuis):
             continue
