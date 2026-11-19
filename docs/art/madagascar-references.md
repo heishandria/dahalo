@@ -32,6 +32,9 @@ Collections : [musée du quai Branly — explorer les collections](https://www.q
   voir lamba) serait plus caractéristique — **piste à étudier** pour une variante.
 - Cases en planches et chaume, enclos en perches tordues : d'après des photos fournies par l'auteur et des
   images de la région ; plan et matériaux exacts **à vérifier**.
+- Palissade : branchages épineux gris et usés, assemblés en haie continue ; **choix artistique générique**,
+  inspiré par l'écorégion de forêt épineuse documentée au §1, sans prétendre décrire une technique de clôture
+  propre à l'Androy. Aucun motif, signe ou terme culturel n'est ajouté.
 - Fourrage de paille et de raquettes de raketa dans l'enclos, auge en tronc creusé : choix plausible, **usage à
   sourcer**.
 - Pâturage le jour avec un gardien, retour au parc la nuit : pratique décrite par l'auteur ; **à sourcer**.
@@ -62,3 +65,32 @@ Collections : [musée du quai Branly — explorer les collections](https://www.q
 - [ ] Orthographe et sens de *omby*, *raketa*, *tsena*, *lamba* ; noms locaux des plantes (ex. *fantsiolotra*
       pour *Alluaudia* — à confirmer avant usage).
 - [ ] Races et cornes des zébus du Sud.
+
+## 5. Puits — recherche pour l'asset du 18/11/2026
+
+**Fait documenté** : le Grand Sud (Anosy, Androy, Atsimo Andrefana) connaît un manque chronique d'eau ;
+les solutions actuelles comprennent puits, forages, désalinisation et pipelines. Source institutionnelle :
+[pS-Eau, compte rendu de la rencontre du réseau Madagascar du 16 juin 2026](https://www.pseau.org/publication/lacces-a-leau-potable-dans-le-grand-sud-de-madagascar-solutions-techniques-et-organisationnelles/),
+publié le 22 juillet 2026, consulté le 18 novembre 2026. Cela documente la fonction, **pas une forme
+« traditionnelle » de margelle antandroy**. Texte consulté, aucune illustration reproduite dans l'asset.
+
+Photographies Wikimedia consultées et regardées le 18/11/2026 (copies de recherche seulement dans
+`~/dahalo-personnages/puits/references/`, non incorporées au modèle, aux textures ou à l'entrée IA) :
+
+| Fichier / source | Auteur, date, licence affichée | Ce qu'il montre / limites |
+|---|---|---|
+| [Madagascar well.jpg](https://commons.wikimedia.org/wiki/File:Madagascar_well.jpg) | Anlace, printemps 2006 ; [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/), également GFDL 1.2+ | Pompe éolienne et ouvrage maçonné dans **l'Ouest** de Madagascar. Ni preuve d'un puits de l'Androy, ni entrée adaptée au puits ouvert demandé. Malgré la phrase « release all rights », retenir la licence affichée sur la fiche. |
+| [School well Madagascar.jpg](https://commons.wikimedia.org/wiki/File:School_well_Madagascar.jpg) | Harald Kreutzer / Madagaskar Vision e.V., 04/09/2007 ; [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) (choix parmi les licences proposées), également GFDL | Puits d'école EPP **Brickaville**, ouverture entourée de planches. Autre région ; environnement encombré, objet en partie masqué. Pas une référence architecturale de l'Androy. |
+
+**Choix artistique, non constat ethnographique** : puits circulaire ouvert, pierre/calcaire clair poussiéreux,
+petit support en bois gris pour un fanion de clan uni, sans toit, mécanisme européen ni motif inventé.
+Entrée Hunyuan3D-2mini : rendu local d'un blockout Blender original ; aucune des photos ci-dessus envoyée
+au modèle. Eau, fanion, matériaux et corrections fonctionnelles ajoutés dans Blender. La présence exacte
+d'un tel ouvrage et son mode de construction dans l'Androy restent **à valider localement**.
+
+**Licence du modèle IA** : [Tencent Hunyuan3D-2mini — LICENSE](https://huggingface.co/tencent/Hunyuan3D-2mini/blob/main/LICENSE),
+consultée le 18/11/2026. La licence communautaire exclut UE, Royaume-Uni et Corée du Sud, y compris pour
+l'usage des sorties (§5.c), et contient des conditions commerciales et d'usage. L'utilisateur **déclare**
+une utilisation autorisée dans le territoire concerné ou une licence distincte ; ses droits individuels
+n'ont pas été vérifiés par l'agent. Ne pas présenter la sortie comme CC0, ni cette déclaration comme une
+autorisation générale de distribution mondiale. Détails et provenance : `assets/models/decor/puits/LISEZMOI.md`.

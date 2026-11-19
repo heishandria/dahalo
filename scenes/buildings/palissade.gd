@@ -4,6 +4,12 @@ extends Batiment
 ## Un guerrier adverse arrêté par elle la sabote automatiquement, puis reprend son ordre.
 ## Spec : docs/specs/defense.md
 
+const MODELES_PALISSADE: Array[PackedScene] = [
+	preload("res://assets/models/decor/palissade/palissade_a.glb"),
+	preload("res://assets/models/decor/palissade/palissade_b.glb"),
+	preload("res://assets/models/decor/palissade/palissade_c.glb"),
+]
+
 var pv := GameRules.PALISSADE_PV
 var _ralentis: Array = []
 var _derniere_alerte := -INF
@@ -14,8 +20,26 @@ var _derniere_alerte := -INF
 func _ready() -> void:
 	super()
 	collision_layer = 4 | (64 << faction)   # 3 = clic ; 7 = palissades du joueur, 8 = palissades de l'IA
+	_creer_modele()
 	zone.body_entered.connect(_on_entree)
 	zone.body_exited.connect(_on_sortie)
+
+
+func _creer_modele() -> void:
+	var variante: int = Plantes.variante_en(global_position, MODELES_PALISSADE.size())
+	var modele := MODELES_PALISSADE[variante].instantiate() as Node3D
+	if modele == null:
+		push_error("Le modèle de palissade %d n'est pas un Node3D." % variante)
+		return
+	modele.name = "Modele"
+	add_child(modele)
+	var banniere := modele.find_child("Banniere", true, false) as MeshInstance3D
+	if banniere == null:
+		push_error("Le modèle de palissade %d ne contient pas de bannière." % variante)
+		return
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = GameRules.couleur_faction(faction)
+	banniere.material_override = mat
 
 
 func subir(degats: float, _attaquant) -> void:

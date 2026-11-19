@@ -30,7 +30,8 @@
     suivante (pas de jour entre deux tronçons).
   - **Aperçu à la souris** avant de cliquer : segments fantômes **verts** (posables) ou **rouges** (emplacement
     occupé : point d'eau, arbre, bâtiment, colline…). Un segment rouge n'est ni posé ni payé (brèche).
-  - Visuel : haie continue et crête d'épines le long de la ligne ; segments légèrement chevauchants.
+  - Visuel : trois variantes de haie épineuse, avec fanion coloré selon le clan ; les bouts arrondis se
+    chevauchent légèrement pour garder la ligne continue. La collision et l'emprise de jeu restent inchangées.
 - **Sabotage automatique** : un **guerrier** adverse arrêté par la palissade l'attaque de lui-même, puis
   **reprend son ordre** (pillage, capture, déplacement) une fois le segment détruit. Un Dahalo seul met
   **12,5 s** par segment (150 PV, 12 dégâts/s) ; trois Dahalo, ~4 s. Villageois et Pisteurs adverses restent bloqués.
