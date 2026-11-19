@@ -6,23 +6,34 @@
 # une correction de repos (rotation minimale qui aligne la direction de repos cible sur la source : A-pose → T-pose).
 # Le bassin suit le déplacement du pelvis, mis à l'échelle de la longueur des jambes. Os non reliés : pose de repos.
 #
-#   Blender -b CIBLE.blend --python recibler_bibliotheque.py -- SOURCE.glb SORTIE.blend [--glb SORTIE.glb] \
+# Sources reconnues : Quaternius UAL / Unreal (.glb) et Mixamo (.fbx, os « mixamorig:… », une action par fichier).
+#
+#   Blender -b CIBLE.blend --python recibler_bibliotheque.py -- SOURCE.glb|.fbx SORTIE.blend [--glb SORTIE.glb] \
 #       --prefixe Villageoise --actions Walk_Loop=marche_loop,Idle_Loop=repos_loop,Death01=mort [--remplacer]
-# Sans --remplacer, les actions créées s'appellent <prefixe>_ual_<nom> (comparaison avec les actions existantes).
+# « *=nom » prend la seule action du fichier (Mixamo). Sans --remplacer, les actions créées s'appellent
+# <prefixe>_ual_<nom> (comparaison avec les actions existantes).
 import bpy, os, sys
 from mathutils import Matrix
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ik_deux_os import assigner, courbes, vitesse_calage  # noqa: E402
 
-CORRESPONDANCE = {
+UNREAL = {
     "Racine": "root", "Bassin": "pelvis", "Colonne": "spine_02", "Thorax": "spine_03", "Cou": "neck_01", "Tete": "Head",
 }
-for c, s in (("D", "r"), ("G", "l")):
-    CORRESPONDANCE.update({
+MIXAMO = {"Bassin": "mixamorig:Hips", "Colonne": "mixamorig:Spine1", "Thorax": "mixamorig:Spine2",
+          "Cou": "mixamorig:Neck", "Tete": "mixamorig:Head"}
+for c, s, m in (("D", "r", "Right"), ("G", "l", "Left")):
+    UNREAL.update({
         "Clavicule_" + c: "clavicle_" + s, "Bras_" + c: "upperarm_" + s, "Avant_bras_" + c: "lowerarm_" + s,
         "Main_" + c: "hand_" + s, "Doigts_" + c: "middle_01_" + s,
         "Cuisse_" + c: "thigh_" + s, "Mollet_" + c: "calf_" + s, "Pied_" + c: "foot_" + s,
+    })
+    MIXAMO.update({
+        "Clavicule_" + c: "mixamorig:%sShoulder" % m, "Bras_" + c: "mixamorig:%sArm" % m,
+        "Avant_bras_" + c: "mixamorig:%sForeArm" % m, "Main_" + c: "mixamorig:%sHand" % m,
+        "Doigts_" + c: "mixamorig:%sHandMiddle1" % m, "Cuisse_" + c: "mixamorig:%sUpLeg" % m,
+        "Mollet_" + c: "mixamorig:%sLeg" % m, "Pied_" + c: "mixamorig:%sFoot" % m,
     })
 
 args = sys.argv[sys.argv.index("--") + 1:]
@@ -40,15 +51,21 @@ ACTIONS = [p.split("=") for p in option("--actions").split(",")]
 sc = bpy.context.scene
 sc.render.fps, sc.render.fps_base = 30, 1.0
 cible = next(o for o in bpy.data.objects if o.type == 'ARMATURE')
-avant = set(bpy.data.objects)
-bpy.ops.import_scene.gltf(filepath=SOURCE)
+avant, actions_avant = set(bpy.data.objects), set(bpy.data.actions)
+if SOURCE.lower().endswith(".fbx"):
+    bpy.ops.import_scene.fbx(filepath=SOURCE)
+else:
+    bpy.ops.import_scene.gltf(filepath=SOURCE)
 importes = set(bpy.data.objects) - avant
+actions_source = [a for a in bpy.data.actions if a not in actions_avant]
+noms_source = [a.name for a in actions_source]           # les références deviennent invalides après suppression
 source = next(o for o in importes if o.type == 'ARMATURE')
 for o in importes:
     o.hide_render = o.hide_viewport = o.type == 'MESH'
 
 ps, pc = source.pose.bones, cible.pose.bones
 bs, bc = source.data.bones, cible.data.bones
+CORRESPONDANCE = MIXAMO if "mixamorig:Hips" in bs else UNREAL
 reliees = {c: s for c, s in CORRESPONDANCE.items() if c in bc and s in bs}
 ws, wc = source.matrix_world, cible.matrix_world
 
@@ -64,16 +81,20 @@ def direction(arm, b):
 # Correction de repos : rotation minimale (monde) qui amène la direction de repos de l'os cible sur celle de la source.
 correction = {c: direction(cible, bc[c]).rotation_difference(direction(source, bs[s])).to_matrix()
               for c, s in reliees.items()}
-jambe_s = (bs["thigh_r"].tail_local - bs["thigh_r"].head_local).length + (bs["calf_r"].tail_local - bs["calf_r"].head_local).length
+def longueur_monde(arm, b):
+    return (arm.matrix_world @ b.tail_local - arm.matrix_world @ b.head_local).length
+
+
+jambe_s = longueur_monde(source, bs[reliees["Cuisse_D"]]) + longueur_monde(source, bs[reliees["Mollet_D"]])
 jambe_c = (bc["Cuisse_D"].tail_local - bc["Cuisse_D"].head_local).length + (bc["Mollet_D"].tail_local - bc["Mollet_D"].head_local).length
 echelle = jambe_c / jambe_s
-pelvis_repos = (ws @ bs["pelvis"].matrix_local).translation
+pelvis_repos = (ws @ bs[reliees["Bassin"]].matrix_local).translation
 print("Os reliés : %d / %d ; échelle des déplacements %.3f" % (len(reliees), len(bc), echelle))
 
 ordre = [b.name for b in cible.data.bones]                     # parents avant enfants (ordre de l'armature)
 creees = []
 for nom_source, nom_court in ACTIONS:
-    a_src = bpy.data.actions.get(nom_source)
+    a_src = actions_source[0] if nom_source == "*" and actions_source else bpy.data.actions.get(nom_source)
     if a_src is None:
         print("ATTENTION action source absente : " + nom_source)
         continue
@@ -137,10 +158,10 @@ for o in importes:
 for a in list(bpy.data.actions):
     if a.users == 0 and not a.use_fake_user:
         bpy.data.actions.remove(a)
-for nom_source, _ in ACTIONS:
-    a = bpy.data.actions.get(nom_source)
-    if a:
-        bpy.data.actions.remove(a)
+noms_creees = {a.name for a in creees}
+for nom in noms_source:
+    if nom in bpy.data.actions and nom not in noms_creees:
+        bpy.data.actions.remove(bpy.data.actions[nom])
 repos_action = next((a for a in bpy.data.actions if a.name.endswith("_repos_loop") and "ual" not in a.name), None)
 assigner(cible, repos_action or creees[0])
 bpy.ops.wm.save_as_mainfile(filepath=SORTIE)
