@@ -161,32 +161,41 @@ for nom in ACTIONS:
             chemins.append(rendre(os.path.join(SORTIE, "%s_%s_%03d.png" % (nom, vue, f))))
     planche(chemins, N_IMAGES, os.path.join(SORTIE, "planche_%s.png" % nom))
 
-# 3. Vues RTS : caméra au-dessus et de trois-quarts, à plusieurs distances en mètres.
-# Simule la caméra isométrique du jeu. Obligatoire avant de passer au rig.
-# Les unités Dahalo font ~1,6–1,85 m ; à 18 m elles doivent être reconnaissables en silhouette.
+# 3. Vues RTS : caméra isométrique (angle jeu), 4 orientations × N distances en mètres.
+# Simule la caméra Godot Forward+. Obligatoire avant de passer au rig : vérifier que la silhouette
+# est lisible à 18 m et que le rôle est identifiable depuis au moins une orientation.
+# Convention Blender : avant = −Y, haut = +Z.
+# La caméra jeu vient de l'avant-gauche du personnage (direction face, légèrement de côté, angle ~55°).
+# Les 4 orientations couvrent le tour du personnage comme le ferait une caméra qu'on fait pivoter.
 if RTS:
     mini_rts, maxi_rts = boite_maillages()
     centre_rts = (mini_rts + maxi_rts) / 2
-    hauteur_rts = maxi_rts.z - mini_rts.z      # hauteur du personnage en unités (mètres)
-    # Direction caméra jeu : de trois-quarts haut, angle ~55° (Godot isométrique)
-    d_rts = Vector((0.55, 0.55, 0.85)).normalized()
+    hauteur_rts = maxi_rts.z - mini_rts.z      # hauteur du personnage en mètres
+    # 4 orientations : face (−Y), droite (+X), dos (+Y), gauche (−X) — avec inclinaison ~55°
+    ORIENTATIONS_RTS = [
+        ("face",   Vector((0.0, -0.7, 0.85))),
+        ("droite", Vector((0.7,  0.0, 0.85))),
+        ("dos",    Vector((0.0,  0.7, 0.85))),
+        ("gauche", Vector((-0.7, 0.0, 0.85))),
+    ]
     chemins_rts = []
     for dist in DISTANCES_RTS:
-        # La caméra est à `dist` mètres du personnage mesuré au sol
-        cam.location = centre_rts + d_rts * dist
-        cam.rotation_euler = (centre_rts - cam.location).to_track_quat('-Z', 'Y').to_euler()
-        # Échelle ortho : on veut voir une fenêtre de dist * 0.4 m de large (angle ~23° équivalent)
-        cam_data.ortho_scale = dist * 0.40
+        # Échelle ortho calée sur la caméra Godot : fenêtre ≈ dist * 0.38 m de large
+        cam_data.ortho_scale = dist * 0.38
         cam_data.clip_end = dist * 4
         sc.render.resolution_x = TAILLE
         sc.render.resolution_y = TAILLE
-        chemin = os.path.join(SORTIE, "rts_%dm.png" % int(dist))
-        rendre(chemin)
-        chemins_rts.append(chemin)
-        print("RTS %d m : personnage fait %.0f px de haut (sur %d px)" % (
-            int(dist), hauteur_rts / (cam_data.ortho_scale) * TAILLE, TAILLE))
+        px_haut = round(hauteur_rts / cam_data.ortho_scale * TAILLE)
+        for nom_orient, d_rts in ORIENTATIONS_RTS:
+            cam.location = centre_rts + d_rts.normalized() * dist
+            cam.rotation_euler = (centre_rts - cam.location).to_track_quat('-Z', 'Y').to_euler()
+            chemin = os.path.join(SORTIE, "rts_%dm_%s.png" % (int(dist), nom_orient))
+            rendre(chemin)
+            chemins_rts.append(chemin)
+        print("RTS %d m : personnage ~%d px de haut (sur %d px)" % (int(dist), px_haut, TAILLE))
+    # Planche groupée par distance (4 orientations par ligne)
     if chemins_rts:
-        planche(chemins_rts, len(chemins_rts), os.path.join(SORTIE, "planche_rts.png"))
-    print(">>> Contrôler planche_rts.png : silhouette lisible ? rôle identifiable ?")
+        planche(chemins_rts, len(ORIENTATIONS_RTS), os.path.join(SORTIE, "planche_rts.png"))
+    print(">>> Contrôler planche_rts.png : silhouette lisible ? rôle identifiable depuis la face ?")
 
 print("OK rendus dans " + SORTIE)
