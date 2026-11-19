@@ -1,72 +1,56 @@
 {
-  "_aide": "Copier dans le dossier du personnage, renommer config_personnage.json, remplir les valeurs.",
-
+  "_aide": "Copier dans le dossier du personnage (config_personnage.json) et remplir. Chemins relatifs à ce dossier, ~ accepté. Lancer : python3 ~/dahalo/.claude/skills/blender-python-pipeline/scripts/pipeline_personnage.py",
   "nom": "PERSONNAGE",
-  "dossier_personnages": "~/dahalo-personnages",
 
-  "geometrie": {
-    "hauteur_m": 1.75,
-    "triangles_corps": 9000,
-    "triangles_tete": 0,
-    "voxel_remaillage": 0.006,
-    "_aide_tete": "triangles_tete = 0 si pas de greffe de tête séparée"
-  },
-
-  "texture": {
-    "px": 1024,
-    "_aide": "1024 de préférence (bible §7) ; 2048 seulement si l'unité est un héros au premier plan"
-  },
-
+  "geometrie": {"hauteur_m": 1.75, "triangles": 9000, "triangles_tete": 3000, "voxel_remaillage": 0.005},
+  "texture": {"px": 1024, "arguments": [], "_aide": "1024 par défaut (bible §4) ; arguments : options en plus pour le script de texture"},
+  "retouche": {"desaturer": 0.25, "poussiere": 0.3, "_aide": "bible §3 : tons passés, poussière de latérite"},
+  "budget": {"triangles": 10000, "texture": 1024},
   "animation": {
-    "fps": 30,
-    "vitesse_marche": 0.0,
-    "vitesse_course": 0.0,
-    "_aide": "Remplir après calage (vitesse_calage() de ik_deux_os.py)"
+    "vitesse_marche": 0.0, "vitesse_course": 0.0,
+    "actions": ["PERSONNAGE_repos_loop", "PERSONNAGE_marche_loop", "PERSONNAGE_course_loop"],
+    "_aide": "Vitesses : lues dans le journal de l'étape anim. Actions : repos d'abord (pose la plus vue en RTS)."
   },
-
-  "corpulence": {
-    "_aide": "Laisser {} si pas d'épaississement. Facteurs > 1 = plus large.",
-    "Bassin": 1.0, "Colonne": 1.0, "Thorax": 1.0, "Cou": 1.0, "Tete": 1.0,
-    "Clavicule": 1.0, "Bras": 1.0, "Avant_bras": 1.0, "Main": 1.0, "Doigts": 1.0,
-    "Cuisse": 1.0, "Mollet": 1.0, "Pied": 1.0
-  },
-
   "accessoires": [],
 
   "photos_reference": {
-    "_aide": "Chemins relatifs au dossier du personnage.",
-    "face": "images/face.png",
-    "dos": "images/dos.png",
-    "profils": "images/profils.png",
-    "gros_plan": "images/gros_plan.png"
+    "_aide": "A-pose stricte, fond uni clair, même distance face/dos (bible §4). Laisser vide ce qui manque.",
+    "face": "../images-reference/PERSONNAGE_face.png",
+    "dos": "../images-reference/PERSONNAGE_dos.png",
+    "profils": "",
+    "gros_plan": ""
   },
+  "greffe": {"recalage": "", "recadrage_tete": "", "tete_triangles": 150000},
 
-  "etapes": {
-    "_aide": "true = étape active pour ce personnage.",
-    "generation_ia": true,
-    "greffe_tete": false,
-    "texture": true,
-    "rig": true,
-    "corpulence": false,
-    "accessoire": false,
-    "animation": true,
-    "video": true
+  "etapes": {"greffe": false, "corpulence": false, "accessoire": false, "retouche": true},
+
+  "scripts": {
+    "greffe": "scripts_claude/greffer_tete.py",
+    "texture": "scripts_claude/texture_projection.py",
+    "comparer": "scripts_claude/comparer_image.py",
+    "rig": "scripts_claude/rig_PERSONNAGE.py",
+    "corpulence": "scripts_claude/corpulence.py",
+    "accessoire": "scripts_claude/accessoire_PERSONNAGE.py",
+    "retouche": "scripts_claude/retoucher_texture.py",
+    "anim": "scripts_claude/anim_PERSONNAGE.py",
+    "video": "scripts_claude/video_PERSONNAGE.py"
   },
-
   "fichiers": {
-    "_aide": "Noms des .blend et .glb produits par chaque étape.",
     "corps_glb": "PERSONNAGE_corps.glb",
     "tete_glb": "PERSONNAGE_tete.glb",
     "greffe_glb": "PERSONNAGE_greffe.glb",
-    "texture_blend": "PERSONNAGE_v2_texture.blend",
-    "texture_glb": "PERSONNAGE_v2_texture.glb",
-    "rig_blend": "PERSONNAGE_v3_rig.blend",
-    "corpulence_blend": "PERSONNAGE_v3b_corpulence.blend",
-    "accessoire_blend": "PERSONNAGE_v3c_accessoire.blend",
-    "anim_blend": "PERSONNAGE_v4_anim.blend",
-    "anim_glb": "PERSONNAGE_v4_anim.glb",
-    "video_mp4": "PERSONNAGE_v4_anim.mp4"
+    "texture_blend": "PERSONNAGE_v1_texture.blend",
+    "texture_glb": "PERSONNAGE_v1_texture.glb",
+    "rig_blend": "PERSONNAGE_v1_rig.blend",
+    "corpulence_blend": "PERSONNAGE_v1b_corpulence.blend",
+    "accessoire_blend": "PERSONNAGE_v1c_accessoire.blend",
+    "retouche_blend": "PERSONNAGE_v1d_retouche.blend",
+    "anim_blend": "PERSONNAGE_v1_anim.blend",
+    "anim_glb": "PERSONNAGE_v1_anim.glb",
+    "video_mp4": "video_PERSONNAGE_v1.mp4",
+    "rendus": "rendus_v1"
   },
-
+  "video": {"reference": "~/dahalo/assets/models/personnages/villageoise.glb"},
+  "jeu": {"glb": "~/dahalo/assets/models/personnages/PERSONNAGE.glb"},
   "notes": ""
 }

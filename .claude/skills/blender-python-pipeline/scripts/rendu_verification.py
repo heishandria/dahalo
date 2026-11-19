@@ -4,10 +4,16 @@
 #   blender_lancer.sh modele.blend rendu_verification.py -- --sortie DOSSIER
 #       [--vues face,profil,dos,trois_quarts,dessus] [--action NOM]… [--images 6] [--taille 384]
 #       [--squelette NOM] [--fond 0.25] [--cacher OBJET,OBJET…]
-#       [--rts [--distances 18,40]]     ← vues caméra RTS (angle jeu, distances en mètres)
+#       [--rts [--tailles-vue 18,40,70] [--ecran 1080] [--agrandir 3]]   ← vues à la caméra du jeu
+#
+# --rts reproduit la caméra de systems/rts_camera.gd : orthographique, isométrique « vraie » (35,26° au-dessus de
+# l'horizon), 4 orientations du personnage. --tailles-vue = Camera3D.size de Godot (hauteur de vue en mètres : zoom
+# 18 à 70, 40 par défaut). Chaque vignette est un recadrage de l'écran (--ecran px de haut) À SA DENSITÉ RÉELLE
+# (le personnage y a la taille en pixels qu'il aura en jeu), agrandie ensuite sans lissage pour être regardée.
+# Avec --action : une planche RTS par action (image du milieu), la pose de repos d'abord.
 #
 # Repère : avant du modèle = -Y (convention Blender), haut = +Z. « face » regarde le modèle de face.
-# Sortie : DOSSIER/planche_vues.png, DOSSIER/planche_<action>.png, DOSSIER/rts_<dist>m.png (+ images séparées).
+# Sortie : DOSSIER/planche_vues.png, DOSSIER/planche_<action>.png, DOSSIER/planche_rts[_<action>].png.
 import bpy, math, os, sys
 from mathutils import Vector
 
@@ -25,7 +31,9 @@ SORTIE = os.path.abspath(option("--sortie", "rendus_verification"))
 VUES = option("--vues", "face,profil,dos,trois_quarts").split(",")
 ACTIONS = option("--action", multiple=True)
 RTS = "--rts" in args
-DISTANCES_RTS = [float(d) for d in option("--distances", "18,40").split(",")]
+TAILLES_VUE = [float(d) for d in option("--tailles-vue", option("--distances", "18,40,70")).split(",")]
+ECRAN = int(option("--ecran", "1080"))
+AGRANDIR = int(option("--agrandir", "3"))
 N_IMAGES = int(option("--images", "6"))
 TAILLE = int(option("--taille", "384"))
 FOND = float(option("--fond", "0.25"))
@@ -97,13 +105,15 @@ def rendre(chemin):
     return chemin
 
 
-def planche(chemins, colonnes, chemin_sortie):
-    """Assemble des PNG de même taille en grille (numpy fourni avec Blender)."""
+def planche(chemins, colonnes, chemin_sortie, agrandir=1):
+    """Assemble des PNG de même taille en grille (numpy fourni avec Blender) ; agrandir : sans lissage."""
     import numpy as np
     imgs = []
     for c in chemins:
         im = bpy.data.images.load(c)
         a = np.array(im.pixels[:], dtype=np.float32).reshape(im.size[1], im.size[0], 4)
+        if agrandir > 1:
+            a = a.repeat(agrandir, 0).repeat(agrandir, 1)
         imgs.append(a)
         bpy.data.images.remove(im)
     h, w = imgs[0].shape[:2]
@@ -161,41 +171,47 @@ for nom in ACTIONS:
             chemins.append(rendre(os.path.join(SORTIE, "%s_%s_%03d.png" % (nom, vue, f))))
     planche(chemins, N_IMAGES, os.path.join(SORTIE, "planche_%s.png" % nom))
 
-# 3. Vues RTS : caméra isométrique (angle jeu), 4 orientations × N distances en mètres.
-# Simule la caméra Godot Forward+. Obligatoire avant de passer au rig : vérifier que la silhouette
-# est lisible à 18 m et que le rôle est identifiable depuis au moins une orientation.
-# Convention Blender : avant = −Y, haut = +Z.
-# La caméra jeu vient de l'avant-gauche du personnage (direction face, légèrement de côté, angle ~55°).
-# Les 4 orientations couvrent le tour du personnage comme le ferait une caméra qu'on fait pivoter.
+# 3. Vues RTS à la caméra du jeu (voir l'en-tête). Contrôle de lisibilité : rôle reconnaissable à la taille de vue
+#    par défaut (40), silhouette lisible au zoom maximal (18), au moins une tache de couleur au zoom minimal (70).
+def planche_rts(suffixe):
+    import math as _m
+    mini_r, maxi_r = boite_maillages()
+    centre_r = (mini_r + maxi_r) / 2
+    hauteur_px = {t: (maxi_r.z - mini_r.z) * _m.cos(_m.radians(35.26)) / t * ECRAN for t in TAILLES_VUE}
+    cote = max(48, int(max(hauteur_px.values()) * 1.5))          # vignette carrée, en pixels d'écran réels
+    sc.render.resolution_x = sc.render.resolution_y = cote
+    ancien_fond = tuple(sc.world.color)
+    sc.world.color = (0.30, 0.13, 0.06)                           # latérite (linéaire) : fond réel du jeu
+    chemins_r = []
+    for t in TAILLES_VUE:
+        cam_data.ortho_scale = t * cote / ECRAN
+        cam_data.clip_end = 200
+        for nom_o, horizontal in (("face", (0, -1)), ("droite", (1, 0)), ("dos", (0, 1)), ("gauche", (-1, 0))):
+            d = Vector((horizontal[0] * math.sqrt(2), horizontal[1] * math.sqrt(2), 1.0)).normalized()
+            cam.location = centre_r + d * 60
+            cam.rotation_euler = (centre_r - cam.location).to_track_quat('-Z', 'Y').to_euler()
+            chemins_r.append(rendre(os.path.join(SORTIE, "rts%s_%d_%s.png" % (suffixe, int(t), nom_o))))
+        print("RTS%s taille de vue %d : personnage ~%d px de haut sur un écran de %d px" % (
+            suffixe, int(t), round(hauteur_px[t]), ECRAN))
+    sc.world.color = ancien_fond
+    sc.render.resolution_x = sc.render.resolution_y = TAILLE
+    planche(chemins_r, 4, os.path.join(SORTIE, "planche_rts%s.png" % suffixe), agrandir=AGRANDIR)
+    print(">>> Regarder planche_rts%s.png (lignes : tailles de vue %s ; colonnes : face, droite, dos, gauche)" % (
+        suffixe, ",".join(str(int(t)) for t in TAILLES_VUE)))
+
+
 if RTS:
-    mini_rts, maxi_rts = boite_maillages()
-    centre_rts = (mini_rts + maxi_rts) / 2
-    hauteur_rts = maxi_rts.z - mini_rts.z      # hauteur du personnage en mètres
-    # 4 orientations : face (−Y), droite (+X), dos (+Y), gauche (−X) — avec inclinaison ~55°
-    ORIENTATIONS_RTS = [
-        ("face",   Vector((0.0, -0.7, 0.85))),
-        ("droite", Vector((0.7,  0.0, 0.85))),
-        ("dos",    Vector((0.0,  0.7, 0.85))),
-        ("gauche", Vector((-0.7, 0.0, 0.85))),
-    ]
-    chemins_rts = []
-    for dist in DISTANCES_RTS:
-        # Échelle ortho calée sur la caméra Godot : fenêtre ≈ dist * 0.38 m de large
-        cam_data.ortho_scale = dist * 0.38
-        cam_data.clip_end = dist * 4
-        sc.render.resolution_x = TAILLE
-        sc.render.resolution_y = TAILLE
-        px_haut = round(hauteur_rts / cam_data.ortho_scale * TAILLE)
-        for nom_orient, d_rts in ORIENTATIONS_RTS:
-            cam.location = centre_rts + d_rts.normalized() * dist
-            cam.rotation_euler = (centre_rts - cam.location).to_track_quat('-Z', 'Y').to_euler()
-            chemin = os.path.join(SORTIE, "rts_%dm_%s.png" % (int(dist), nom_orient))
-            rendre(chemin)
-            chemins_rts.append(chemin)
-        print("RTS %d m : personnage ~%d px de haut (sur %d px)" % (int(dist), px_haut, TAILLE))
-    # Planche groupée par distance (4 orientations par ligne)
-    if chemins_rts:
-        planche(chemins_rts, len(ORIENTATIONS_RTS), os.path.join(SORTIE, "planche_rts.png"))
-    print(">>> Contrôler planche_rts.png : silhouette lisible ? rôle identifiable depuis la face ?")
+    if ACTIONS and squelette is not None:
+        for nom in ACTIONS:
+            a = bpy.data.actions.get(nom)
+            if a is None:
+                continue
+            squelette.animation_data.action = a
+            if getattr(a, "slots", None):
+                squelette.animation_data.action_slot = a.slots[0]
+            sc.frame_set(round(sum(a.frame_range) / 2))
+            planche_rts("_" + nom)
+    else:
+        planche_rts("")
 
 print("OK rendus dans " + SORTIE)

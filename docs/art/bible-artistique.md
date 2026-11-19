@@ -49,7 +49,7 @@ Modèle générique : `.claude/skills/art-direction/modele-bible.md`.
 | Mort | Les unités tombent puis disparaissent, **sans effet sanglant** | décidé (CLAUDE.md) |
 | Budget | 3 000 – 10 000 triangles ; ≤ 3 matériaux ; texture **1024 px par défaut** (2048 seulement pour héros) | décidé (19/11) |
 | Photos de référence | A-pose stricte, fond uni (pas blanc pur ni motif), même distance face/dos, même éclairage, minimum : face + dos | règle (19/11) |
-| Lisibilité RTS | Tester la silhouette à 18 m (rendu_verification.py --rts) **avant** la texture ; corriger la géométrie si illisible | règle (19/11) |
+| Lisibilité RTS | `rendu_verification.py --rts` (caméra du jeu, taille de vue 18/40/70) : rôle lisible à 40 dans les 4 orientations, **pose de repos comprise** (l'accessoire doit sortir de la silhouette) | règle (19/11) |
 | Tête séparée | Pour tout personnage humain : générer la tête séparément (Hunyuan3D-2mini), greffer avec greffer_tete.py | règle (19/11) |
 
 ## 5. Animaux
@@ -95,9 +95,10 @@ objets sacrés comme butin ; couleurs vives sans fonction.
 - Villageoise v9, corps généré par IA (TRELLIS.2 / ComfyUI) depuis la photo de référence, passé par le kit
   (recuisson de la couleur, poids transférés du rig v4, 9 000 triangles, texture 1024) — en jeu le 18/11.
   Scripts : `~/dahalo-personnages/villageoise/scripts_claude/`.
-- Chef dahalo (Tireur, fusil de traite) — validé le 19/11.
+- Chef dahalo (Tireur, fusil de traite) — en jeu depuis le 18/11 ; v5 du 19/11 après revue (Fable) : texture 1024
+  retouchée (rouge brique, poussière), flancs nettoyés, repos en port d’arme. Gros plan en jeu encore à regarder.
   Corps + tête Hunyuan3D-2mini, texture projection 5 vues, rig 23 os, animations repos/marche/course/tir,
-  fusil 128 triangles atlas 512 px. 13 094 triangles, texture 2048 px (prochaine version : 1024).
+  fusil 128 triangles atlas 512 px. 13 094 triangles, texture 1024 px.
   Dossier : `~/dahalo-personnages/dahalo_chef/`. Config : `config_personnage.json`.
 - Enclos (d'après la photo fournie le 17/11) — `scenes/buildings/maisons.gd`.
 - Illustration de référence : **à produire** (planche de calibration : villageoise + seau + case + baobab).
@@ -114,6 +115,6 @@ objets sacrés comme butin ; couleurs vives sans fonction.
 | 18/11/2026 | Villageoise v5 : corps image→3D (TRELLIS.2) sur le squelette et les animations existants |
 | 18/11/2026 | Villageoise v6 : travail des champs d'Astra (biner à la houe, récolter le maïs) |
 | 18/11/2026 | Villageoise v7 : coupe du bois à la petite hache (**choix artistique** : outil courant de l'Androy à sourcer — hache ou coupe-coupe) |
-| 19/11/2026 | Chef dahalo (Tireur) validé : Hunyuan3D-2mini, tête séparée, texture 5 vues, fusil de traite avec atlas 512 px |
-| 19/11/2026 | Kit amélioré : config_personnage.json, pipeline_personnage.sh, rendu_verification.py --rts |
+| 19/11/2026 | Chef dahalo v5 (revue Fable) : texture 1024 retouchée, flancs nettoyés, repos en port d’arme |
+| 19/11/2026 | Kit : config_personnage.json, pipeline_personnage.py, rendu_verification.py --rts (caméra du jeu), retoucher_texture.py |
 | 19/11/2026 | Règles ajoutées : texture 1024 px par défaut, photos de référence A-pose, test RTS avant texture |

@@ -139,7 +139,8 @@ couleurs ternes et poussiéreuses. Les personnages sont inventés, jamais copié
 ## Assets 3D intégrés (18/11/2026)
 
 - **Tireur / chef dahalo** : `assets/models/personnages/dahalo_chef.glb`, 13 094 triangles, 23 os,
-  texture 2048² ; `Chef_repos`, `Chef_marche`, `Chef_course` et `Chef_tirer` (1,23 s). Vitesses de calage :
+  texture 1024² (v5 du 19/11, retouchée : rouge brique, poussière) + atlas du fusil 512² ; `Chef_repos` (port
+  d’arme : crosse à la hanche, canon en diagonale ; première image du tir), `Chef_marche`, `Chef_course` et `Chef_tirer` (1,23 s). Vitesses de calage :
   0,965 m/s en marche et 4,408 m/s en course. Le corps est dérivé de Hunyuan3D-2mini ; le fusil est modélisé
   par script Blender. Voir `docs/art/references/RESOURCES.md` pour le rappel de licence applicable.
 - **Palissade épineuse** : trois GLB (`assets/models/decor/palissade/palissade_{a,b,c}.glb`), chacun sous
@@ -148,6 +149,7 @@ couleurs ternes et poussiéreuses. Les personnages sont inventés, jamais copié
 - Validation Godot 4.7 : réimport headless, test accéléré `--graine=1` et export Web réussis sans erreur.
   Les rendus Blender (dont les angles 45°/90° et la marche/course) ont été regardés ; les captures réelles
   Compatibility ont été générées, dont la base IA à 5 min.
-- Limite restante : pas de gros plan en jeu du Tireur. Dans la vidéo Blender, le fusil paraît presque blanc,
-  bien que ses facteurs PBR dans le GLB soient brun/gris foncé ; confirmer son apparence dans une capture
-  rapprochée du jeu avant validation visuelle finale.
+- Fusil presque blanc en jeu (18/11) : le GLB copié dans le jeu datait d'avant l'atlas du fusil ; corrigé le 19/11
+  (GLB v5 + réimport Godot, qui extrait `dahalo_chef_dahalo_chef_fusil_atlas_512_v06.png`).
+- Limite restante : pas de gros plan en jeu du Tireur (le scénario de captures n'en montre pas) ; à regarder en
+  lançant le jeu.
