@@ -4,9 +4,10 @@
 #   blender_lancer.sh modele.blend rendu_verification.py -- --sortie DOSSIER
 #       [--vues face,profil,dos,trois_quarts,dessus] [--action NOM]… [--images 6] [--taille 384]
 #       [--squelette NOM] [--fond 0.25] [--cacher OBJET,OBJET…]
+#       [--rts [--distances 18,40]]     ← vues caméra RTS (angle jeu, distances en mètres)
 #
 # Repère : avant du modèle = -Y (convention Blender), haut = +Z. « face » regarde le modèle de face.
-# Sortie : DOSSIER/planche_vues.png, DOSSIER/planche_<action>.png (+ images séparées).
+# Sortie : DOSSIER/planche_vues.png, DOSSIER/planche_<action>.png, DOSSIER/rts_<dist>m.png (+ images séparées).
 import bpy, math, os, sys
 from mathutils import Vector
 
@@ -23,6 +24,8 @@ def option(nom, defaut=None, multiple=False):
 SORTIE = os.path.abspath(option("--sortie", "rendus_verification"))
 VUES = option("--vues", "face,profil,dos,trois_quarts").split(",")
 ACTIONS = option("--action", multiple=True)
+RTS = "--rts" in args
+DISTANCES_RTS = [float(d) for d in option("--distances", "18,40").split(",")]
 N_IMAGES = int(option("--images", "6"))
 TAILLE = int(option("--taille", "384"))
 FOND = float(option("--fond", "0.25"))
@@ -157,4 +160,33 @@ for nom in ACTIONS:
             sc.frame_set(f)
             chemins.append(rendre(os.path.join(SORTIE, "%s_%s_%03d.png" % (nom, vue, f))))
     planche(chemins, N_IMAGES, os.path.join(SORTIE, "planche_%s.png" % nom))
+
+# 3. Vues RTS : caméra au-dessus et de trois-quarts, à plusieurs distances en mètres.
+# Simule la caméra isométrique du jeu. Obligatoire avant de passer au rig.
+# Les unités Dahalo font ~1,6–1,85 m ; à 18 m elles doivent être reconnaissables en silhouette.
+if RTS:
+    mini_rts, maxi_rts = boite_maillages()
+    centre_rts = (mini_rts + maxi_rts) / 2
+    hauteur_rts = maxi_rts.z - mini_rts.z      # hauteur du personnage en unités (mètres)
+    # Direction caméra jeu : de trois-quarts haut, angle ~55° (Godot isométrique)
+    d_rts = Vector((0.55, 0.55, 0.85)).normalized()
+    chemins_rts = []
+    for dist in DISTANCES_RTS:
+        # La caméra est à `dist` mètres du personnage mesuré au sol
+        cam.location = centre_rts + d_rts * dist
+        cam.rotation_euler = (centre_rts - cam.location).to_track_quat('-Z', 'Y').to_euler()
+        # Échelle ortho : on veut voir une fenêtre de dist * 0.4 m de large (angle ~23° équivalent)
+        cam_data.ortho_scale = dist * 0.40
+        cam_data.clip_end = dist * 4
+        sc.render.resolution_x = TAILLE
+        sc.render.resolution_y = TAILLE
+        chemin = os.path.join(SORTIE, "rts_%dm.png" % int(dist))
+        rendre(chemin)
+        chemins_rts.append(chemin)
+        print("RTS %d m : personnage fait %.0f px de haut (sur %d px)" % (
+            int(dist), hauteur_rts / (cam_data.ortho_scale) * TAILLE, TAILLE))
+    if chemins_rts:
+        planche(chemins_rts, len(chemins_rts), os.path.join(SORTIE, "planche_rts.png"))
+    print(">>> Contrôler planche_rts.png : silhouette lisible ? rôle identifiable ?")
+
 print("OK rendus dans " + SORTIE)

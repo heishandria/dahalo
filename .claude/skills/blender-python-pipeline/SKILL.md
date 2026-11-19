@@ -27,18 +27,23 @@ d'interface : chaque étape est un fichier versionnable, rejouable, journalisé.
 |---|---|
 | `blender_lancer.sh` | Trouve Blender, lance un script sur un `.blend` (ou une scène vide), journal, délai max, sauvegarde |
 | `inspecter_blend.py` | Inventaire : objets, triangles, matériaux, images, os, actions (+ JSON) |
-| `rendu_verification.py` | Planches de vues orthographiques et de cycles d'animation (Workbench) |
+| `rendu_verification.py` | Planches de vues orthographiques, cycles d'animation, et vues RTS (`--rts`) |
 | `exporter_gltf.py` | Export GLB sûr (actions, échantillonnage optionnel, ancienne sortie conservée) |
 | `audit_glb.py` | Audit d'un `.glb` sans Blender : triangles, textures, os, animations, alertes de budget |
 | `ik_deux_os.py` | Bibliothèque : IK analytique deux os, pose d'os, F-courbes toutes versions, vitesse de calage |
+| `pipeline_personnage.sh` | Orchestre toutes les étapes image→jeu, reprend avec `--depuis ETAPE` |
+| `gabarits/config_personnage.json` | Gabarit de config par personnage (taille, triangles, texture, vitesses…) |
 
 Exemples (chemins relatifs au dossier `scripts/`) :
 
     ./blender_lancer.sh perso.blend inspecter_blend.py -- rapport.json
     ./blender_lancer.sh perso.blend rendu_verification.py -- --sortie rendus --vues face,profil,dos,trois_quarts
     ./blender_lancer.sh perso.blend rendu_verification.py -- --sortie rendus --action Marche_loop --images 8
+    ./blender_lancer.sh perso.blend rendu_verification.py -- --sortie rendus --rts --distances 18,40
     ./blender_lancer.sh perso_v02.blend exporter_gltf.py -- perso.glb --echantillonner
     python3 audit_glb.py perso.glb --max-triangles 10000 --max-texture 2048
+    # Depuis le dossier du personnage :
+    ~/dahalo/.claude/skills/blender-python-pipeline/scripts/pipeline_personnage.sh --depuis texture
 
 ## Gabarit d'un script d'étape
 
@@ -76,8 +81,46 @@ Exemples (chemins relatifs au dossier `scripts/`) :
 - Modificateurs non appliqués : appliqués à l'export glTF, mais pas dans les comptes de `mesh.loop_triangles`.
 - Unités : 1 unité = 1 m ; transformations appliquées avant export.
 
+## Pipeline personnage image→jeu (Dahalo)
+
+Chaque personnage suit ce schéma. Toutes les étapes sont gérées par `pipeline_personnage.sh` avec
+`config_personnage.json` dans le dossier du personnage.
+
+**Ordre des étapes :**
+
+| Étape | Script | Entrée → Sortie | Obligatoire |
+|---|---|---|---|
+| Génération IA | ComfyUI (Hunyuan3D-2mini) | image → corps.glb | toujours |
+| Greffe tête | `greffer_tete.py` | corps.glb + tete.glb → greffe.glb | si tête séparée |
+| **Rendu RTS** | `rendu_verification.py --rts` | greffe/corps.glb → planche_rts.png | **toujours, avant texture** |
+| Texture | `texture_projection.py` | greffe.glb + photos → v2_texture.blend | toujours |
+| Comparaison | `comparer_image.py` | v2_texture.blend → comparatif.png | **toujours, valider avant rig** |
+| Rig | `rig_NOM.py` | v2_texture.blend → v3_rig.blend | toujours |
+| Corpulence | `corpulence.py` | v3_rig.blend → v3b.blend | si morphologie spéciale |
+| Accessoire | `fusil_NOM.py` ou autre | v3b.blend → v3c.blend | si accessoire |
+| Animation | `anim_NOM.py` | v3c.blend → v4_anim.glb | toujours |
+| Vidéo | `video_NOM.py` | v4_anim.blend → vidéo.mp4 | toujours |
+| Audit | `audit_glb.py` | v4_anim.glb → rapport | toujours |
+
+**Règles du pipeline (apprises sur le chef dahalo) :**
+
+1. **Rendu RTS avant texture** : vérifier la lisibilité à 18 m avant d'investir dans la projection de couleurs.
+   Si la silhouette n'est pas reconnaissable à 18 m, corriger la géométrie ou la taille.
+2. **`comparer_image.py` obligatoire** avant de valider la texture et de passer au rig.
+   Ne jamais affirmer que la texture ressemble aux photos de référence sans l'avoir vu côte à côte.
+3. **Taille de texture** : 1024 px par défaut (bible §7) ; 2048 seulement pour un héros de premier plan.
+4. **Photos de référence pour image→3D** : A-pose stricte, fond uni (pas de blanc pur ni de motif),
+   même distance face et dos, même éclairage. Fournir face + dos + profils + gros plan si disponibles.
+5. **Tête séparée** : pour tout personnage humain, générer la tête séparément (meilleure qualité faciale).
+   Utiliser `greffer_tete.py` pour l'intégrer.
+6. **Reprise après échec** : `pipeline_personnage.sh --depuis ETAPE`. Le fichier `.etat_pipeline` trace
+   les étapes réussies. Ne jamais relancer tout le pipeline si seule une étape a changé.
+7. **Accessoire = os dédié** : nommer l'os comme l'objet (`Fusil`, `Sagaie`, `Seau`), parent `Racine`,
+   déformant. Les mains s'y attachent par IK. L'objet peut être montré/caché par le jeu.
+
 ## Critères de validation
 
 - Le script tourne de bout en bout par `blender_lancer.sh` avec code 0 et journal propre.
-- Les rendus de vérification ont été produits **et regardés** ; l'export passe `audit_glb.py`.
+- Les rendus de vérification ont été produits **et regardés** (y compris `--rts`) ; l'export passe `audit_glb.py`.
+- La comparaison images de référence / rendu a été regardée : couleurs cohérentes.
 - La source n'a pas été modifiée (ou une sauvegarde horodatée existe).

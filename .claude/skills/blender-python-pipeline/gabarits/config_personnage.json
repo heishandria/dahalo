@@ -1,0 +1,72 @@
+{
+  "_aide": "Copier dans le dossier du personnage, renommer config_personnage.json, remplir les valeurs.",
+
+  "nom": "PERSONNAGE",
+  "dossier_personnages": "~/dahalo-personnages",
+
+  "geometrie": {
+    "hauteur_m": 1.75,
+    "triangles_corps": 9000,
+    "triangles_tete": 0,
+    "voxel_remaillage": 0.006,
+    "_aide_tete": "triangles_tete = 0 si pas de greffe de tête séparée"
+  },
+
+  "texture": {
+    "px": 1024,
+    "_aide": "1024 de préférence (bible §7) ; 2048 seulement si l'unité est un héros au premier plan"
+  },
+
+  "animation": {
+    "fps": 30,
+    "vitesse_marche": 0.0,
+    "vitesse_course": 0.0,
+    "_aide": "Remplir après calage (vitesse_calage() de ik_deux_os.py)"
+  },
+
+  "corpulence": {
+    "_aide": "Laisser {} si pas d'épaississement. Facteurs > 1 = plus large.",
+    "Bassin": 1.0, "Colonne": 1.0, "Thorax": 1.0, "Cou": 1.0, "Tete": 1.0,
+    "Clavicule": 1.0, "Bras": 1.0, "Avant_bras": 1.0, "Main": 1.0, "Doigts": 1.0,
+    "Cuisse": 1.0, "Mollet": 1.0, "Pied": 1.0
+  },
+
+  "accessoires": [],
+
+  "photos_reference": {
+    "_aide": "Chemins relatifs au dossier du personnage.",
+    "face": "images/face.png",
+    "dos": "images/dos.png",
+    "profils": "images/profils.png",
+    "gros_plan": "images/gros_plan.png"
+  },
+
+  "etapes": {
+    "_aide": "true = étape active pour ce personnage.",
+    "generation_ia": true,
+    "greffe_tete": false,
+    "texture": true,
+    "rig": true,
+    "corpulence": false,
+    "accessoire": false,
+    "animation": true,
+    "video": true
+  },
+
+  "fichiers": {
+    "_aide": "Noms des .blend et .glb produits par chaque étape.",
+    "corps_glb": "PERSONNAGE_corps.glb",
+    "tete_glb": "PERSONNAGE_tete.glb",
+    "greffe_glb": "PERSONNAGE_greffe.glb",
+    "texture_blend": "PERSONNAGE_v2_texture.blend",
+    "texture_glb": "PERSONNAGE_v2_texture.glb",
+    "rig_blend": "PERSONNAGE_v3_rig.blend",
+    "corpulence_blend": "PERSONNAGE_v3b_corpulence.blend",
+    "accessoire_blend": "PERSONNAGE_v3c_accessoire.blend",
+    "anim_blend": "PERSONNAGE_v4_anim.blend",
+    "anim_glb": "PERSONNAGE_v4_anim.glb",
+    "video_mp4": "PERSONNAGE_v4_anim.mp4"
+  },
+
+  "notes": ""
+}
