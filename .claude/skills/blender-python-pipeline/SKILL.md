@@ -31,6 +31,7 @@ d'interface : chaque étape est un fichier versionnable, rejouable, journalisé.
 | `exporter_gltf.py` | Export GLB sûr (actions, échantillonnage optionnel, ancienne sortie conservée) |
 | `audit_glb.py` | Audit d'un `.glb` sans Blender : triangles, textures, os, animations, alertes de budget |
 | `ik_deux_os.py` | Bibliothèque : IK analytique deux os, pose d'os, F-courbes toutes versions, vitesse de calage |
+| `recibler_bibliotheque.py` | Recible les animations d'une bibliothèque humanoïde (Quaternius UAL CC0, squelette type Unreal) sur notre squelette, A-pose comprise ; cuites en actions ordinaires, vitesse de calage mesurée |
 | `mort.py` | Animation de mort générique du squelette commun (chute, contact au sol d'après l'épaisseur du maillage, objet tenu lâché) : bibliothèque ou étape autonome |
 | `pipeline_personnage.py` | Orchestre les étapes image→jeu d'après `config_personnage.json` ; `--depuis`, `--jusqu-a`, `--etape`, `--etat`, `--seche` |
 | `gabarits/config_personnage.json` | Gabarit de config par personnage (taille, triangles, texture, vitesses…) |

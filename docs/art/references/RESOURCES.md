@@ -61,9 +61,11 @@ Références culturelles de Madagascar : voir `../madagascar-references.md`.
 
 | Ressource | Licence / conditions | ✓ |
 |---|---|---|
+| [Quaternius Universal Animation Library 1](https://quaternius.com/packs/universalanimationlibrary.html) et [2](https://quaternius.itch.io/universal-animation-library-2) | **CC0** (License.txt des zips, vérifié le 19/11/2026) ; versions « Standard » gratuites (43 + 43 animations) téléchargées dans `~/dahalo-personnages/bibliotheques/` ; squelette type Unreal, reciblé par `recibler_bibliotheque.py` | ✓ |
 | [CMU Graphics Lab Motion Capture Database](http://mocap.cs.cmu.edu/) | « Free for all uses » selon le site (ne pas revendre les données brutes : lire la FAQ) | ✓ |
 | [Bandai Namco Research Motion Dataset](https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset) | **CC BY-NC 4.0 : pas d'usage commercial** (étude seulement) | ✓ |
-| [Mixamo](https://www.mixamo.com/) | Compte Adobe ; animations utilisables dans des projets selon les conditions Adobe (lire avant usage commercial) | ✓ |
+| [Mixamo](https://www.mixamo.com/) | Compte Adobe ; personnages et animations libres de droits pour les projets personnels, commerciaux et les jeux vidéo ([FAQ Adobe](https://helpx.adobe.com/creative-cloud/faq/mixamo-faq.html), lue le 19/11/2026) ; interdit de redistribuer les fichiers bruts | ✓ |
+| Animations Epic (mannequin Unreal, Lyra, MetaHumans) | **Exclues** : contenu Epic réservé aux produits Unreal Engine | ✓ |
 | [Rokoko](https://rokoko.com/), [DeepMotion](https://www.deepmotion.com/) | Outils commerciaux de capture / capture vidéo | ✓ |
 
 ## 6. Textures, matériaux, modèles libres
