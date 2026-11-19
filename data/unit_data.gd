@@ -33,6 +33,7 @@ extends Resource
 ## Modèle 3D animé (.glb) ; sans modèle, l'unité reste une capsule colorée.
 ## Animations sur place : noms finissant par _repos, _marche ou _course ; _loop active la boucle.
 ## Une animation finissant par _tirer est jouée pendant les attaques à distance.
+## Une animation finissant par _mort (non bouclée) est jouée à la mort ; sans elle, l'unité bascule.
 @export var modele: PackedScene
 @export var vitesse_marche_animation := 0.87   # vitesse (m/s) pour laquelle la marche du modèle est calée
 @export var acceleration_animation_max := 2.4  # au-delà, la marche ne s'accélère plus (sinon elle s'agite)

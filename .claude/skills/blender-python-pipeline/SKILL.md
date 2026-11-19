@@ -31,6 +31,7 @@ d'interface : chaque étape est un fichier versionnable, rejouable, journalisé.
 | `exporter_gltf.py` | Export GLB sûr (actions, échantillonnage optionnel, ancienne sortie conservée) |
 | `audit_glb.py` | Audit d'un `.glb` sans Blender : triangles, textures, os, animations, alertes de budget |
 | `ik_deux_os.py` | Bibliothèque : IK analytique deux os, pose d'os, F-courbes toutes versions, vitesse de calage |
+| `mort.py` | Animation de mort générique du squelette commun (chute, contact au sol d'après l'épaisseur du maillage, objet tenu lâché) : bibliothèque ou étape autonome |
 | `pipeline_personnage.py` | Orchestre les étapes image→jeu d'après `config_personnage.json` ; `--depuis`, `--jusqu-a`, `--etape`, `--etat`, `--seche` |
 | `gabarits/config_personnage.json` | Gabarit de config par personnage (taille, triangles, texture, vitesses…) |
 
@@ -126,7 +127,10 @@ nouvelle texture d'accessoire n'apparaît pas en jeu), puis partie accélérée 
 7. **Tête séparée** pour un humain : générée seule puis `greffer_tete.py` (visage bien plus net).
 8. **Accessoire = os dédié** nommé comme l'objet (`Fusil`, `Sagaie`), parent `Racine`, déformant ; les mains s'y
    posent par IK ; matériaux à texture (atlas), pas de couleur unie seule (illisible ou blanchâtre en jeu).
-9. **Une version promue = un seul fichier source** : la config pointe vers les fichiers réellement promus ;
+9. **Mort** : chaque personnage a une action `<Nom>_mort` non bouclée, faite par `mort.py` (appelé depuis le
+   script d'animation, ou en étape autonome sur le dernier `.blend`). Regarder la **dernière image** : corps à plat,
+   pas appuyé sur un bras, pas de jambe en l'air. Sans effet sanglant (bible §4).
+10. **Une version promue = un seul fichier source** : la config pointe vers les fichiers réellement promus ;
    ne jamais copier un GLB dans le jeu à la main (écart du chef v4 : GLB du jeu antérieur au fusil texturé).
 
 ## Critères de validation

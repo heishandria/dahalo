@@ -155,7 +155,9 @@ for nom in ACTIONS:
     if getattr(a, "slots", None):
         squelette.animation_data.action_slot = a.slots[0]
     debut, fin = a.frame_range
-    images = [round(debut + (fin - debut) * k / N_IMAGES) for k in range(N_IMAGES)]
+    # Boucle : la dernière image = la première, on s'arrête avant. Action jouée une fois (tir, mort) : on montre la fin.
+    n_div = N_IMAGES if nom.endswith("_loop") else max(N_IMAGES - 1, 1)
+    images = [round(debut + (fin - debut) * k / n_div) for k in range(N_IMAGES)]
     mini = Vector((1e9, 1e9, 1e9))
     maxi = Vector((-1e9, -1e9, -1e9))
     for f in images:

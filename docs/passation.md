@@ -140,9 +140,10 @@ couleurs ternes et poussiéreuses. Les personnages sont inventés, jamais copié
 
 - **Tireur / chef dahalo** : `assets/models/personnages/dahalo_chef.glb`, 13 094 triangles, 23 os,
   texture 1024² (v5 du 19/11, retouchée : rouge brique, poussière) + atlas du fusil 512² ; `Chef_repos` (port
-  d’arme : crosse à la hanche, canon en diagonale ; première image du tir), `Chef_marche`, `Chef_course` et `Chef_tirer` (1,23 s). Vitesses de calage :
+  d’arme : crosse à la hanche, canon en diagonale ; première image du tir), `Chef_marche`, `Chef_course`, `Chef_tirer` (1,23 s) et `Chef_mort` (1,5 s). Vitesses de calage :
   0,965 m/s en marche et 4,408 m/s en course. Le corps est dérivé de Hunyuan3D-2mini ; le fusil est modélisé
   par script Blender. Voir `docs/art/references/RESOURCES.md` pour le rappel de licence applicable.
+- **Villageoise** : v10 du 19/11 = v9 + `Villageoise_mort` (1,5 s, chute vers sa droite) ; outils cachés à la mort.
 - **Palissade épineuse** : trois GLB (`assets/models/decor/palissade/palissade_{a,b,c}.glb`), chacun sous
   1 000 triangles, texture atlas 1024², deux matériaux ; variante stable selon la position du segment, bannière
   recolorée par faction. Sources et reproduction : `assets/models/decor/palissade/LISEZMOI.md`.

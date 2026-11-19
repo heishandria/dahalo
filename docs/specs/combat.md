@@ -65,7 +65,10 @@ Les guerriers peuvent aussi **saboter les palissades** ennemies (voir `defense.m
 À 0 PV, l'unité :
 1. **lâche son troupeau** : les zébus escortés redeviennent sauvages sur place (chacun peut les capturer) ;
 2. devient immédiatement non sélectionnable et non ciblable, prend une teinte sombre ;
-3. **tombe au sol**, reste 5 s, puis s'efface (message « … est tombé au combat » pour le joueur).
+3. **tombe au sol**, reste 5 s, puis s'efface en s'aplatissant (message « … est tombé au combat » pour le joueur).
+   Un modèle qui a une animation `…_mort` la joue (1,5 s : à-coup, jambes qui cèdent, chute en avant de
+   trois-quarts, l'arme lâchée tombe à côté ; objets de travail cachés), puis reste 5 s au sol. Sinon (capsule,
+   modèle sans `_mort`), toute l'unité bascule en 0,35 s. Aucun effet sanglant (bible §4).
 
 Villageois et pisteurs peuvent aussi être tués s'ils sont attaqués.
 

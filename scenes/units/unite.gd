@@ -372,6 +372,7 @@ var _marque: MeshInstance3D      # disque à la couleur du clan sous les pieds (
 var _anim_marche := ""
 var _anim_repos := ""
 var _anim_tir := ""
+var _anim_mort := ""
 # Corvée d'eau (villageoise) : marche avec le seau vide ou plein, puiser ; seau et eau montrés ou cachés.
 var _anim_seau_vide := ""
 var _anim_seau_plein := ""
@@ -434,6 +435,9 @@ func _creer_modele() -> void:
 						_anim_repos = nom
 					elif court.ends_with("_tirer"):
 						_anim_tir = nom
+					elif court.ends_with("_mort"):
+						_anim_mort = nom
+						_animations.get_animation(nom).loop_mode = Animation.LOOP_NONE
 		# Décalage aléatoire : deux villageois côte à côte ne marchent pas au pas.
 		_jouer(_anim_repos, 1.0)
 		_animations.seek(randf() * 2.0, true)
@@ -988,12 +992,24 @@ func _mourir() -> void:
 	var mat_corps := corps.material_override as StandardMaterial3D
 	if mat_corps:
 		mat_corps.albedo_color = data.couleur.darkened(0.5)
-	if _animations != null:
-		_animations.pause()   # la chute est faite par la rotation de l'unité
 	if _marque != null:
 		_marque.visible = false
 	if faction == GameRules.PLAYER:
 		EventBus.message.emit("%s est tombé au combat." % data.nom)
+	# Modèle avec animation de mort : il tombe de lui-même (objets de travail cachés), reste au sol, puis s'efface.
+	if _animations != null and _anim_mort != "":
+		_montrer_seau(false, false)
+		_montrer_hache(false)
+		_montrer_outils_champ("")
+		_animations.speed_scale = 1.0
+		_animations.play(_anim_mort, 0.15)
+		var au_sol := create_tween()
+		au_sol.tween_interval(_animations.get_animation(_anim_mort).length + DUREE_CORPS_S)
+		au_sol.tween_property(self, "scale", Vector3(1.0, 0.05, 1.0), 0.6)
+		au_sol.tween_callback(queue_free)
+		return
+	if _animations != null:
+		_animations.pause()   # la chute est faite par la rotation de l'unité
 	# Chute au sol, puis le corps s'efface après quelques secondes (sans effet sanglant).
 	var chute := create_tween()
 	chute.tween_property(self, "rotation:x", -PI / 2.0, 0.35).set_ease(Tween.EASE_IN)
