@@ -119,6 +119,9 @@ def commandes(e):
                  "--actions", "%s=%s" % (b.get("action", "*"), b["nom"]), "--remplacer"]
             if b.get("arme"):
                 a += ["--arme-deux-mains", b["arme"]]
+            for cle in ("attacher", "figer"):
+                if b.get(cle):
+                    a += ["--" + cle, b[cle]]
             if dernier:
                 a += ["--glb", FINAL_GLB]
             cmds.append(blender(entree, os.path.join(KIT, "recibler_bibliotheque.py"), *a))

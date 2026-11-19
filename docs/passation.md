@@ -139,12 +139,14 @@ couleurs ternes et poussiéreuses. Les personnages sont inventés, jamais copié
 ## Assets 3D intégrés (18/11/2026)
 
 - **Tireur / chef dahalo** : `assets/models/personnages/dahalo_chef.glb`, 13 094 triangles, 23 os,
-  texture 1024² (v5 du 19/11, retouchée : rouge brique, poussière) + atlas du fusil 512² ; `Chef_repos` (port
-  d’arme : crosse à la hanche, canon en diagonale ; première image du tir), `Chef_marche`, `Chef_course` et `Chef_viser` (Mixamo, fusil tenu à deux mains, v6 du 19/11), `Chef_tirer` (1,23 s)
-  et `Chef_mort` (1,5 s). Vitesses de calage v6 : 1,332 m/s en marche et 3,998 m/s en course (anciennes :
-  0,965 et 4,408 m/s). Le corps est dérivé de Hunyuan3D-2mini ; le fusil est modélisé
+  texture 1024² (v5 du 19/11, retouchée : rouge brique, poussière) + atlas du fusil 512² ; v7 du 19/11 : toutes
+  les animations viennent de Mixamo, fusil tenu à deux mains (`Chef_repos`, `Chef_marche`, `Chef_course`,
+  `Chef_viser`, `Chef_tirer` 0,3 s, `Chef_mort` 3,8 s). Calage : 1,332 m/s en marche, 3,998 m/s en course. Le corps est dérivé de Hunyuan3D-2mini ; le fusil est modélisé
   par script Blender. Voir `docs/art/references/RESOURCES.md` pour le rappel de licence applicable.
-- **Villageoise** : v10 du 19/11 = v9 + `Villageoise_mort` (1,5 s, chute vers sa droite) ; outils cachés à la mort.
+- **Villageoise** : v11 du 19/11 : repos, marche, course, mort (Quaternius UAL1), coupe du bois et récolte (UAL2),
+  binage (Mixamo Digging), houe et épi rattachés à la main ; gestes du seau et rangement de la houe faits main.
+  Calage : 0,831 m/s en marche, 4,568 m/s en course (déplacement réel), 3,96 m/s pour la course au seau
+  (`vitesse_course_seau_animation`, nouveau) ; outils cachés à la mort.
 - **Palissade épineuse** : trois GLB (`assets/models/decor/palissade/palissade_{a,b,c}.glb`), chacun sous
   1 000 triangles, texture atlas 1024², deux matériaux ; variante stable selon la position du segment, bannière
   recolorée par faction. Sources et reproduction : `assets/models/decor/palissade/LISEZMOI.md`.

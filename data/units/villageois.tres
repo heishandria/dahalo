@@ -18,3 +18,5 @@ cout = {"nourriture": 50.0}
 temps_formation = 6.0
 couleur = Color(0.85, 0.72, 0.55, 1)
 modele = ExtResource("2_modele")
+vitesse_marche_animation = 0.831
+vitesse_course_animation = 4.568

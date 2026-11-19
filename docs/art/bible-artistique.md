@@ -46,7 +46,7 @@ Modèle générique : `.claude/skills/art-direction/modele-bible.md`.
 | Coiffures | Petits chignons (villageoise, d'après la photo de référence de l'auteur) | référence fournie ; généralité **à vérifier** |
 | Unités | Villageoise (modèle 3D) ; Dahalo, Lanceur, Tireur, Pisteur : **à concevoir** (encore des capsules) | à faire |
 | Identité de rôle | Chaque unité lisible en silhouette par son accessoire (seau, bâton, sagaie, fusil, pisteur…) | règle |
-| Mort | Les unités tombent puis disparaissent, **sans effet sanglant** : animation `_mort` (1,5 s : à-coup, jambes qui cèdent, chute en avant de trois-quarts, objet tenu lâché, tête tournée sur le côté), 5 s au sol, puis le corps s'aplatit | décidé (CLAUDE.md) ; animation 19/11 |
+| Mort | Les unités tombent puis disparaissent, **sans effet sanglant** : animation `_mort` (bibliothèque : Mixamo pour le chef, Quaternius pour la villageoise ; `mort.py` du kit en repli), 5 s au sol, puis le corps s'aplatit | décidé (CLAUDE.md) ; animation 19/11 |
 | Budget | 3 000 – 10 000 triangles ; ≤ 3 matériaux ; texture **1024 px par défaut** (2048 seulement pour héros) | décidé (19/11) |
 | Photos de référence | A-pose stricte, fond uni (pas blanc pur ni motif), même distance face/dos, même éclairage, minimum : face + dos | règle (19/11) |
 | Lisibilité RTS | `rendu_verification.py --rts` (caméra du jeu, taille de vue 18/40/70) : rôle lisible à 40 dans les 4 orientations, **pose de repos comprise** (l'accessoire doit sortir de la silhouette) | règle (19/11) |
@@ -119,4 +119,4 @@ objets sacrés comme butin ; couleurs vives sans fonction.
 | 19/11/2026 | Kit : config_personnage.json, pipeline_personnage.py, rendu_verification.py --rts (caméra du jeu), retoucher_texture.py |
 | 19/11/2026 | Règles ajoutées : texture 1024 px par défaut, photos de référence A-pose, test RTS avant texture |
 | 19/11/2026 | Animations de mort (chef, villageoise) par un script commun du kit (`mort.py`) |
-| 19/11/2026 | Bibliothèques d'animations libres (Quaternius UAL CC0, Mixamo) reciblées par défaut ; chef v6 : marche, course et visée Mixamo |
+| 19/11/2026 | Bibliothèques d'animations libres (Quaternius UAL CC0, Mixamo) reciblées par défaut ; chef v7 (tout Mixamo), villageoise v11 (Quaternius + Mixamo, seau fait main) |

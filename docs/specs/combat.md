@@ -51,8 +51,8 @@ Les guerriers peuvent aussi **saboter les palissades** ennemies (voir `defense.m
   L'unité s'approche à portée, se tourne vers la cible et frappe à chaque fin de recharge.
 - **Animation du Tireur** : le modèle du chef dahalo joue `Chef_tirer` à chaque attaque à distance et
   `Chef_viser` (en joue) à l'arrêt entre deux tirs ; les animations de repos, marche et course sont reconnues par
-  leur suffixe (`_repos`, `_marche`, `_course`, `_viser`). Marche, course et visée viennent de Mixamo (calage
-  1,332 et 3,998 m/s) ; repos (port d'arme), tir et mort sont faits par script.
+  leur suffixe (`_repos`, `_marche`, `_course`, `_viser`). Toutes viennent de Mixamo (v7 : Rifle Idle, Walk,
+  Run, Aiming Idle, Firing Rifle, Rifle Death ; calage 1,332 et 3,998 m/s), le fusil tenu à deux mains.
 - **Engagement automatique** : un guerrier **inactif** attaque le premier ennemi **visible** qui entre dans son
   champ de vision (Dahalo 14 m, Lanceur 14 m, Tireur 18 m ; ×0,6 la nuit), vérifié toutes les 0,5 s.
   Une attaque s'interrompt si la cible sort du champ de vision (voir `vision.md`).
@@ -68,9 +68,10 @@ Les guerriers peuvent aussi **saboter les palissades** ennemies (voir `defense.m
 1. **lâche son troupeau** : les zébus escortés redeviennent sauvages sur place (chacun peut les capturer) ;
 2. devient immédiatement non sélectionnable et non ciblable, prend une teinte sombre ;
 3. **tombe au sol**, reste 5 s, puis s'efface en s'aplatissant (message « … est tombé au combat » pour le joueur).
-   Un modèle qui a une animation `…_mort` la joue (1,5 s : à-coup, jambes qui cèdent, chute en avant de
-   trois-quarts, l'arme lâchée tombe à côté ; objets de travail cachés), puis reste 5 s au sol. Sinon (capsule,
-   modèle sans `_mort`), toute l'unité bascule en 0,35 s. Aucun effet sanglant (bible §4).
+   Un modèle qui a une animation `…_mort` la joue (objets de travail cachés), puis reste 5 s au sol : Tireur
+   « Rifle Death » de Mixamo (3,8 s, il pivote et tombe sur le dos, fusil en main), villageoise « Death01 » de
+   Quaternius (2,4 s, les genoux cèdent puis chute en arrière). Sinon (capsule, modèle sans `_mort`), toute
+   l'unité bascule en 0,35 s. Aucun effet sanglant (bible §4).
 
 Villageois et pisteurs peuvent aussi être tués s'ils sont attaqués.
 

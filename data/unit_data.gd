@@ -38,5 +38,6 @@ extends Resource
 @export var vitesse_marche_animation := 0.87   # vitesse (m/s) pour laquelle la marche du modèle est calée
 @export var acceleration_animation_max := 2.4  # au-delà, la marche ne s'accélère plus (sinon elle s'agite)
 @export var vitesse_marche_seau_animation := 0.36  # marche avec le seau (petits pas chargés), si le modèle l'a
-@export var vitesse_course_animation := 3.96       # course (avec ou sans seau), si le modèle l'a ; v9 : cycle 0,66 s
+@export var vitesse_course_animation := 3.96       # course, si le modèle l'a
+@export var vitesse_course_seau_animation := 3.96  # course avec le seau (faite main, v9 : cycle 0,66 s)
 @export var seuil_course := 2.2                    # au-delà de cette vitesse réelle (m/s), elle court

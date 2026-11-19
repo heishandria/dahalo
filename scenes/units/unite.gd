@@ -520,7 +520,8 @@ func _animer() -> void:
 	elif corvee and v > 0.3:
 		_montrer_seau(true, plein)
 		if court:
-			_jouer(_anim_course_seau_plein if plein else _anim_course_seau_vide, allure_course)
+			_jouer(_anim_course_seau_plein if plein else _anim_course_seau_vide,
+					clampf(v / data.vitesse_course_seau_animation, 0.6, data.acceleration_animation_max))
 		else:
 			_jouer(_anim_seau_plein if plein else _anim_seau_vide,
 					clampf(v / data.vitesse_marche_seau_animation, 0.6, data.acceleration_animation_max))

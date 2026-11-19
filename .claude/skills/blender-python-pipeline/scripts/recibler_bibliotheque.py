@@ -12,6 +12,9 @@
 #       --prefixe Villageoise --actions Walk_Loop=marche_loop,Idle_Loop=repos_loop,Death01=mort [--remplacer]
 # --arme-deux-mains Fusil : l'os de l'arme est replacé à chaque image, poignée dans la main droite, canon vers la
 # main gauche, dessus vers le haut (animations « rifle » de Mixamo).
+# --attacher Houe@Villageoise_biner_loop:10 : l'os suit la main la plus proche, avec la prise relevée à l'image 10 de
+# l'action de référence (lue AVANT remplacement). --figer Houe@Villageoise_recolter:1 : l'os garde la pose de
+# référence (outil planté). Plusieurs os : séparer par des virgules.
 # « *=nom » prend la seule action du fichier (Mixamo). Sans --remplacer, les actions créées s'appellent
 # <prefixe>_ual_<nom> (comparaison avec les actions existantes).
 import bpy, os, sys
@@ -48,6 +51,19 @@ def option(nom, defaut=None):
 
 PREFIXE = option("--prefixe")
 ARME = option("--arme-deux-mains")
+
+
+def references(texte):
+    res = []
+    for item in (texte or "").split(","):
+        if item:
+            os_, ref = item.split("@")
+            action, image = ref.split(":")
+            res.append((os_, action, int(image)))
+    return res
+
+
+ATTACHER, FIGER = references(option("--attacher")), references(option("--figer"))
 REMPLACER = "--remplacer" in args
 ACTIONS = [p.split("=") for p in option("--actions").split(",")]
 
@@ -100,6 +116,49 @@ echelle = jambe_c / jambe_s
 pelvis_repos = (ws @ bs[reliees["Bassin"]].matrix_local).translation
 print("Os reliés : %d / %d ; échelle des déplacements %.3f" % (len(reliees), len(bc), echelle))
 
+def vitesse_root_motion(nom_action):
+    """Vitesse réelle (m/s) d'après la version « _RM » du fichier source (Quaternius) : déplacement du bassin sur
+    un cycle, à l'échelle des jambes de la cible. Plus sûre que la mesure au pied (trot UAL surestimé de 30 %)."""
+    rm = SOURCE[:-4] + "_RM.glb" if SOURCE.lower().endswith(".glb") else ""
+    if not rm or not os.path.exists(rm):
+        return None
+    avant_rm, actions_avant_rm = set(bpy.data.objects), set(bpy.data.actions)
+    bpy.ops.import_scene.gltf(filepath=rm)
+    nouveaux = set(bpy.data.objects) - avant_rm
+    nouvelles = [a for a in bpy.data.actions if a not in actions_avant_rm]
+    arm_rm = next(o for o in nouveaux if o.type == 'ARMATURE')
+    a = next((x for x in nouvelles if x.name.split(".")[0] == nom_action), None)
+    v = None
+    if a:
+        assigner(arm_rm, a)
+        d, f = int(a.frame_range[0]), int(a.frame_range[1])
+        sc.frame_set(d)
+        p0 = (arm_rm.matrix_world @ arm_rm.pose.bones[reliees["Bassin"]].head).copy()
+        sc.frame_set(f)
+        p1 = (arm_rm.matrix_world @ arm_rm.pose.bones[reliees["Bassin"]].head).copy()
+        v = ((p1 - p0).xy.length / ((f - d) / 30)) * echelle
+    for o in nouveaux:
+        bpy.data.objects.remove(o, do_unlink=True)
+    for x in nouvelles:
+        bpy.data.actions.remove(x)
+    return v
+
+
+# Prises et poses de référence, lues dans les actions actuelles de la cible avant tout remplacement.
+attaches, figes = {}, {}
+for liste, cible_dict in ((ATTACHER, attaches), (FIGER, figes)):
+    for nom_os, nom_action, image in liste:
+        assigner(cible, bpy.data.actions[nom_action])
+        sc.frame_set(image)
+        m_os = wc @ pc[nom_os].matrix
+        if cible_dict is attaches:
+            main = min(("Main_D", "Main_G"), key=lambda n: ((wc @ pc[n].matrix).translation - m_os.translation).length)
+            attaches[nom_os] = (main, (wc @ pc[main].matrix).inverted() @ m_os)
+            print("Attache : %s suit %s (prise de %s, image %d)" % (nom_os, main, nom_action, image))
+        else:
+            figes[nom_os] = (wc @ pc[bc[nom_os].parent.name].matrix).inverted() @ m_os if bc[nom_os].parent else m_os
+            print("Figé : %s (pose de %s, image %d)" % (nom_os, nom_action, image))
+
 ordre = [b.name for b in cible.data.bones]                     # parents avant enfants (ordre de l'armature)
 creees = []
 for nom_source, nom_court in ACTIONS:
@@ -129,7 +188,12 @@ for nom_source, nom_court in ACTIONS:
                 base = parent_pose @ rest_p.inverted() @ rest_b      # os qui suit son parent sans bouger lui-même
             else:
                 base = rest_b.copy()
-            if n == ARME and "Main_D" in pose_monde and "Main_G" in pose_monde:
+            if n in attaches:
+                main, prise = attaches[n]
+                m = pose_monde[main] @ prise
+            elif n in figes:
+                m = (pose_monde[b.parent.name] @ figes[n]) if b.parent else figes[n].copy()
+            elif n == ARME and "Main_D" in pose_monde and "Main_G" in pose_monde:
                 paume = {c: pose_monde["Main_" + c].translation + pose_monde["Main_" + c].to_3x3().col[1] * 0.07
                          for c in ("D", "G")}
                 canon = (paume["G"] - paume["D"]).normalized()
@@ -155,7 +219,8 @@ for nom_source, nom_court in ACTIONS:
                 local = (rest_p.inverted() @ rest_b).inverted() @ pose_monde[b.parent.name].inverted() @ m
             else:
                 local = rest_b.inverted() @ m
-            pb.location = local.translation if n in ("Bassin", "Racine", ARME) else (0, 0, 0)
+            libre = n in ("Bassin", "Racine", ARME) or n in attaches or n in figes
+            pb.location = local.translation if libre else (0, 0, 0)
             pb.rotation_quaternion = local.to_quaternion()
             pb.keyframe_insert("location", frame=f - debut + 1)
             pb.keyframe_insert("rotation_quaternion", frame=f - debut + 1)
@@ -167,7 +232,10 @@ for nom_source, nom_court in ACTIONS:
     texte = "ACTION %s ← %s : %d images (%.2f s)" % (nom, nom_source, fin - debut + 1, (fin - debut) / 30)
     if nom_court.startswith(("marche", "course")):
         pieds = [n for n in ("Pied_D", "Pied_G") if n in bc]
-        texte += " ; vitesse de calage %.3f m/s" % vitesse_calage(cible, action, pieds)
+        texte += " ; vitesse de calage %.3f m/s (pied au sol)" % vitesse_calage(cible, action, pieds)
+        v_rm = vitesse_root_motion(nom_source)
+        if v_rm:
+            texte += ", %.3f m/s (déplacement réel, À RETENIR)" % v_rm
     print(texte)
 
 # La source ne part pas dans le fichier : ni son squelette, ni son maillage, ni ses actions.
