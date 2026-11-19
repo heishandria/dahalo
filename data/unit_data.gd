@@ -31,7 +31,8 @@ extends Resource
 @export_group("Visuel")
 @export var couleur := Color(0.85, 0.72, 0.55)
 ## Modèle 3D animé (.glb) ; sans modèle, l'unité reste une capsule colorée.
-## Animations attendues (sur place, nom finissant par _loop pour la boucle) : …marche…, …repos….
+## Animations sur place : noms finissant par _repos, _marche ou _course ; _loop active la boucle.
+## Une animation finissant par _tirer est jouée pendant les attaques à distance.
 @export var modele: PackedScene
 @export var vitesse_marche_animation := 0.87   # vitesse (m/s) pour laquelle la marche du modèle est calée
 @export var acceleration_animation_max := 2.4  # au-delà, la marche ne s'accélère plus (sinon elle s'agite)

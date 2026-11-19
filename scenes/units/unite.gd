@@ -94,7 +94,7 @@ func _ready() -> void:
 	_materiau_barre.no_depth_test = true
 	barre_vie.material_override = _materiau_barre
 	_maj_barre_vie()
-	if data.arme == "fusil":
+	if data.arme == "fusil" and data.modele == null:
 		_ajouter_fusil()
 	if data.modele != null:
 		_creer_modele()
@@ -371,6 +371,7 @@ var _animations: AnimationPlayer
 var _marque: MeshInstance3D      # disque à la couleur du clan sous les pieds (la capsule colorée disparaît)
 var _anim_marche := ""
 var _anim_repos := ""
+var _anim_tir := ""
 # Corvée d'eau (villageoise) : marche avec le seau vide ou plein, puiser ; seau et eau montrés ou cachés.
 var _anim_seau_vide := ""
 var _anim_seau_plein := ""
@@ -412,8 +413,6 @@ func _creer_modele() -> void:
 					_anim_seau_plein = nom
 				"Villageoise_puiser":
 					_anim_puiser = nom
-				"Villageoise_course":
-					_anim_course = nom
 				"Villageoise_course_seau_vide":
 					_anim_course_seau_vide = nom
 				"Villageoise_course_seau_plein":
@@ -427,10 +426,14 @@ func _creer_modele() -> void:
 					# Début et fin différents : jouée en aller-retour pour ne pas sauter à chaque boucle.
 					_animations.get_animation(nom).loop_mode = Animation.LOOP_PINGPONG
 				_:
-					if "marche" in court:
+					if court.ends_with("_course"):
+						_anim_course = nom
+					elif court.ends_with("_marche"):
 						_anim_marche = nom
-					elif "repos" in court:
+					elif court.ends_with("_repos"):
 						_anim_repos = nom
+					elif court.ends_with("_tirer"):
+						_anim_tir = nom
 		# Décalage aléatoire : deux villageois côte à côte ne marchent pas au pas.
 		_jouer(_anim_repos, 1.0)
 		_animations.seek(randf() * 2.0, true)
@@ -476,6 +479,8 @@ func _jouer(nom: String, vitesse: float) -> void:
 ## (vide à l'aller, plein au retour), puiser à la source.
 func _animer() -> void:
 	if _animations == null or mort:
+		return
+	if _anim_tir != "" and _animations.current_animation == _anim_tir and _animations.is_playing():
 		return
 	var v := Vector2(velocity.x, velocity.z).length()
 	var corvee := _corvee_d_eau() and _anim_seau_vide != ""
@@ -957,6 +962,8 @@ func _frapper(ennemi) -> void:
 	_recharge = data.cadence
 	if data.portee > PORTEE_DISTANCE:
 		_tracer_vers(ennemi.global_position)
+		if _anim_tir != "":
+			_jouer(_anim_tir, 1.0)
 	ennemi.subir(degats_contre(ennemi), self)
 
 

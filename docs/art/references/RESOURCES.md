@@ -99,6 +99,7 @@ Modèles présents (image→3D seulement, **aucun modèle texte→image**) — l
 | [Pixal3D](https://huggingface.co/Comfy-Org/Pixal3D) | Image → 3D (variante) | MIT |
 | [MoGe](https://huggingface.co/Comfy-Org/MoGe) | Estimation de géométrie et de champ de vision | MIT |
 | [BiRefNet](https://huggingface.co/Comfy-Org/BiRefNet) | Détourage | MIT |
+| [Hunyuan3D-2mini](https://huggingface.co/tencent/Hunyuan3D-2mini) (Tencent) | Image → forme 3D (géométrie seule) | **Tencent Hunyuan 3D 2.0 Community License** : aucun droit dans l'UE, au Royaume-Uni ni en Corée du Sud ; licence à demander au-delà d'1 M d'utilisateurs actifs mensuels ; joindre la licence et la mention « Tencent Hunyuan 3D 2.0 is licensed under the Tencent Hunyuan 3D 2.0 Community License Agreement. » en cas de distribution ; sorties non réutilisables pour entraîner un autre modèle. Décision de l'auteur (18/11/2026) : utilisé pour le chef dahalo, jeu produit et diffusé à Madagascar ; **à revoir avant toute diffusion vers l'UE, le Royaume-Uni ou la Corée du Sud** (ex. Steam mondial) |
 | DINOv3 ViT-L (Meta, dans le dépôt Pixal3D) | Encodeur d'image | **Licence propre à Meta** ([fiche](https://huggingface.co/facebook/dinov3-vitl16-pretrain-lvd1689m)) : à lire avant usage commercial |
 
 | Ressource | Licence | ✓ |
